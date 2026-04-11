@@ -325,6 +325,28 @@ body::after {
     border-color: var(--border-bright);
 }
 
+/* ── Item queue input ──────────────────────── */
+#item-keep-row {
+    margin-bottom: 0.3rem;
+}
+
+#item-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border-bright);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 0.3rem 0.5rem;
+    border-radius: var(--zone-radius);
+    outline: none;
+}
+
+#item-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+}
+
 /* ── Keep log ──────────────────────────────── */
 .keep-list {
     list-style: none;
@@ -371,6 +393,11 @@ body::after {
 #clear-save-btn:hover {
     color: var(--text-danger);
     border-color: var(--text-danger);
+}
+
+#clear-save-btn.btn-confirm-pending {
+    color: var(--text-warn);
+    border-color: var(--text-warn);
 }
 
 /* ── Responsive fallback ───────────────────── */

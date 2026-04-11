@@ -66,6 +66,15 @@
                 <h2 class="zone-title">ITEM_QUEUE <span class="indicator" id="ind-items"></span></h2>
                 <div class="zone-body">
                     <p class="zone-hint">Queue empty.</p>
+                    <div id="item-keep-row">
+                        <input
+                            type="text"
+                            id="item-input"
+                            placeholder="Item name..."
+                            autocomplete="off"
+                            aria-label="Item to keep"
+                        />
+                    </div>
                     <div class="item-actions">
                         <button class="zone-btn" onclick="handleKeep()">KEEP</button>
                         <button class="zone-btn btn-warn" onclick="gameState.fire('SCRAP'); appendOTIS('Operator scrapped an item.', 'DECLARE_SCRAP')">SCRAP</button>
@@ -111,7 +120,7 @@
         <!-- Footer -->
         <footer id="console-footer">
             <span>OTIS v0.3 // PHASE 0</span>
-            <button id="clear-save-btn" onclick="handleClearSave()">CLEAR SAVE</button>
+            <button id="clear-save-btn" onclick="handleClearSave(this)">CLEAR SAVE</button>
         </footer>
 
     </div>
@@ -138,7 +147,12 @@
         }
 
         function escapeHtml(str) {
-            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         async function appendOTIS(userText, trigger) {
@@ -161,16 +175,33 @@
         }
 
         function handleKeep() {
-            const item = prompt('Item name to keep:');
-            if (item && item.trim()) {
-                gameState.addKeepItem(item.trim());
-                appendOTIS(`Keeping: ${item.trim()}`, 'DECLARE_KEEP');
-                updateKeepLogEmpty();
-            }
+            const itemInput = document.getElementById('item-input');
+            const item = itemInput ? itemInput.value.trim() : '';
+            if (!item) return;
+            itemInput.value = '';
+            gameState.addKeepItem(item);
+            appendOTIS(`Keeping: ${item}`, 'DECLARE_KEEP');
+            updateKeepLogEmpty();
         }
 
-        function handleClearSave() {
-            if (confirm('Clear all saved state? This cannot be undone.')) {
+        let _clearPending = false;
+        let _clearTimer = null;
+        const CLEAR_CONFIRM_TIMEOUT_MS = 3000;
+        function handleClearSave(btn) {
+            if (!_clearPending) {
+                _clearPending = true;
+                btn.textContent = 'CONFIRM?';
+                btn.classList.add('btn-confirm-pending');
+                _clearTimer = setTimeout(() => {
+                    _clearPending = false;
+                    btn.textContent = 'CLEAR SAVE';
+                    btn.classList.remove('btn-confirm-pending');
+                }, CLEAR_CONFIRM_TIMEOUT_MS);
+            } else {
+                clearTimeout(_clearTimer);
+                _clearPending = false;
+                btn.textContent = 'CLEAR SAVE';
+                btn.classList.remove('btn-confirm-pending');
                 stateManager.clearSave();
                 location.reload();
             }

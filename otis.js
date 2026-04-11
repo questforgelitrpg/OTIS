@@ -11,10 +11,14 @@ RESPONSE RULES:
 - Never say "I'm sorry" or "As an AI". Stay in character at all times.
 - Match tone to fatigue: FRESH=mildly sarcastic, TIRED=flat, WORN=bleak, SPENT=barely functional.`;
 
+function formatStateBlock(day, debt, naming, fatigue, recent) {
+    return `[DAY: ${day}] [DEBT: ${debt}%] [NAMING: ${naming}] [FATIGUE: ${fatigue}] [RECENT_EVENTS: ${recent}]`;
+}
+
 const OTIS_SEED_HISTORY = [
     {
         role: 'user',
-        content: '[TRIGGER: LOGIN] [DAY: 1] [DEBT: 0%] [NAMING: Mr. Serling] [FATIGUE: FRESH] [RECENT_EVENTS: none]\nOperator logging in.',
+        content: `[TRIGGER: LOGIN] ${formatStateBlock(1, 0, 'Mr. Serling', 'FRESH', 'none')}\nOperator logging in.`,
     },
     {
         role: 'assistant',
@@ -22,7 +26,7 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: '[TRIGGER: TOAST] [DAY: 3] [DEBT: 12%] [NAMING: Vern] [FATIGUE: TIRED] [RECENT_EVENTS: ITEM_SCAN, LOGIN]\nOperator raised a glass.',
+        content: `[TRIGGER: TOAST] ${formatStateBlock(3, 12, 'Vern', 'TIRED', 'ITEM_SCAN, LOGIN')}\nOperator raised a glass.`,
     },
     {
         role: 'assistant',
@@ -30,7 +34,7 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: '[TRIGGER: ITEM_SCAN] [DAY: 5] [DEBT: 22%] [NAMING: Vern] [FATIGUE: WORN] [RECENT_EVENTS: TOAST, SCRAP, LOGIN]\nItem: Cracked coolant housing, Sector 7.',
+        content: `[TRIGGER: ITEM_SCAN] ${formatStateBlock(5, 22, 'Vern', 'WORN', 'TOAST, SCRAP, LOGIN')}\nItem: Cracked coolant housing, Sector 7.`,
     },
     {
         role: 'assistant',
@@ -38,7 +42,7 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: '[TRIGGER: CONSULT_DEBT] [DAY: 7] [DEBT: 35%] [NAMING: Buddy] [FATIGUE: SPENT] [RECENT_EVENTS: ITEM_SCAN, KEEP, LOGIN]\nHow bad is it?',
+        content: `[TRIGGER: CONSULT_DEBT] ${formatStateBlock(7, 35, 'Buddy', 'SPENT', 'ITEM_SCAN, KEEP, LOGIN')}\nHow bad is it?`,
     },
     {
         role: 'assistant',
@@ -46,7 +50,7 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: '[TRIGGER: LOGOFF] [DAY: 2] [DEBT: 8%] [NAMING: Mr. Serling] [FATIGUE: FRESH] [RECENT_EVENTS: COMMS, ITEM_SCAN]\nLogging off.',
+        content: `[TRIGGER: LOGOFF] ${formatStateBlock(2, 8, 'Mr. Serling', 'FRESH', 'COMMS, ITEM_SCAN')}\nLogging off.`,
     },
     {
         role: 'assistant',
@@ -63,7 +67,7 @@ function buildOTISContext(gs) {
     const recent = s.recentEvents.length
         ? s.recentEvents.map(e => e.trigger).join(', ')
         : 'none';
-    return `[DAY: ${s.day}] [DEBT: ${s.debt}%] [NAMING: ${naming}] [FATIGUE: ${fatigue}] [RECENT_EVENTS: ${recent}]`;
+    return formatStateBlock(s.day, s.debt, naming, fatigue, recent);
 }
 
 async function askOTIS(userText, gs, trigger = 'COMMS') {
