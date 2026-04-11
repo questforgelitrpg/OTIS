@@ -8,6 +8,7 @@ class StateManager {
     _defaultState() {
         return {
             debt: 25000,
+            credits: 0,
             day: 1,
             sessionHours: 0,
             namingTier: 0,

@@ -14,6 +14,10 @@ const TRIGGERS = {
     CONSULT_NOTELLING: 'CONSULT_NOTELLING',
     DECLARE_KEEP: 'DECLARE_KEEP',
     DECLARE_SCRAP: 'DECLARE_SCRAP',
+    DECLARE_SELL: 'DECLARE_SELL',
+    SCRAP_DISPATCH: 'SCRAP_DISPATCH',
+    BARGE_IMMINENT: 'BARGE_IMMINENT',
+    PAYMENT: 'PAYMENT',
     KEEP: 'KEEP',
     SCRAP: 'SCRAP',
     COMMS: 'COMMS',
@@ -24,6 +28,7 @@ class GameState {
     constructor() {
         this.state = {
             debt: 25000,
+            credits: 0,
             day: 1,
             sessionHours: 0,
             namingTier: 0,
@@ -41,6 +46,7 @@ class GameState {
             const loaded = stateManager.getState();
             this.state = {
                 debt: loaded.debt ?? 25000,
+                credits: loaded.credits || 0,
                 day: loaded.day || 1,
                 sessionHours: loaded.sessionHours || 0,
                 namingTier: loaded.namingTier || 0,
@@ -120,6 +126,11 @@ class GameState {
 
         const ledgerDebtEl = document.getElementById('ledger-debt');
         if (ledgerDebtEl) ledgerDebtEl.textContent = this.state.debt.toLocaleString() + ' cr';
+
+        const creditsEl = document.getElementById('stat-credits');
+        if (creditsEl) creditsEl.textContent = `Credits: ${this.state.credits.toLocaleString()} cr`;
+        const ledgerCreditsEl = document.getElementById('ledger-credits');
+        if (ledgerCreditsEl) ledgerCreditsEl.textContent = this.state.credits.toLocaleString() + ' cr';
 
         const keepLogEl = document.getElementById('keep-log-list');
         if (keepLogEl) {
