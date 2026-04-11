@@ -186,6 +186,7 @@
 
         let _clearPending = false;
         let _clearTimer = null;
+        // 3-second window gives the operator time to reconsider without being too long.
         const CLEAR_CONFIRM_TIMEOUT_MS = 3000;
         function handleClearSave(btn) {
             if (!_clearPending) {

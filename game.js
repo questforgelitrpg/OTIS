@@ -1,4 +1,5 @@
 const MS_PER_MINUTE = 60000;
+const MINUTES_PER_HOUR = 60;
 
 const NAMING_TIERS = ['Mr. Serling', 'Vern', 'Buddy'];
 
@@ -54,7 +55,7 @@ class GameState {
     _startSessionTimer() {
         this._sessionStart = Date.now();
         this._sessionTimer = setInterval(() => {
-            const elapsed = (Date.now() - this._sessionStart) / (MS_PER_MINUTE * 60);
+            const elapsed = (Date.now() - this._sessionStart) / (MS_PER_MINUTE * MINUTES_PER_HOUR);
             this.state.sessionHours = parseFloat(elapsed.toFixed(2));
             this._updateUI();
         }, MS_PER_MINUTE);
