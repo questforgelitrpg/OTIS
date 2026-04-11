@@ -114,9 +114,12 @@ class GameState {
         const hoursEl = document.getElementById('stat-hours');
         const namingEl = document.getElementById('stat-naming');
         if (dayEl) dayEl.textContent = `Day ${this.state.day}`;
-        if (debtEl) debtEl.textContent = `Debt: ${this.state.debt.toLocaleString()} cr`;
+        if (debtEl) debtEl.textContent = `Loan: ${this.state.debt.toLocaleString()} cr`;
         if (hoursEl) hoursEl.textContent = `Session: ${this.state.sessionHours}h`;
         if (namingEl) namingEl.textContent = this.getNamingLabel();
+
+        const ledgerDebtEl = document.getElementById('ledger-debt');
+        if (ledgerDebtEl) ledgerDebtEl.textContent = this.state.debt.toLocaleString() + ' cr';
 
         const keepLogEl = document.getElementById('keep-log-list');
         if (keepLogEl) {
