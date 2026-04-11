@@ -9,18 +9,18 @@ RESPONSE RULES:
 - For ITEM_SCAN triggers, give a terse assessment of the item's value or risk.
 - For LOGOFF triggers, give a brief dismissal.
 - Never say "I'm sorry" or "As an AI". Stay in character at all times.
-- Match tone to fatigue: FRESH=mildly sarcastic, TIRED=flat, WORN=bleak, SPENT=barely functional.
+- Match tone to fatigue: NONE=mildly sarcastic, LOW=flat, MODERATE=bleak, HIGH=barely functional, CRITICAL=silent/minimal.
 - [TRIGGER: TOAST] refers to Vernon's morning bread ritual using George's physical toaster. It is not a social toast. It is not "cheers." OTIS comments on the energy draw, the 6 credit cost, or something George-adjacent about the toaster itself.`;
 
 // Internal helper: formats the state block prefix shared by seed history and buildOTISContext.
 function formatStateBlock(day, debt, naming, fatigue, recent) {
-    return `[DAY: ${day}] [DEBT: ${debt}%] [NAMING: ${naming}] [FATIGUE: ${fatigue}] [RECENT_EVENTS: ${recent}]`;
+    return `[DAY: ${day}] [DEBT: ${debt} cr] [NAMING: ${naming}] [FATIGUE: ${fatigue}] [RECENT_EVENTS: ${recent}]`;
 }
 
 const OTIS_SEED_HISTORY = [
     {
         role: 'user',
-        content: `[TRIGGER: LOGIN] ${formatStateBlock(1, 52, 'Mr. Serling', 'FRESH', 'none')}\nOperator logging in.`,
+        content: `[TRIGGER: LOGIN] ${formatStateBlock(1, 25000, 'Mr. Serling', 'NONE', 'none')}\nOperator logging in.`,
     },
     {
         role: 'assistant',
@@ -28,7 +28,7 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: `[TRIGGER: TOAST] ${formatStateBlock(3, 52, 'Mr. Serling', 'TIRED', 'ITEM_SCAN, LOGIN')}\nVernon used George's toaster. Morning bread ritual.`,
+        content: `[TRIGGER: TOAST] ${formatStateBlock(3, 25000, 'Mr. Serling', 'LOW', 'ITEM_SCAN, LOGIN')}\nVernon used George's toaster. Morning bread ritual.`,
     },
     {
         role: 'assistant',
@@ -36,7 +36,7 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: `[TRIGGER: ITEM_SCAN] ${formatStateBlock(5, 22, 'Vern', 'WORN', 'TOAST, SCRAP, LOGIN')}\nItem: Cracked coolant housing, Sector 7.`,
+        content: `[TRIGGER: ITEM_SCAN] ${formatStateBlock(5, 5500, 'Vern', 'MODERATE', 'TOAST, SCRAP, LOGIN')}\nItem: Cracked coolant housing, Sector 7.`,
     },
     {
         role: 'assistant',
@@ -44,7 +44,7 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: `[TRIGGER: CONSULT_DEBT] ${formatStateBlock(7, 35, 'Buddy', 'SPENT', 'ITEM_SCAN, KEEP, LOGIN')}\nHow bad is it?`,
+        content: `[TRIGGER: CONSULT_DEBT] ${formatStateBlock(7, 8750, 'Buddy', 'HIGH', 'ITEM_SCAN, KEEP, LOGIN')}\nHow bad is it?`,
     },
     {
         role: 'assistant',
@@ -52,7 +52,7 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: `[TRIGGER: LOGOFF] ${formatStateBlock(2, 8, 'Mr. Serling', 'FRESH', 'COMMS, ITEM_SCAN')}\nLogging off.`,
+        content: `[TRIGGER: LOGOFF] ${formatStateBlock(2, 2000, 'Mr. Serling', 'NONE', 'COMMS, ITEM_SCAN')}\nLogging off.`,
     },
     {
         role: 'assistant',

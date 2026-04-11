@@ -1,7 +1,7 @@
 const MS_PER_MINUTE = 60000;
 const MINUTES_PER_HOUR = 60;
 
-const NAMING_TIERS = ['Mr. Serling', 'Vern', 'Buddy'];
+const NAMING_TIERS = ['Mr. Serling', 'Vernon', 'Vern', 'Buddy', 'Pal', 'Coworker', 'Boss', 'Mr. Serling', 'Oh. You.'];
 
 const TRIGGERS = {
     LOGIN: 'LOGIN',
@@ -23,7 +23,7 @@ const TRIGGERS = {
 class GameState {
     constructor() {
         this.state = {
-            debt: 52,
+            debt: 25000,
             day: 1,
             sessionHours: 0,
             namingTier: 0,
@@ -40,7 +40,7 @@ class GameState {
         if (typeof stateManager !== 'undefined' && stateManager.load()) {
             const loaded = stateManager.getState();
             this.state = {
-                debt: loaded.debt ?? 52,
+                debt: loaded.debt ?? 25000,
                 day: loaded.day || 1,
                 sessionHours: loaded.sessionHours || 0,
                 namingTier: loaded.namingTier || 0,
@@ -88,10 +88,11 @@ class GameState {
 
     getFatigueTier() {
         const h = this.state.sessionHours;
-        if (h < 12) return 'FRESH';
-        if (h < 20) return 'TIRED';
-        if (h < 32) return 'WORN';
-        return 'SPENT';
+        if (h < 12) return 'NONE';
+        if (h < 20) return 'LOW';
+        if (h < 32) return 'MODERATE';
+        if (h < 48) return 'HIGH';
+        return 'CRITICAL';
     }
 
     incrementSkipCount() {
@@ -103,7 +104,7 @@ class GameState {
         this.state.keepLog = [
             { item, day: this.state.day },
             ...this.state.keepLog,
-        ].slice(0, 20);
+        ].slice(0, 12);
         this.fire(TRIGGERS.KEEP, { item });
     }
 
@@ -113,7 +114,7 @@ class GameState {
         const hoursEl = document.getElementById('stat-hours');
         const namingEl = document.getElementById('stat-naming');
         if (dayEl) dayEl.textContent = `Day ${this.state.day}`;
-        if (debtEl) debtEl.textContent = `Debt: ${this.state.debt}%`;
+        if (debtEl) debtEl.textContent = `Debt: ${this.state.debt.toLocaleString()} cr`;
         if (hoursEl) hoursEl.textContent = `Session: ${this.state.sessionHours}h`;
         if (namingEl) namingEl.textContent = this.getNamingLabel();
 
