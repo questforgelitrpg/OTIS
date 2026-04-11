@@ -385,6 +385,84 @@ body::after {
     border-color: var(--text-warn);
 }
 
+/* ── Sell actions ───────────────────────────── */
+.sell-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 0.25rem;
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--border);
+}
+
+.zone-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.zone-btn:disabled:hover {
+    background: var(--btn-bg);
+    border-color: var(--btn-border);
+}
+
+/* ── Scrap channel bar ──────────────────────── */
+.scrap-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.4rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--border);
+}
+
+.scrap-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+}
+
+.scrap-bar-track {
+    height: 6px;
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+}
+
+.scrap-bar-fill {
+    height: 100%;
+    background: var(--text-ok);
+    transition: width 0.3s ease, background 0.3s ease;
+}
+
+.scrap-bar-amber { background: var(--ind-amber) !important; }
+.scrap-bar-red   { background: var(--text-danger) !important; }
+
+/* ── Comms slots ────────────────────────────── */
+.comms-slot {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.2rem 0;
+}
+
+.comms-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ind-off);
+    flex-shrink: 0;
+}
+
+.comms-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    flex: 1;
+}
+
 /* ── Responsive fallback ───────────────────── */
 @media (max-width: 700px) {
     #console-grid {
