@@ -1,16 +1,209 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Console</title>
-    <script src="state.js"></script>
-    <script src="game.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEAD SIGNAL — Station Console</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Welcome to your console</h1>
+    <div id="console-frame">
+
+        <!-- Header bar -->
+        <header id="console-header">
+            <span class="header-title">DEAD SIGNAL // STATION CONSOLE</span>
+            <span id="stat-day" class="header-stat">Day 1</span>
+            <span id="stat-debt" class="header-stat">Debt: 0%</span>
+            <span id="stat-hours" class="header-stat">Session: 0h</span>
+            <span id="stat-naming" class="header-stat naming-label">Mr. Serling</span>
+        </header>
+
+        <!-- Main grid -->
+        <main id="console-grid">
+
+            <!-- Zone: BELT_MONITOR -->
+            <section class="console-zone" id="zone-belt-monitor" tabindex="0">
+                <h2 class="zone-title">BELT_MONITOR <span class="indicator" id="ind-belt"></span></h2>
+                <div class="zone-body">
+                    <p class="zone-hint">No active belt signals.</p>
+                    <button class="zone-btn" onclick="gameState.fire('ITEM_SCAN', { zone: 'belt' }); appendOTIS('Item scan initiated on belt.', 'ITEM_SCAN')">SCAN BELT</button>
+                </div>
+            </section>
+
+            <!-- Zone: COMMS -->
+            <section class="console-zone" id="zone-comms" tabindex="0">
+                <h2 class="zone-title">COMMS <span class="indicator" id="ind-comms"></span></h2>
+                <div class="zone-body">
+                    <p class="zone-hint">Incoming channel: static.</p>
+                    <button class="zone-btn" onclick="gameState.fire('COMMS'); appendOTIS('Operator opened comms channel.', 'COMMS')">OPEN CHANNEL</button>
+                </div>
+            </section>
+
+            <!-- Zone: SYSTEMS -->
+            <section class="console-zone" id="zone-systems" tabindex="0">
+                <h2 class="zone-title">SYSTEMS <span class="indicator" id="ind-systems"></span></h2>
+                <div class="zone-body">
+                    <ul class="sys-list">
+                        <li>LIFE_SUPPORT: <span class="status-ok">NOMINAL</span></li>
+                        <li>POWER_GRID: <span class="status-ok">NOMINAL</span></li>
+                        <li>COMMS_ARRAY: <span class="status-warn">DEGRADED</span></li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Zone: LEDGER -->
+            <section class="console-zone" id="zone-ledger" tabindex="0">
+                <h2 class="zone-title">LEDGER <span class="indicator" id="ind-ledger"></span></h2>
+                <div class="zone-body">
+                    <p>Debt: <span id="ledger-debt">0%</span></p>
+                    <p>Day: <span id="ledger-day">1</span></p>
+                    <button class="zone-btn" onclick="appendOTIS('How bad is the debt situation?', 'CONSULT_DEBT')">CONSULT DEBT</button>
+                </div>
+            </section>
+
+            <!-- Zone: ITEM_QUEUE -->
+            <section class="console-zone" id="zone-item-queue" tabindex="0">
+                <h2 class="zone-title">ITEM_QUEUE <span class="indicator" id="ind-items"></span></h2>
+                <div class="zone-body">
+                    <p class="zone-hint">Queue empty.</p>
+                    <div class="item-actions">
+                        <button class="zone-btn" onclick="handleKeep()">KEEP</button>
+                        <button class="zone-btn btn-warn" onclick="gameState.fire('SCRAP'); appendOTIS('Operator scrapped an item.', 'DECLARE_SCRAP')">SCRAP</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Zone: OTIS_TERMINAL -->
+            <section class="console-zone zone-wide" id="zone-otis" tabindex="0">
+                <h2 class="zone-title">OTIS_TERMINAL <span class="indicator indicator-on" id="ind-otis"></span></h2>
+                <div class="zone-body">
+                    <div id="otis-output" role="log" aria-live="polite" aria-label="OTIS conversation log"></div>
+                    <div id="otis-input-row">
+                        <input
+                            type="text"
+                            id="user-input"
+                            placeholder="Transmit to OTIS..."
+                            autocomplete="off"
+                            aria-label="Message to OTIS"
+                        />
+                        <button id="send-btn" onclick="handleSend()">SEND</button>
+                    </div>
+                    <div id="otis-quick-actions">
+                        <button class="quick-btn" onclick="appendOTIS('Operator logged in.', 'LOGIN')">LOGIN</button>
+                        <button class="quick-btn" onclick="appendOTIS('Operator raised a glass.', 'TOAST')">TOAST</button>
+                        <button class="quick-btn" onclick="appendOTIS('What is the current status?', 'CONSULT_STATUS')">STATUS</button>
+                        <button class="quick-btn" onclick="appendOTIS('Logging off.', 'LOGOFF')">LOGOFF</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Zone: KEEP_LOG -->
+            <section class="console-zone" id="zone-keep-log" tabindex="0">
+                <h2 class="zone-title">KEEP_LOG</h2>
+                <div class="zone-body">
+                    <ul id="keep-log-list" class="keep-list"></ul>
+                    <p class="zone-hint" id="keep-log-empty">Log empty.</p>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer id="console-footer">
+            <span>OTIS v0.3 // PHASE 0</span>
+            <button id="clear-save-btn" onclick="handleClearSave()">CLEAR SAVE</button>
+        </footer>
+
+    </div>
+
+    <!-- Scripts loaded in dependency order -->
+    <script src="state.js"></script>
+    <script src="game.js"></script>
+    <script src="otis.js"></script>
+    <script src="audio.js"></script>
     <script>
-        const stateManager = new StateManager();
-        const gameState = new GameState();
+        // --- UI Helpers ---
+
+        const MAX_OTIS_LINES = 10;
+        const otisLines = [];
+
+        function renderOTIS() {
+            const out = document.getElementById('otis-output');
+            if (!out) return;
+            out.innerHTML = otisLines.slice(-MAX_OTIS_LINES).map(line => {
+                const cls = line.role === 'otis' ? 'otis-line' : 'user-line';
+                return `<div class="${cls}"><span class="line-tag">${line.role === 'otis' ? 'OTIS' : 'OPR'}</span> ${escapeHtml(line.text)}</div>`;
+            }).join('');
+            out.scrollTop = out.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        async function appendOTIS(userText, trigger) {
+            if (userText) {
+                otisLines.push({ role: 'user', text: userText });
+            }
+            renderOTIS();
+            const reply = await askOTIS(userText || '', gameState, trigger || 'COMMS');
+            otisLines.push({ role: 'otis', text: reply });
+            renderOTIS();
+            syncLedger();
+        }
+
+        function handleSend() {
+            const input = document.getElementById('user-input');
+            const text = input ? input.value.trim() : '';
+            if (!text) return;
+            input.value = '';
+            appendOTIS(text, 'COMMS');
+        }
+
+        function handleKeep() {
+            const item = prompt('Item name to keep:');
+            if (item && item.trim()) {
+                gameState.addKeepItem(item.trim());
+                appendOTIS(`Keeping: ${item.trim()}`, 'DECLARE_KEEP');
+                updateKeepLogEmpty();
+            }
+        }
+
+        function handleClearSave() {
+            if (confirm('Clear all saved state? This cannot be undone.')) {
+                stateManager.clearSave();
+                location.reload();
+            }
+        }
+
+        function syncLedger() {
+            const d = document.getElementById('ledger-debt');
+            const day = document.getElementById('ledger-day');
+            if (d) d.textContent = gameState.state.debt + '%';
+            if (day) day.textContent = gameState.state.day;
+        }
+
+        function updateKeepLogEmpty() {
+            const list = document.getElementById('keep-log-list');
+            const empty = document.getElementById('keep-log-empty');
+            if (list && empty) {
+                empty.style.display = list.children.length ? 'none' : '';
+            }
+        }
+
+        // Enter key sends message
+        const inputEl = document.getElementById('user-input');
+        if (inputEl) {
+            inputEl.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') handleSend();
+            });
+        }
+
+        // Boot sequence
         gameState.initUI();
+        syncLedger();
+        updateKeepLogEmpty();
+        appendOTIS('Operator logging in.', 'LOGIN');
     </script>
 </body>
 </html>
