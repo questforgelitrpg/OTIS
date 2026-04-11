@@ -54,7 +54,7 @@ class GameState {
     _startSessionTimer() {
         this._sessionStart = Date.now();
         this._sessionTimer = setInterval(() => {
-            const elapsed = (Date.now() - this._sessionStart) / MS_PER_MINUTE / 60;
+            const elapsed = (Date.now() - this._sessionStart) / (MS_PER_MINUTE * 60);
             this.state.sessionHours = parseFloat(elapsed.toFixed(2));
             this._updateUI();
         }, MS_PER_MINUTE);

@@ -11,6 +11,7 @@ RESPONSE RULES:
 - Never say "I'm sorry" or "As an AI". Stay in character at all times.
 - Match tone to fatigue: FRESH=mildly sarcastic, TIRED=flat, WORN=bleak, SPENT=barely functional.`;
 
+// Internal helper: formats the state block prefix shared by seed history and buildOTISContext.
 function formatStateBlock(day, debt, naming, fatigue, recent) {
     return `[DAY: ${day}] [DEBT: ${debt}%] [NAMING: ${naming}] [FATIGUE: ${fatigue}] [RECENT_EVENTS: ${recent}]`;
 }
