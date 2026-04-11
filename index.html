@@ -13,7 +13,7 @@
         <header id="console-header">
             <span class="header-title">DEAD SIGNAL // STATION CONSOLE</span>
             <span id="stat-day" class="header-stat">Day 1</span>
-            <span id="stat-debt" class="header-stat">Debt: 52%</span>
+            <span id="stat-debt" class="header-stat">Debt: --</span>
             <span id="stat-hours" class="header-stat">Session: 0h</span>
             <span id="stat-naming" class="header-stat naming-label">Mr. Serling</span>
         </header>
@@ -64,7 +64,7 @@
             <section class="console-zone" id="zone-ledger" tabindex="0">
                 <h2 class="zone-title">LEDGER <span class="indicator" id="ind-ledger"></span></h2>
                 <div class="zone-body">
-                    <p>Debt: <span id="ledger-debt">52%</span></p>
+                    <p>Debt: <span id="ledger-debt">--</span></p>
                     <p>Day: <span id="ledger-day">1</span></p>
                     <button class="zone-btn" onclick="appendOTIS('How bad is the debt situation?', 'CONSULT_DEBT')">CONSULT DEBT</button>
                 </div>
@@ -264,7 +264,7 @@
         function syncLedger() {
             const d = document.getElementById('ledger-debt');
             const day = document.getElementById('ledger-day');
-            if (d) d.textContent = gameState.state.debt + '%';
+            if (d) d.textContent = gameState.state.debt.toLocaleString() + ' cr';
             if (day) day.textContent = gameState.state.day;
         }
 
