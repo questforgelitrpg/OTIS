@@ -302,7 +302,12 @@
             const prevFill = scrapFill;
             scrapFill = 0;
             updateScrapBar();
-            appendOTIS(`Dispatching scrap to May Finster. Volume: ${prevFill}%.`, 'SCRAP_DISPATCH');
+            // Scrap pays 5–10 cr per fill percentage point
+            const earned = Math.floor(prevFill * (5 + Math.random() * 5));
+            gameState.state.credits += earned;
+            gameState._save();
+            gameState._updateUI();
+            appendOTIS(`Dispatching scrap to May Finster. Volume: ${prevFill}%. +${earned} cr`, 'SCRAP_DISPATCH');
         }
 
         function handleScrap() {
@@ -314,16 +319,28 @@
             appendOTIS(`Scrapping: ${item}`, 'DECLARE_SCRAP');
         }
 
+        // Item sale credit values per sell method
+        const SELL_VALUES = {
+            OTIS_PRICE:  { min: 80,  max: 180 },
+            RESERVE:     { min: 120, max: 250 },
+            NO_RESERVE:  { min: 30,  max: 90  },
+        };
+
         function handleSell(method) {
             if (!currentItem) return;
             const item = currentItem.name;
             clearItemQueue();
+            const range = SELL_VALUES[method] || { min: 50, max: 120 };
+            const earned = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+            gameState.state.credits += earned;
+            gameState._save();
+            gameState._updateUI();
             const msgMap = {
-                OTIS_PRICE: `Selling at OTIS price: ${item}`,
-                RESERVE: `Listing at reserve price: ${item}`,
-                NO_RESERVE: `Selling below OTIS price (no reserve): ${item}`
+                OTIS_PRICE: `Selling at OTIS price: ${item}. +${earned} cr`,
+                RESERVE:    `Listing at reserve price: ${item}. +${earned} cr`,
+                NO_RESERVE: `Selling below OTIS price (no reserve): ${item}. +${earned} cr`
             };
-            appendOTIS(msgMap[method] || `Selling: ${item}`, 'DECLARE_SELL');
+            appendOTIS(msgMap[method] || `Selling: ${item}. +${earned} cr`, 'DECLARE_SELL');
         }
 
         function handleBargeArrival() {
@@ -394,12 +411,11 @@
         }
 
         function syncLedger() {
-            const d = document.getElementById('ledger-debt');
+            // Delegate entirely to _updateUI so there is one source of truth
+            gameState._updateUI();
+            // Also sync the ledger-day span which _updateUI doesn't cover
             const day = document.getElementById('ledger-day');
-            const cr = document.getElementById('ledger-credits');
-            if (d) d.textContent = gameState.state.debt.toLocaleString() + ' cr';
             if (day) day.textContent = gameState.state.day;
-            if (cr) cr.textContent = gameState.state.credits.toLocaleString() + ' cr';
         }
 
         function updateKeepLogEmpty() {
