@@ -13,7 +13,7 @@
         <header id="console-header">
             <span class="header-title">DEAD SIGNAL // STATION CONSOLE</span>
             <span id="stat-day" class="header-stat">Day 1</span>
-            <span id="stat-debt" class="header-stat">Debt: --</span>
+            <span id="stat-debt" class="header-stat">Loan: 25,000 cr</span>
             <span id="stat-hours" class="header-stat">Session: 0h</span>
             <span id="stat-naming" class="header-stat naming-label">Mr. Serling</span>
         </header>
@@ -51,7 +51,7 @@
                         <li>RECV: <span class="status-ok">NOMINAL</span></li>
                         <li>SHIP: <span class="status-ok">NOMINAL</span></li>
                         <li>POWER: <span class="status-ok">NOMINAL</span></li>
-                        <li>STORE: <span class="status-warn">ATTENTION</span></li>
+                        <li>STORE: <span class="status-ok" id="store-status">NOMINAL</span></li>
                         <li>TOAST: <span class="status-ok">NOMINAL</span></li>
                         <li>SVEN: <span class="status-ok">NOMINAL</span></li>
                         <li>OTIS: <span class="status-ok">NOMINAL</span></li>
@@ -64,7 +64,7 @@
             <section class="console-zone" id="zone-ledger" tabindex="0">
                 <h2 class="zone-title">LEDGER <span class="indicator" id="ind-ledger"></span></h2>
                 <div class="zone-body">
-                    <p>Debt: <span id="ledger-debt">--</span></p>
+                    <p>Loan balance: <span id="ledger-debt">25,000 cr</span></p>
                     <p>Day: <span id="ledger-day">1</span></p>
                     <button class="zone-btn" onclick="appendOTIS('How bad is the debt situation?', 'CONSULT_DEBT')">CONSULT DEBT</button>
                 </div>
@@ -100,7 +100,7 @@
                         <button class="quick-btn" onclick="appendOTIS('Operator logged in.', 'LOGIN')">LOGIN</button>
                         <button class="quick-btn" onclick="appendOTIS('Vernon used George\'s toaster. Morning bread ritual.', 'TOAST')">TOAST</button>
                         <button class="quick-btn" onclick="appendOTIS('What is the current status?', 'CONSULT_STATUS')">STATUS</button>
-                        <button class="quick-btn" onclick="appendOTIS('Logging off.', 'LOGOFF')">LOGOFF</button>
+                        <button class="quick-btn" onclick="handleLogoff()">LOGOFF</button>
                     </div>
                 </div>
             </section>
@@ -259,6 +259,11 @@
                 stateManager.clearSave();
                 location.reload();
             }
+        }
+
+        function handleLogoff() {
+            gameState._save();
+            appendOTIS('Logging off.', 'LOGOFF');
         }
 
         function syncLedger() {
