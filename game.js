@@ -10,6 +10,8 @@ const TRIGGERS = {
     CONSULT_DEBT: 'CONSULT_DEBT',
     CONSULT_DAY: 'CONSULT_DAY',
     CONSULT_STATUS: 'CONSULT_STATUS',
+    CONSULT_VALUE: 'CONSULT_VALUE',
+    CONSULT_NOTELLING: 'CONSULT_NOTELLING',
     DECLARE_KEEP: 'DECLARE_KEEP',
     DECLARE_SCRAP: 'DECLARE_SCRAP',
     KEEP: 'KEEP',
@@ -21,7 +23,7 @@ const TRIGGERS = {
 class GameState {
     constructor() {
         this.state = {
-            debt: 0,
+            debt: 52,
             day: 1,
             sessionHours: 0,
             namingTier: 0,
@@ -30,7 +32,7 @@ class GameState {
             keepLog: [],
             recentEvents: [],
         };
-        this._sessionStart = Date.now();
+        this._sessionStart = null;
         this._sessionTimer = null;
     }
 
@@ -38,7 +40,7 @@ class GameState {
         if (typeof stateManager !== 'undefined' && stateManager.load()) {
             const loaded = stateManager.getState();
             this.state = {
-                debt: loaded.debt || 0,
+                debt: loaded.debt ?? 52,
                 day: loaded.day || 1,
                 sessionHours: loaded.sessionHours || 0,
                 namingTier: loaded.namingTier || 0,
@@ -48,15 +50,17 @@ class GameState {
                 recentEvents: loaded.recentEvents || [],
             };
         }
-        this._startSessionTimer();
         this.fire(TRIGGERS.LOGIN);
     }
 
-    _startSessionTimer() {
-        this._sessionStart = Date.now();
+    startSessionTimer() {
+        if (this._sessionTimer) return; // already running
+        // sessionHours stores game hours; 1 game hour = 1 real minute.
+        // Backdate _sessionStart so elapsed real minutes equals saved sessionHours.
+        this._sessionStart = Date.now() - this.state.sessionHours * MS_PER_MINUTE;
         this._sessionTimer = setInterval(() => {
-            const elapsed = (Date.now() - this._sessionStart) / (MS_PER_MINUTE * MINUTES_PER_HOUR);
-            this.state.sessionHours = parseFloat(elapsed.toFixed(2));
+            // Elapsed real minutes = elapsed game hours
+            this.state.sessionHours = Math.floor((Date.now() - this._sessionStart) / MS_PER_MINUTE);
             this._updateUI();
         }, MS_PER_MINUTE);
     }
@@ -84,10 +88,15 @@ class GameState {
 
     getFatigueTier() {
         const h = this.state.sessionHours;
-        if (h < 1) return 'FRESH';
-        if (h < 2) return 'TIRED';
-        if (h < 3) return 'WORN';
+        if (h < 12) return 'FRESH';
+        if (h < 20) return 'TIRED';
+        if (h < 32) return 'WORN';
         return 'SPENT';
+    }
+
+    incrementSkipCount() {
+        this.state.skipCount = (this.state.skipCount || 0) + 1;
+        this._save();
     }
 
     addKeepItem(item) {

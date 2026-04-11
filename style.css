@@ -126,11 +126,12 @@ body::after {
 
 .zone-title {
     font-size: 10px;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.14em;
     color: var(--text-dim);
     text-transform: uppercase;
     padding: 0.35rem 0.6rem;
     border-bottom: 1px solid var(--border);
+    border-left: 2px solid var(--border-bright);
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -259,46 +260,6 @@ body::after {
 
 .user-line .line-tag { color: var(--text-dim); }
 
-/* ── OTIS input row ────────────────────────── */
-#otis-input-row {
-    display: flex;
-    gap: 0.4rem;
-    flex-shrink: 0;
-    margin-top: 0.3rem;
-}
-
-#user-input {
-    flex: 1;
-    background: var(--input-bg);
-    border: 1px solid var(--border-bright);
-    color: var(--text-primary);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    padding: 0.3rem 0.5rem;
-    border-radius: var(--zone-radius);
-    outline: none;
-}
-
-#user-input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px var(--accent);
-}
-
-#send-btn {
-    background: var(--btn-bg);
-    border: 1px solid var(--accent);
-    color: var(--text-ok);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    padding: 0.3rem 0.8rem;
-    cursor: pointer;
-    border-radius: var(--zone-radius);
-    letter-spacing: 0.05em;
-    transition: background 0.1s;
-}
-
-#send-btn:hover { background: var(--btn-hover); }
-
 /* ── Quick action buttons ──────────────────── */
 #otis-quick-actions {
     display: flex;
@@ -325,26 +286,50 @@ body::after {
     border-color: var(--border-bright);
 }
 
-/* ── Item queue input ──────────────────────── */
-#item-keep-row {
-    margin-bottom: 0.3rem;
-}
-
-#item-input {
-    width: 100%;
-    background: var(--input-bg);
-    border: 1px solid var(--border-bright);
-    color: var(--text-primary);
-    font-family: var(--font-mono);
+/* ── Item queue ────────────────────────────── */
+.item-queue-name {
     font-size: 12px;
-    padding: 0.3rem 0.5rem;
-    border-radius: var(--zone-radius);
-    outline: none;
+    color: var(--text-primary);
+    margin-bottom: 0.4rem;
+    padding: 0.25rem 0.4rem;
+    border-left: 2px solid var(--accent);
 }
 
-#item-input:focus {
+.consult-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 0.4rem;
+}
+
+.consult-card {
+    background: var(--btn-bg);
+    border: 1px solid var(--border-bright);
+    color: var(--text-header);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+    border-radius: var(--zone-radius);
+    letter-spacing: 0.06em;
+    text-align: left;
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.consult-card:hover {
+    background: var(--btn-hover);
     border-color: var(--accent);
-    box-shadow: 0 0 0 1px var(--accent);
+    color: var(--text-primary);
+}
+
+.btn-skip {
+    color: var(--text-dim);
+    border-color: var(--border);
+}
+
+.btn-skip:hover {
+    color: var(--text-warn);
+    border-color: var(--text-warn);
 }
 
 /* ── Keep log ──────────────────────────────── */

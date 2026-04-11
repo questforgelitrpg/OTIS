@@ -7,7 +7,7 @@ class StateManager {
 
     _defaultState() {
         return {
-            debt: 0,
+            debt: 52,
             day: 1,
             sessionHours: 0,
             namingTier: 0,
