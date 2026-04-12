@@ -52,31 +52,31 @@ const MINUTES_PER_HOUR = 60;
 const NAMING_TIERS = ['Mr. Serling', 'Vernon', 'Vern', 'Buddy', 'Pal', 'Coworker', 'Boss', 'Mr. Serling', 'Oh. You.'];
 
 const MANIFEST_POOL = [
-    // Common (otisValue 20–55)
-    { name: 'Personal effects bundle — civilian origin', category: 'Civilian', rarity: 'Common', condition: 'Used', otisValue: 40 },
-    { name: 'Corroded fuel cell casing', category: 'Industrial', rarity: 'Common', condition: 'Used', otisValue: 30 },
-    { name: 'Settlement cooking unit — communal', category: 'Settlement', rarity: 'Common', condition: 'Used', otisValue: 55 },
-    { name: 'Burned circuit board cluster', category: 'Industrial', rarity: 'Common', condition: 'Used', otisValue: 20 },
-    { name: 'Bent structural strut', category: 'Industrial', rarity: 'Common', condition: 'Used', otisValue: 25 },
-    { name: "Children's toy — unidentified origin", category: 'Civilian', rarity: 'Common', condition: 'Used', otisValue: 35 },
-    { name: 'Settlement water filter — ceramic', category: 'Settlement', rarity: 'Common', condition: 'Used', otisValue: 28 },
-    // Uncommon (otisValue 70–180)
-    { name: 'Partial navigation array', category: 'Vessel', rarity: 'Uncommon', condition: 'Used', otisValue: 140 },
-    { name: 'Cracked coolant housing', category: 'Industrial', rarity: 'Uncommon', condition: 'Used', otisValue: 85 },
-    { name: 'Civilian medical kit — partial', category: 'Civilian', rarity: 'Uncommon', condition: 'Used', otisValue: 90 },
-    { name: 'Coolant manifold — intact', category: 'Industrial', rarity: 'Uncommon', condition: 'Used', otisValue: 175 },
-    { name: 'Settlement community archive — partial', category: 'Settlement', rarity: 'Uncommon', condition: 'Used', otisValue: 110 },
-    { name: 'Pressure suit fragment — marked', category: 'Vessel', rarity: 'Uncommon', condition: 'Used', otisValue: 95 },
-    { name: 'Decommissioned beacon housing', category: 'Vessel', rarity: 'Uncommon', condition: 'Used', otisValue: 160 },
-    // Rare (otisValue 200–500)
-    { name: 'Pre-collapse data crystal', category: 'Vessel', rarity: 'Rare', condition: 'Used', otisValue: 480 },
-    { name: 'Fused relay core — pre-collapse', category: 'Vessel', rarity: 'Rare', condition: 'Used', otisValue: 380 },
-    { name: 'Encrypted data slate', category: 'Vessel', rarity: 'Rare', condition: 'Used', otisValue: 310 },
-    { name: 'Autonomous drone chassis — inert', category: 'Industrial', rarity: 'Rare', condition: 'Used', otisValue: 220 },
-    // Anomalous (otisValue 0 — OTIS cannot assess)
-    { name: 'Unidentified alloy fragment', category: 'Unknown', rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
-    { name: 'Pressurized canister — unknown contents', category: 'Unknown', rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
-    { name: 'Ceramic figure — no catalogue match', category: 'Unknown', rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
+    // Common (otisValue 30–80)
+    { name: 'Personal effects bundle — civilian origin',  category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 50 },
+    { name: 'Corroded fuel cell casing',                  category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 38 },
+    { name: 'Settlement cooking unit — communal',         category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 65 },
+    { name: 'Burned circuit board cluster',               category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 32 },
+    { name: 'Bent structural strut',                      category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 35 },
+    { name: "Children's toy — unidentified origin",       category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 45 },
+    { name: 'Settlement water filter — ceramic',          category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 40 },
+    // Uncommon (otisValue 90–250)
+    { name: 'Partial navigation array',                   category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 155 },
+    { name: 'Cracked coolant housing',                    category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 95 },
+    { name: 'Civilian medical kit — partial',             category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 110 },
+    { name: 'Coolant manifold — intact',                  category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 210 },
+    { name: 'Settlement community archive — partial',     category: 'Settlement', rarity: 'Uncommon',  condition: 'Used', otisValue: 130 },
+    { name: 'Pressure suit fragment — marked',            category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 115 },
+    { name: 'Decommissioned beacon housing',              category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 180 },
+    // Rare (otisValue 300–650)
+    { name: 'Pre-collapse data crystal',                  category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 580 },
+    { name: 'Fused relay core — pre-collapse',            category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 440 },
+    { name: 'Encrypted data slate',                       category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 360 },
+    { name: 'Autonomous drone chassis — inert',           category: 'Industrial', rarity: 'Rare',      condition: 'Used', otisValue: 310 },
+    // Anomalous (otisValue 0 — OTIS cannot assess; reserve range 400–2000)
+    { name: 'Unidentified alloy fragment',                category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
+    { name: 'Pressurized canister — unknown contents',    category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
+    { name: 'Ceramic figure — no catalogue match',        category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
 ];
 
 function buildManifestSummary(manifest) {
@@ -232,7 +232,6 @@ class GameState {
 
         this.checkPaymentDue();
         this.checkDropSchedule();
-        if (typeof autoToast === 'function') autoToast();
         this._save();
         if (typeof updateAllDisplays === 'function') updateAllDisplays();
     }
@@ -240,6 +239,8 @@ class GameState {
     checkPaymentDue() {
         if (this.state.daysUntilPayment <= 0) {
             if (this.state.credits >= 650 && (this.state.outstandingDebt || 0) === 0) {
+                // Reset timer — player will be prompted to pay manually
+                this.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
                 if (typeof appendOTIS === 'function') {
                     appendOTIS('Payment due, Mr. Serling. 650 credits. Make payment when ready.', 'PAYMENT');
                 }
