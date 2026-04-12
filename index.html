@@ -40,6 +40,7 @@
                     <p class="zone-hint" id="belt-backed-up-msg" style="display:none; color:var(--text-warn)">⚠ BELT BACKED UP — clear item queue</p>
                     <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.4rem">
                         <button class="zone-btn" id="btn-barge-drop" onclick="handleBargeArrival()">BARGE DROP</button>
+                        <button class="zone-btn" id="btn-scan-belt" onclick="handleBeltScan()" disabled>SCAN BELT</button>
                     </div>
                 </div>
             </section>
@@ -63,10 +64,12 @@
                         <button class="zone-btn" onclick="handleComms('COMPLAINT')">FILE COMPLAINT</button>
                     </div>
                     <!-- MAY -->
-                    <div class="comms-slot">
+                    <div class="comms-slot" style="flex-wrap:wrap; gap:0.3rem;">
                         <span class="comms-dot" id="comms-dot-may"></span>
                         <span class="comms-label">MAY FINSTER / LEFTOVER RECYCLING</span>
+                        <span class="comms-label" id="may-scrap-readout" style="font-size:11px; color:var(--text-dim)">SCRAP: 0%</span>
                         <button class="zone-btn" onclick="handleComms('MAY')">ANSWER MAY</button>
+                        <button class="zone-btn" onclick="handleDispatchMay()">DISPATCH SCRAP</button>
                     </div>
                 </div>
             </section>
@@ -158,7 +161,7 @@
                     </div>
                     <div id="otis-quick-actions">
                         <button class="quick-btn" onclick="appendOTIS('Operator logged in.', 'LOGIN')">LOGIN</button>
-                        <button class="quick-btn" onclick="appendOTIS('Vernon is making toast in George\'s toaster. Morning bread ritual. Energy draw logged.', 'TOAST')">TOAST</button>
+                        <button class="quick-btn" onclick="autoToast()">TOAST</button>
                         <button class="quick-btn" onclick="appendOTIS('What is the current status?', 'CONSULT_STATUS')">STATUS</button>
                         <button class="quick-btn" onclick="handleLogoff()">LOGOFF</button>
                     </div>
@@ -214,7 +217,7 @@
         const MAX_OTIS_LINES = 10;
         const RESERVE_SALE_SUCCESS_RATE = 0.70;
         const RESERVE_MULTIPLIERS = { Common: 1.10, Uncommon: 1.20, Rare: 1.35 };
-        const CONDITION_MULTIPLIERS = { Broken: 0.15, Poor: 0.45, Used: 1.0, Excellent: 1.6 };
+        const CONDITION_MULTIPLIERS = { Broken: 0.2, Poor: 0.5, Used: 1.0, Excellent: 1.5 };
         const otisLines = [];
 
         function getEffectiveValue(item) {
@@ -427,6 +430,8 @@
                 if (dropStatusEl) dropStatusEl.textContent = 'WINDOW: CLOSED';
                 const bargeBtn = document.getElementById('btn-barge-drop');
                 if (bargeBtn) bargeBtn.disabled = false;
+                const scanBtn = document.getElementById('btn-scan-belt');
+                if (scanBtn) scanBtn.disabled = true;
                 ['bot-dot-1', 'bot-dot-2', 'bot-dot-3'].forEach(id => {
                     const dot = document.getElementById(id);
                     if (dot) dot.className = 'comms-dot';
@@ -528,8 +533,13 @@
 
             let manifest;
             if (gameState.state.day === 1) {
-                // Day 1 scripted drop: first 4 Common items, all Used
-                manifest = MANIFEST_POOL.filter(i => i.rarity === 'Common').slice(0, 4).map(i => ({ ...i, condition: 'Used' }));
+                // Day 1 scripted drop: 4 random Common items, all Used
+                const commonPool = MANIFEST_POOL.filter(i => i.rarity === 'Common');
+                for (let i = commonPool.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [commonPool[i], commonPool[j]] = [commonPool[j], commonPool[i]];
+                }
+                manifest = commonPool.slice(0, 4).map(i => ({ ...i, condition: 'Used' }));
             } else {
                 const count = generateManifestCount();
                 manifest = [];
@@ -555,6 +565,8 @@
 
             appendOTIS(buildManifestSummary(manifest), 'BARGE_IMMINENT');
             startBeltDelivery();
+            const scanBtn = document.getElementById('btn-scan-belt');
+            if (scanBtn) scanBtn.disabled = false;
         }
 
         function triggerBargeArrival() {
@@ -642,11 +654,13 @@
         function handleSellBack(index) {
             const item = gameState.state.keepLog[index];
             if (!item) return;
-            gameState.state.credits += item.otisValue || 0;
+            const condMult = CONDITION_MULTIPLIERS[item.condition] || 1.0;
+            const sellValue = Math.floor((item.otisValue || 0) * condMult);
+            gameState.state.credits += sellValue;
             gameState.state.keepLog.splice(index, 1);
             gameState._save();
             gameState._updateUI();
-            appendOTIS('Selling from keep log: ' + item.name + '.', 'SELL_FROM_LOG');
+            appendOTIS('Selling from keep log: ' + item.name + '. +' + sellValue + ' cr.', 'SELL_FROM_LOG');
             syncLedger();
             updateKeepLogEmpty();
         }
@@ -655,19 +669,28 @@
             const fill = gameState.state.scrapFill || 0;
             const pct = document.getElementById('scrap-pct');
             const bar = document.getElementById('scrap-bar-fill');
+            const mayReadout = document.getElementById('may-scrap-readout');
             if (pct) pct.textContent = fill + '%';
+            if (mayReadout) mayReadout.textContent = 'SCRAP: ' + fill + '%';
             if (bar) {
                 bar.style.width = fill + '%';
                 bar.className = 'scrap-bar-fill';
                 if (fill >= 90) bar.classList.add('scrap-bar-red');
                 else if (fill >= 75) bar.classList.add('scrap-bar-amber');
             }
+            // Pulse MAY dot amber when scrap channel is high
+            const mayDot = document.getElementById('comms-dot-may');
+            if (mayDot) {
+                if (fill >= 75) mayDot.className = 'comms-dot indicator-amber';
+                else if (fill > 0) mayDot.className = 'comms-dot indicator-on';
+                else mayDot.className = 'comms-dot';
+            }
         }
 
         function handleDispatchMay() {
             const scrapFill = gameState.state.scrapFill || 0;
             if (scrapFill === 0) return;
-            const earned = Math.floor(scrapFill * 2);
+            const earned = Math.floor(scrapFill * (5 + Math.random() * 5));
             gameState.state.credits += earned;
             const prevFill = scrapFill;
             gameState.state.scrapFill = 0;
@@ -785,7 +808,7 @@
                     daysEl.style.color = 'var(--text-danger)';
                     daysEl.style.animation = 'pulse-warn 0.8s infinite';
                 } else if (dup <= 7) {
-                    daysEl.style.color = 'var(--text-danger)';
+                    daysEl.style.color = 'var(--text-payment-warn)';
                     daysEl.style.animation = '';
                 } else if (dup <= 14) {
                     daysEl.style.color = 'var(--text-warn)';
@@ -818,8 +841,13 @@
             const daysUntilDrop = gameState.state.daysUntilNextDrop ?? TIMING.DAYS_BETWEEN_DROPS;
             const bargeDaysEl = document.getElementById('barge-days');
             if (bargeDaysEl) {
-                bargeDaysEl.textContent = daysUntilDrop;
-                bargeDaysEl.style.color = daysUntilDrop <= 0 ? 'var(--ind-on)' : daysUntilDrop <= 2 ? 'var(--ind-amber)' : '';
+                if (gameState.state.bargeActive) {
+                    bargeDaysEl.textContent = 'ACTIVE';
+                    bargeDaysEl.style.color = 'var(--ind-on)';
+                } else {
+                    bargeDaysEl.textContent = daysUntilDrop;
+                    bargeDaysEl.style.color = daysUntilDrop <= 0 ? 'var(--ind-on)' : daysUntilDrop <= 2 ? 'var(--ind-amber)' : '';
+                }
             }
             const beltDropEl = document.getElementById('belt-drop-countdown');
             if (beltDropEl) beltDropEl.textContent = daysUntilDrop;
