@@ -181,7 +181,7 @@
         <footer id="console-footer">
             <span>OTIS v0.3 // PHASE 0</span>
             <span style="display:flex; gap:0.5rem; align-items:center">
-                <button onclick="document.getElementById('debug-panel').style.display = document.getElementById('debug-panel').style.display === 'none' ? '' : 'none'" style="background:transparent; border:none; color:var(--border); font-family:var(--font-mono); font-size:11px; cursor:pointer;">DBG</button>
+                <button onclick="toggleDebugPanel()" style="background:transparent; border:none; color:var(--border); font-family:var(--font-mono); font-size:11px; cursor:pointer;">DBG</button>
                 <button id="clear-save-btn" onclick="handleClearSave(this)">CLEAR SAVE</button>
             </span>
         </footer>
@@ -474,7 +474,7 @@
                 if (bar) {
                     bar.style.setProperty('--belt-duration', (TIMING.BELT_DELIVERY_MS / 1000) + 's');
                     bar.className = 'belt-bar-fill';
-                    void bar.offsetWidth; // force reflow to restart animation
+                    void bar.offsetWidth; // force reflow to restart CSS animation
                     bar.classList.add('belt-bar-active');
                 }
                 if (backedUpMsg) backedUpMsg.style.display = 'none';
@@ -592,7 +592,7 @@
             } else if (method === 'RESERVE') {
                 let reservePrice;
                 if (item.rarity === 'Anomalous') {
-                    reservePrice = Math.floor(Math.random() * (2000 - 400 + 1)) + 400;
+                    reservePrice = Math.floor(Math.random() * (TIMING.ANOMALOUS_RESERVE_MAX - TIMING.ANOMALOUS_RESERVE_MIN + 1)) + TIMING.ANOMALOUS_RESERVE_MIN;
                 } else {
                     reservePrice = Math.floor(effectiveValue * (RESERVE_MULTIPLIERS[item.rarity] || 1.10));
                 }
@@ -908,6 +908,11 @@
         }
 
         // --- Debug helpers ---
+
+        function toggleDebugPanel() {
+            const panel = document.getElementById('debug-panel');
+            if (panel) panel.style.display = panel.style.display === 'none' ? '' : 'none';
+        }
 
         function debugAdvanceDay() { gameState.advanceDay(); syncLedger(); }
         function debugAdvanceWeek() { for (let i = 0; i < 7; i++) gameState.advanceDay(); syncLedger(); }
