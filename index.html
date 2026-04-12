@@ -104,9 +104,9 @@
                     <div id="item-queue-present" style="display:none">
                         <p class="item-queue-name" id="item-queue-name"></p>
                         <div class="consult-cards">
-                            <button class="consult-card" onclick="handleConsult('ITEM_SCAN', 'What is that item?')">WHAT IS THAT</button>
-                            <button class="consult-card" onclick="handleConsult('CONSULT_VALUE', 'What do you think it\'s worth?')">WHAT IS IT WORTH</button>
-                            <button class="consult-card" onclick="handleConsult('CONSULT_NOTELLING', 'What are you not telling me?')">WHAT ARE YOU NOT TELLING ME</button>
+                            <button class="consult-card" onclick="handleConsult('CONSULT_WHATIS', 'What is that item?')">EXAMINE</button>
+                            <button class="consult-card" onclick="handleConsult('CONSULT_WORTH', 'What do you think it\'s worth?')">ASSESS VALUE</button>
+                            <button class="consult-card" onclick="handleConsult('CONSULT_GEORGE', 'What are you not telling me?')">GEORGE ARCHIVE</button>
                         </div>
                         <div class="item-actions">
                             <button class="zone-btn" onclick="handleKeep()">KEEP</button>
@@ -249,7 +249,7 @@
 
         function handleConsult(trigger, text) {
             if (!currentItem) return;
-            if (trigger === 'CONSULT_VALUE') {
+            if (trigger === 'CONSULT_WORTH') {
                 currentItem.consultedWorth = true;
                 const btnReserve = document.getElementById('btn-reserve');
                 if (btnReserve) btnReserve.disabled = false;
