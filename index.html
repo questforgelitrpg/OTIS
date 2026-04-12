@@ -149,6 +149,13 @@
                             <button class="zone-btn btn-warn" onclick="handleDeclare('SCRAP')">SCRAP</button>
                         </div>
                     </div>
+                    <!-- Manifest Pool Reference -->
+                    <div id="manifest-pool-toggle" style="margin-top:0.4rem">
+                        <button class="zone-btn" onclick="toggleManifestPool()" style="font-size:11px; padding:0.15rem 0.5rem; color:var(--text-dim)">POOL ▾</button>
+                    </div>
+                    <div id="manifest-pool-panel" style="display:none; margin-top:0.3rem; overflow-y:auto; max-height:180px; font-size:11px; color:var(--text-dim);">
+                        <!-- JS will populate this -->
+                    </div>
                 </div>
             </section>
 
@@ -522,6 +529,38 @@
         }
 
         // --- Manifest Helpers ---
+
+        function toggleManifestPool() {
+            const panel = document.getElementById('manifest-pool-panel');
+            const btn = document.querySelector('#manifest-pool-toggle button');
+            if (!panel || !btn) return;
+            const open = panel.style.display !== 'none';
+            panel.style.display = open ? 'none' : '';
+            btn.textContent = open ? 'POOL ▾' : 'POOL ▴';
+            if (!open) renderManifestPool();
+        }
+
+        function renderManifestPool() {
+            const panel = document.getElementById('manifest-pool-panel');
+            if (!panel) return;
+            const tiers = ['Common', 'Uncommon', 'Rare', 'Anomalous'];
+            let html = '';
+            tiers.forEach(rarity => {
+                const items = MANIFEST_POOL.filter(i => i.rarity === rarity);
+                if (!items.length) return;
+                const rarityClass = { Common: 'tag-common', Uncommon: 'tag-uncommon', Rare: 'tag-rare', Anomalous: 'tag-anomalous' }[rarity];
+                html += `<div style="margin-bottom:0.3rem;"><span class="${rarityClass}" style="letter-spacing:0.08em;">${rarity.toUpperCase()}</span></div>`;
+                items.forEach(item => {
+                    const valStr = item.otisValue === 0 ? '— cr' : `${item.otisValue} cr`;
+                    html += `<div style="display:flex; justify-content:space-between; padding:0.1rem 0; border-bottom:1px solid var(--border); gap:0.5rem;">
+                <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(item.name)}</span>
+                <span style="color:var(--text-dim); flex-shrink:0;">${escapeHtml(item.category)}</span>
+                <span style="flex-shrink:0; text-align:right; min-width:50px;">${valStr}</span>
+            </div>`;
+                });
+            });
+            panel.innerHTML = html;
+        }
 
         function generateManifestCount() {
             const act = gameState.state.act;

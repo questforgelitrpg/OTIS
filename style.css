@@ -20,10 +20,10 @@
     --btn-bg:        #0f2020;
     --btn-hover:     #183030;
     --btn-border:    #2a5050;
-    --ind-off:       #1a2020;
-    --ind-amber:     #b08020;
-    --ind-red:       #9a2020;
-    --ind-on:        #40a870;
+    --ind-off:       #253535;
+    --ind-amber:     #f0b030;
+    --ind-red:       #e03030;
+    --ind-on:        #50e090;
     --text-payment-warn: #c86020;
     --font-mono:     'Courier New', Courier, monospace;
     --zone-radius:   2px;
@@ -99,11 +99,11 @@ body::after {
 #console-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: auto auto auto;
+    grid-template-rows: 1fr 1fr 1fr;
     gap: 6px;
     padding: 6px;
     flex: 1;
-    overflow: auto;
+    overflow: hidden;
 }
 
 /* ── Console zones ─────────────────────────── */
@@ -113,7 +113,8 @@ body::after {
     border-radius: var(--zone-radius);
     display: flex;
     flex-direction: column;
-    min-height: 100px;
+    overflow: hidden;
+    height: 100%;
     cursor: default;
     transition: border-color 0.15s;
     outline: none;
@@ -145,7 +146,7 @@ body::after {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 /* Wide zone spans full row */
@@ -156,16 +157,16 @@ body::after {
 /* ── Indicator lights ──────────────────────── */
 .indicator {
     display: inline-block;
-    width: 7px;
-    height: 7px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background: var(--ind-off);
     flex-shrink: 0;
 }
 
-.indicator-on   { background: var(--ind-on);    box-shadow: 0 0 4px var(--ind-on); }
-.indicator-amber{ background: var(--ind-amber);  box-shadow: 0 0 4px var(--ind-amber); }
-.indicator-red  { background: var(--ind-red);    box-shadow: 0 0 4px var(--ind-red); }
+.indicator-on   { background: var(--ind-on);    box-shadow: 0 0 8px var(--ind-on),    0 0 16px rgba(80, 224, 144, 0.5); }
+.indicator-amber{ background: var(--ind-amber);  box-shadow: 0 0 8px var(--ind-amber), 0 0 16px rgba(240, 176, 48, 0.5); }
+.indicator-red  { background: var(--ind-red);    box-shadow: 0 0 8px var(--ind-red),   0 0 16px rgba(224, 48, 48, 0.5); }
 
 /* ── Buttons ───────────────────────────────── */
 .zone-btn {
@@ -223,7 +224,6 @@ body::after {
 
 /* ── OTIS terminal ─────────────────────────── */
 #zone-otis {
-    min-height: 220px;
 }
 
 #otis-output {
@@ -233,8 +233,7 @@ body::after {
     display: flex;
     flex-direction: column;
     gap: 0.3rem;
-    min-height: 80px;
-    max-height: 200px;
+    min-height: 60px;
     scrollbar-width: thin;
     scrollbar-color: var(--accent) transparent;
 }
@@ -340,7 +339,6 @@ body::after {
     flex-direction: column;
     gap: 0.2rem;
     overflow-y: auto;
-    max-height: 100px;
     scrollbar-width: thin;
     scrollbar-color: var(--accent) transparent;
 }
@@ -450,8 +448,8 @@ body::after {
 
 .comms-dot {
     display: inline-block;
-    width: 7px;
-    height: 7px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background: var(--ind-off);
     flex-shrink: 0;
