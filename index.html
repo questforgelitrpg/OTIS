@@ -246,10 +246,14 @@
         // Init first tab on mobile
         document.addEventListener('DOMContentLoaded', function() {
             if (window.innerWidth <= 480) switchTab('zone-otis');
-            // Sync TTS button label on load
+            // Sync TTS button label on load; hide entirely when browser lacks support
             const ttsBtn = document.getElementById('tts-mute-btn');
             if (ttsBtn && window.OtisTTS) {
-                ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON';
+                if (!window.OtisTTS.isSupported()) {
+                    ttsBtn.style.display = 'none';
+                } else {
+                    ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON';
+                }
             }
         });
 
@@ -670,6 +674,7 @@
 
             appendOTIS(buildManifestSummary(manifest), 'BARGE_IMMINENT');
             startBeltDelivery();
+            deliverNextBeltItem();
             const scanBtn = document.getElementById('btn-scan-belt');
             if (scanBtn) scanBtn.disabled = false;
         }

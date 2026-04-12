@@ -12,6 +12,10 @@
     try { _muted = localStorage.getItem(STORAGE_KEY) === 'true'; } catch (e) { /* private browsing or storage disabled */ }
     let _resolvedVoice = null;
 
+    // Queue of pending text strings; spoken one at a time via onend chaining.
+    const _queue = [];
+    let _speaking = false;
+
     function _resolveVoice() {
         if (_resolvedVoice) return _resolvedVoice;
         if (!window.speechSynthesis) return null;
@@ -32,24 +36,26 @@
         return _resolvedVoice;
     }
 
-    // Chrome loads voices asynchronously; resolve when list is ready
-    if (window.speechSynthesis && window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = function () {
+    // Chrome loads voices asynchronously; use addEventListener to avoid overwriting
+    // any other handler that may be registered on speechSynthesis.
+    if (window.speechSynthesis) {
+        window.speechSynthesis.addEventListener('voiceschanged', function () {
             _resolvedVoice = null; // reset so next speak() re-resolves
             _resolveVoice();
-        };
+        });
     }
 
     function _saveMuted() {
         try { localStorage.setItem(STORAGE_KEY, String(_muted)); } catch (e) { /* storage unavailable */ }
     }
 
-    function speak(text) {
-        if (_muted) return;
-        if (!window.speechSynthesis) return;
+    // Speak the next item in _queue if nothing is currently speaking.
+    function _speakNext() {
+        if (_speaking || _queue.length === 0) return;
+        if (!window.speechSynthesis) { _queue.length = 0; return; }
 
-        window.speechSynthesis.cancel();
-
+        _speaking = true;
+        const text = _queue.shift();
         const utterance = new SpeechSynthesisUtterance(text);
         const voice = _resolveVoice();
         if (voice) utterance.voice = voice;
@@ -57,7 +63,27 @@
         utterance.pitch = PITCH;
         utterance.volume = VOLUME;
 
+        utterance.onend = function () {
+            _speaking = false;
+            _speakNext();
+        };
+        utterance.onerror = function () {
+            _speaking = false;
+            _speakNext();
+        };
+
         window.speechSynthesis.speak(utterance);
+    }
+
+    function speak(text) {
+        if (_muted) return;
+        if (!window.speechSynthesis) return;
+        _queue.push(text);
+        _speakNext();
+    }
+
+    function isSupported() {
+        return !!window.speechSynthesis;
     }
 
     function isMuted() {
@@ -68,6 +94,8 @@
         _muted = !_muted;
         _saveMuted();
         if (_muted && window.speechSynthesis) {
+            _queue.length = 0;
+            _speaking = false;
             window.speechSynthesis.cancel();
         }
         return _muted;
@@ -77,9 +105,11 @@
         _muted = Boolean(bool);
         _saveMuted();
         if (_muted && window.speechSynthesis) {
+            _queue.length = 0;
+            _speaking = false;
             window.speechSynthesis.cancel();
         }
     }
 
-    window.OtisTTS = { speak, isMuted, toggleMute, setMuted };
+    window.OtisTTS = { speak, isSupported, isMuted, toggleMute, setMuted };
 })();
