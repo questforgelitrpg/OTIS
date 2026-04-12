@@ -9,18 +9,25 @@ export default async function handler(req, res) {
         return res.status(400).json({ message: 'Missing system or messages' });
     }
 
+    // Wrap system prompt as a cacheable content block if it's a plain string.
+    // The prompt-caching beta requires the array format with cache_control.
+    const systemBlock = typeof system === 'string'
+        ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }]
+        : system;
+
     try {
         const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
                 'x-api-key': process.env.ANTHROPIC_API_KEY,
                 'anthropic-version': '2023-06-01',
+                'anthropic-beta': 'prompt-caching-2024-07-31',
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 model: 'claude-haiku-4-5-20251001',
-                max_tokens: 300,
-                system,
+                max_tokens: 250,
+                system: systemBlock,
                 messages,
             }),
         });
