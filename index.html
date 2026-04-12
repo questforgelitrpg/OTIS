@@ -153,7 +153,7 @@
                     <div id="manifest-pool-toggle" style="margin-top:0.4rem">
                         <button class="zone-btn" onclick="toggleManifestPool()" style="font-size:11px; padding:0.15rem 0.5rem; color:var(--text-dim)">POOL ▾</button>
                     </div>
-                    <div id="manifest-pool-panel" style="display:none; margin-top:0.3rem; overflow-y:auto; max-height:180px; font-size:11px; color:var(--text-dim);">
+                    <div id="manifest-pool-panel" style="display:none; margin-top:0.3rem; overflow-y:auto; max-height:180px; font-size:11px; color:var(--text-primary); scrollbar-width:thin; scrollbar-color:var(--ind-on) transparent;">
                         <!-- JS will populate this -->
                     </div>
                 </div>
@@ -187,6 +187,17 @@
 
         </main>
 
+        <!-- Mobile tab bar -->
+        <nav id="tab-bar">
+            <button data-zone="zone-belt-monitor" onclick="switchTab('zone-belt-monitor')">BELT</button>
+            <button data-zone="zone-comms" onclick="switchTab('zone-comms')">COMMS</button>
+            <button data-zone="zone-systems" onclick="switchTab('zone-systems')">SYS</button>
+            <button data-zone="zone-ledger" onclick="switchTab('zone-ledger')">LEDGER</button>
+            <button data-zone="zone-item-queue" onclick="switchTab('zone-item-queue')">ITEMS</button>
+            <button data-zone="zone-otis" onclick="switchTab('zone-otis')">OTIS</button>
+            <button data-zone="zone-keep-log" onclick="switchTab('zone-keep-log')">LOG</button>
+        </nav>
+
         <!-- Footer -->
         <footer id="console-footer">
             <span>OTIS v0.3 // PHASE 0</span>
@@ -219,6 +230,18 @@
     <script src="otis.js"></script>
     <script src="audio.js"></script>
     <script>
+        // --- Mobile tab switching ---
+        function switchTab(zoneId) {
+            document.querySelectorAll('.console-zone').forEach(z => z.classList.remove('tab-active'));
+            document.getElementById(zoneId).classList.add('tab-active');
+            document.querySelectorAll('#tab-bar button').forEach(b => b.classList.remove('tab-btn-active'));
+            document.querySelector('#tab-bar [data-zone="' + zoneId + '"]').classList.add('tab-btn-active');
+        }
+        // Init first tab on mobile
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.innerWidth <= 480) switchTab('zone-otis');
+        });
+
         // --- UI Helpers ---
 
         const MAX_OTIS_LINES = 10;
