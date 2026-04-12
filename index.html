@@ -305,8 +305,11 @@
         // --- Toast ---
 
         function autoToast() {
+            if (gameState.state.toastFiredToday) return;
             chargeCredits(6, 'toast');
             appendOTIS("Vernon made toast. George's toaster. Energy draw logged. 6 credits from replicator.", 'TOAST');
+            gameState.state.toastFiredToday = true;
+            gameState._save();
             updateAllDisplays();
         }
 
@@ -1002,6 +1005,12 @@
         gameState.startSessionTimer();
         gameState.startDayTimer();
         appendOTIS('Operator logging in.', 'LOGIN');
+        // Auto-toast on login (guarded by toastFiredToday flag — fires once per day)
+        autoToast();
+        // Start with items on belt for Day 1 fresh starts
+        if (gameState.state.day === 1 && !gameState.state.dropActive && gameState.state.manifestItems.length === 0) {
+            handleBargeArrival();
+        }
     </script>
 </body>
 </html>

@@ -27,6 +27,7 @@ class StateManager {
             outstandingDebt: 0,
             missedPayments: 0,
             daysUntilNextDrop: 7,
+            toastFiredToday: false,
             savedAt: null,
         };
     }
