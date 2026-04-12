@@ -14,7 +14,8 @@
             <span class="header-title">DEAD SIGNAL // STATION CONSOLE</span>
             <span id="stat-day" class="header-stat">Day 1</span>
             <span id="stat-debt" class="header-stat">Loan: 25,000 cr</span>
-            <span id="stat-credits" class="header-stat">Credits: 0 cr</span>
+            <span id="stat-credits" class="header-stat">Credits: 200 cr</span>
+            <span id="stat-barge" class="header-stat">BARGE: <span id="barge-days">7</span>d</span>
             <span id="stat-hours" class="header-stat">Session: 0h</span>
             <span id="stat-naming" class="header-stat naming-label">Mr. Serling</span>
         </header>
@@ -32,9 +33,13 @@
                         <span>BOT-2 <span class="comms-dot" id="bot-dot-2"></span></span>
                         <span>BOT-3 <span class="comms-dot" id="bot-dot-3"></span></span>
                     </div>
+                    <div id="belt-countdown-bar-track" class="belt-bar-track" style="display:none">
+                        <div id="belt-countdown-bar" class="belt-bar-fill"></div>
+                    </div>
+                    <p class="zone-hint" id="belt-status-text">NEXT DROP: <span id="belt-drop-countdown">7</span> days</p>
+                    <p class="zone-hint" id="belt-backed-up-msg" style="display:none; color:var(--text-warn)">⚠ BELT BACKED UP — clear item queue</p>
                     <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.4rem">
                         <button class="zone-btn" id="btn-barge-drop" onclick="handleBargeArrival()">BARGE DROP</button>
-                        <button class="zone-btn" id="btn-scan-belt" onclick="handleBeltScan()">SCAN BELT</button>
                     </div>
                 </div>
             </section>
@@ -98,18 +103,22 @@
                 <h2 class="zone-title">LEDGER <span class="indicator" id="ind-ledger"></span></h2>
                 <div class="zone-body">
                     <div class="ledger-row">LOAN BALANCE: <span id="ledger-debt">25,000 cr</span></div>
-                    <div class="ledger-row">CREDITS IN HAND: <span id="ledger-credits">0 cr</span></div>
+                    <div class="ledger-row">CREDITS IN HAND: <span id="ledger-credits">200 cr</span></div>
                     <div class="ledger-row">PAYMENT DUE: 650 cr in <span id="ledger-days-until">28</span> days</div>
+                    <div id="arrears-row" class="ledger-row" style="display:none; color:var(--text-danger)">
+                        ARREARS: <span id="ledger-arrears">0 cr</span>
+                        <button class="zone-btn" onclick="handleClearArrears()" style="color:var(--text-danger); border-color:#3a1010">CLEAR ARREARS</button>
+                    </div>
                     <div class="debt-bar-track"><div class="debt-bar-fill" id="debt-bar-fill" style="width:0%"></div></div>
                     <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.3rem">
                         <button class="zone-btn" onclick="handleMakePayment()">MAKE PAYMENT</button>
-                        <button class="zone-btn" onclick="handleAdvanceDay()" aria-label="Advance Day" style="color:var(--text-dim); border-color:var(--border);">&gt;&gt; DAY</button>
+                        <button class="zone-btn" onclick="gameState.advanceDay()" aria-label="Advance Day" style="color:var(--text-dim); border-color:var(--border);">&gt;&gt; DAY</button>
                         <button class="zone-btn" onclick="appendOTIS('How bad is the debt situation?', 'CONSULT_DEBT')">CONSULT DEBT</button>
                     </div>
                     <div id="shipping-queue-section">
-                        <p class="zone-hint" style="font-size:10px; margin-top:0.4rem">PENDING SALES:</p>
+                        <p class="zone-hint" style="font-size:12px; margin-top:0.4rem">PENDING SALES:</p>
                         <div id="shipping-queue-list"></div>
-                        <p class="zone-hint" id="shipping-queue-empty" style="font-size:10px; font-style:italic">No pending sales.</p>
+                        <p class="zone-hint" id="shipping-queue-empty" style="font-size:12px; font-style:italic">No pending sales.</p>
                     </div>
                 </div>
             </section>
@@ -144,7 +153,7 @@
                 <h2 class="zone-title">OTIS TERMINAL <span class="indicator indicator-on" id="ind-otis"></span></h2>
                 <div class="zone-body">
                     <div id="otis-output" role="log" aria-live="polite" aria-label="OTIS conversation log"></div>
-                    <div id="otis-status-bar" style="font-size:10px; color:var(--text-dim); margin-top:0.2rem;">
+                    <div id="otis-status-bar" style="font-size:12px; color:var(--text-dim); margin-top:0.2rem;">
                         OTIS: <span id="otis-status-text">READY</span>
                     </div>
                     <div id="otis-quick-actions">
@@ -160,7 +169,7 @@
             <section class="console-zone" id="zone-keep-log" tabindex="0">
                 <h2 class="zone-title">KEEP LOG</h2>
                 <div class="zone-body">
-                    <p id="keep-log-count" class="zone-hint" style="font-size:10px"></p>
+                    <p id="keep-log-count" class="zone-hint" style="font-size:12px"></p>
                     <ul id="keep-log-list" class="keep-list"></ul>
                     <p class="zone-hint" id="keep-log-empty">Log empty.</p>
                 </div>
@@ -171,8 +180,26 @@
         <!-- Footer -->
         <footer id="console-footer">
             <span>OTIS v0.3 // PHASE 0</span>
-            <button id="clear-save-btn" onclick="handleClearSave(this)">CLEAR SAVE</button>
+            <span style="display:flex; gap:0.5rem; align-items:center">
+                <button onclick="document.getElementById('debug-panel').style.display = document.getElementById('debug-panel').style.display === 'none' ? '' : 'none'" style="background:transparent; border:none; color:var(--border); font-family:var(--font-mono); font-size:11px; cursor:pointer;">DBG</button>
+                <button id="clear-save-btn" onclick="handleClearSave(this)">CLEAR SAVE</button>
+            </span>
         </footer>
+
+        <!-- Debug panel -->
+        <div id="debug-panel" style="display:none; padding:0.5rem 1rem; background:#050a0a; border-top:1px solid #1a3030; font-size:12px; color:var(--text-warn);">
+            <span style="letter-spacing:0.1em">⚠ DEBUG // NOT FOR PRODUCTION</span>
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.3rem">
+                <button class="zone-btn" onclick="handleBargeArrival()">FORCE DROP</button>
+                <button class="zone-btn" onclick="debugAdvanceDay()">ADVANCE DAY</button>
+                <button class="zone-btn" onclick="debugAdvanceWeek()">ADVANCE WEEK</button>
+                <button class="zone-btn" onclick="debugAddCredits()">ADD 500 CR</button>
+                <button class="zone-btn" onclick="debugForcePaymentDue()">FORCE PAYMENT DUE</button>
+                <button class="zone-btn" onclick="debugToggleFastMode()">FAST MODE TOGGLE</button>
+                <button class="zone-btn" onclick="handleClearSave(this)">CLEAR SAVE</button>
+                <button class="zone-btn" onclick="handleBeltScan()">BELT SCAN</button>
+            </div>
+        </div>
 
     </div>
 
@@ -185,12 +212,15 @@
         // --- UI Helpers ---
 
         const MAX_OTIS_LINES = 10;
-        const PAYMENT_CYCLE_DAYS = 28;
-        const RESERVE_MIN_RESOLVE_MS = 15000;
-        const RESERVE_MAX_EXTRA_MS = 30000;
         const RESERVE_SALE_SUCCESS_RATE = 0.70;
         const RESERVE_MULTIPLIERS = { Common: 1.10, Uncommon: 1.20, Rare: 1.35 };
+        const CONDITION_MULTIPLIERS = { Broken: 0.15, Poor: 0.45, Used: 1.0, Excellent: 1.6 };
         const otisLines = [];
+
+        function getEffectiveValue(item) {
+            if (item.rarity === 'Anomalous') return 0;
+            return Math.floor((item.otisValue || 0) * (CONDITION_MULTIPLIERS[item.condition] || 1.0));
+        }
 
         function renderOTIS() {
             const out = document.getElementById('otis-output');
@@ -231,6 +261,50 @@
                 if (sysOtis) { sysOtis.textContent = 'FAULT'; sysOtis.className = 'status-err'; }
             }
             syncLedger();
+        }
+
+        // --- Credits & Arrears ---
+
+        function chargeCredits(amount, label) {
+            if (gameState.state.credits >= amount) {
+                gameState.state.credits -= amount;
+                gameState._save();
+                return true;
+            } else {
+                const shortfall = amount - gameState.state.credits;
+                gameState.state.credits = 0;
+                gameState.state.outstandingDebt = (gameState.state.outstandingDebt || 0) + shortfall;
+                gameState._save();
+                appendOTIS(
+                    `Insufficient credits for ${label}. Shortfall of ${shortfall} cr added to arrears. Arrears accrue at 5% per day, Mr. Serling.`,
+                    'ARREARS_NOTICE'
+                );
+                updateAllDisplays();
+                return false;
+            }
+        }
+
+        function handleClearArrears() {
+            const debt = gameState.state.outstandingDebt || 0;
+            if (debt === 0) return;
+            if (gameState.state.credits < debt) {
+                appendOTIS(`Insufficient credits to clear arrears. Need ${debt} cr, have ${gameState.state.credits} cr.`, 'ARREARS_NOTICE');
+                return;
+            }
+            gameState.state.credits -= debt;
+            gameState.state.outstandingDebt = 0;
+            gameState._save();
+            gameState._updateUI();
+            appendOTIS('Arrears cleared.', 'ARREARS_CLEARED');
+            syncLedger();
+        }
+
+        // --- Toast ---
+
+        function autoToast() {
+            chargeCredits(6, 'toast');
+            appendOTIS("Vernon made toast. George's toaster. Energy draw logged. 6 credits from replicator.", 'TOAST');
+            updateAllDisplays();
         }
 
         // --- Item Queue ---
@@ -315,32 +389,136 @@
             }
         }
 
-        function handleBeltScan() {
-            if (!gameState.state.dropActive) return;
-            if (currentItem) return; // queue occupied
+        // --- Belt Timer System ---
 
+        let beltTimer = null;
+
+        function startBeltDelivery() {
+            if (beltTimer) return;
+            beltTimer = setInterval(() => {
+                deliverNextBeltItem();
+            }, TIMING.BELT_DELIVERY_MS);
+        }
+
+        function stopBeltDelivery() {
+            clearInterval(beltTimer);
+            beltTimer = null;
+        }
+
+        function assignCondition() {
+            const roll = Math.random();
+            if (roll < 0.15) return 'Broken';
+            if (roll < 0.50) return 'Poor';
+            if (roll < 0.85) return 'Used';
+            return 'Excellent';
+        }
+
+        function deliverNextBeltItem() {
+            if (!gameState.state.dropActive) {
+                stopBeltDelivery();
+                return;
+            }
             if (gameState.state.manifestItems.length === 0) {
+                stopBeltDelivery();
                 gameState.state.dropActive = false;
+                gameState.state.bargeActive = false;
                 gameState.state.dropItemsRemaining = 0;
                 const dropStatusEl = document.getElementById('drop-status-text');
                 if (dropStatusEl) dropStatusEl.textContent = 'WINDOW: CLOSED';
                 const bargeBtn = document.getElementById('btn-barge-drop');
                 if (bargeBtn) bargeBtn.disabled = false;
-                // Reset bot dots
                 ['bot-dot-1', 'bot-dot-2', 'bot-dot-3'].forEach(id => {
                     const dot = document.getElementById(id);
                     if (dot) dot.className = 'comms-dot';
                 });
                 gameState._save();
-                appendOTIS('Drop window closed. Bots returning.', 'DROP_COMPLETE');
+                updateBeltStatus('DROP_COMPLETE');
+                appendOTIS('Belt clear. All items processed. Bots returning.', 'DROP_COMPLETE');
                 return;
             }
-
+            if (currentItem !== null) {
+                updateBeltStatus('BACKED_UP');
+                return;
+            }
             const item = gameState.state.manifestItems.shift();
-            gameState.state.dropItemsRemaining--;
+            item.condition = assignCondition();
+            gameState.state.dropItemsRemaining = gameState.state.manifestItems.length;
             gameState._save();
             setItemInQueue(item);
-            appendOTIS('Item detected on belt: ' + item.name, 'ITEM_SCAN');
+            updateBeltStatus('DELIVERING');
+            appendOTIS('Item on belt: ' + item.name + '.', 'ITEM_SCAN');
+        }
+
+        function handleBeltScan() {
+            // Manual scan — for debug panel
+            deliverNextBeltItem();
+        }
+
+        // --- Belt Status Display ---
+
+        function updateBeltStatus(status) {
+            const barTrack = document.getElementById('belt-countdown-bar-track');
+            const bar = document.getElementById('belt-countdown-bar');
+            const statusText = document.getElementById('belt-status-text');
+            const backedUpMsg = document.getElementById('belt-backed-up-msg');
+            const dropCountdown = document.getElementById('belt-drop-countdown');
+            const remaining = gameState.state.dropItemsRemaining ?? 0;
+            const daysUntilDrop = gameState.state.daysUntilNextDrop ?? TIMING.DAYS_BETWEEN_DROPS;
+
+            if (status === 'CLEAR') {
+                if (barTrack) barTrack.style.display = 'none';
+                if (backedUpMsg) backedUpMsg.style.display = 'none';
+                if (statusText) statusText.innerHTML = 'NEXT DROP: <span id="belt-drop-countdown">' + daysUntilDrop + '</span> days';
+            } else if (status === 'DELIVERING') {
+                if (barTrack) barTrack.style.display = '';
+                if (bar) {
+                    bar.style.setProperty('--belt-duration', (TIMING.BELT_DELIVERY_MS / 1000) + 's');
+                    bar.className = 'belt-bar-fill';
+                    void bar.offsetWidth; // force reflow to restart animation
+                    bar.classList.add('belt-bar-active');
+                }
+                if (backedUpMsg) backedUpMsg.style.display = 'none';
+                if (statusText) statusText.textContent = 'ACTIVE — ' + remaining + ' items remaining';
+            } else if (status === 'BACKED_UP') {
+                if (barTrack) barTrack.style.display = '';
+                if (bar) {
+                    bar.className = 'belt-bar-fill belt-bar-backed-up';
+                }
+                if (backedUpMsg) backedUpMsg.style.display = '';
+                if (statusText) statusText.textContent = 'ACTIVE — ' + remaining + ' items remaining';
+            } else if (status === 'DROP_COMPLETE') {
+                if (barTrack) barTrack.style.display = 'none';
+                if (backedUpMsg) backedUpMsg.style.display = 'none';
+                if (statusText) statusText.textContent = 'DROP COMPLETE';
+                if (dropCountdown) dropCountdown.textContent = daysUntilDrop;
+            }
+        }
+
+        // --- Manifest Helpers ---
+
+        function generateManifestCount() {
+            const act = gameState.state.act;
+            if (act === 1) return TIMING.DROP_SIZE_ACT1;
+            if (act === 2) return TIMING.DROP_SIZE_ACT2_MIN +
+                Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT2_MAX - TIMING.DROP_SIZE_ACT2_MIN + 1));
+            return TIMING.DROP_SIZE_ACT3_MIN +
+                Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT3_MAX - TIMING.DROP_SIZE_ACT3_MIN + 1));
+        }
+
+        function weightedPickItem() {
+            const roll = Math.random();
+            let rarity;
+            if (roll < 0.60) rarity = 'Common';
+            else if (roll < 0.85) rarity = 'Uncommon';
+            else if (roll < 0.95) rarity = 'Rare';
+            else rarity = 'Anomalous';
+            const pool = MANIFEST_POOL.filter(i => i.rarity === rarity);
+            return { ...pool[Math.floor(Math.random() * pool.length)] };
+        }
+
+        function handleBeltScanLegacy() {
+            // Legacy path kept for internal compatibility
+            deliverNextBeltItem();
         }
 
         function handleBargeArrival() {
@@ -348,17 +526,21 @@
             const bargeBtn = document.getElementById('btn-barge-drop');
             if (bargeBtn && bargeBtn.disabled) return;
 
-            // Build manifest: 4-6 random items from MANIFEST_POOL, no duplicates
-            const poolCopy = [...MANIFEST_POOL];
-            const count = 4 + Math.floor(Math.random() * 3); // 4, 5, or 6
-            const manifest = [];
-            for (let i = 0; i < count && poolCopy.length > 0; i++) {
-                const idx = Math.floor(Math.random() * poolCopy.length);
-                manifest.push(poolCopy.splice(idx, 1)[0]);
+            let manifest;
+            if (gameState.state.day === 1) {
+                // Day 1 scripted drop: first 4 Common items, all Used
+                manifest = MANIFEST_POOL.filter(i => i.rarity === 'Common').slice(0, 4).map(i => ({ ...i, condition: 'Used' }));
+            } else {
+                const count = generateManifestCount();
+                manifest = [];
+                for (let i = 0; i < count; i++) {
+                    manifest.push(weightedPickItem());
+                }
             }
 
             gameState.state.manifestItems = [...manifest];
             gameState.state.dropActive = true;
+            gameState.state.bargeActive = true;
             gameState.state.dropItemsRemaining = manifest.length;
             gameState._save();
 
@@ -372,7 +554,11 @@
             if (activeDot) activeDot.className = 'comms-dot indicator-amber';
 
             appendOTIS(buildManifestSummary(manifest), 'BARGE_IMMINENT');
-            setTimeout(() => { handleBeltScan(); }, 1500);
+            startBeltDelivery();
+        }
+
+        function triggerBargeArrival() {
+            handleBargeArrival();
         }
 
         function handleConsult(trigger) {
@@ -393,24 +579,25 @@
             if (!currentItem) return;
             const item = currentItem;
             const itemContext = buildItemContext(item);
+            const effectiveValue = getEffectiveValue(item);
 
             if (method === 'OTIS') {
-                gameState.state.credits += item.otisValue;
+                gameState.state.credits += effectiveValue;
                 gameState._save();
                 gameState._updateUI();
                 gameState.state.recentEvents.unshift('Sold at OTIS price: ' + item.name);
                 clearItemQueue();
-                appendOTIS(`Selling at OTIS price: ${item.name}. +${item.otisValue} cr. ${itemContext}`, 'DECLARATION_OTIS');
-                if (gameState.state.dropActive) setTimeout(handleBeltScan, 400);
+                appendOTIS(`Selling at OTIS price: ${item.name}. +${effectiveValue} cr. ${itemContext}`, 'DECLARATION_OTIS');
 
             } else if (method === 'RESERVE') {
                 let reservePrice;
                 if (item.rarity === 'Anomalous') {
-                    reservePrice = Math.floor(Math.random() * 1600) + 400;
+                    reservePrice = Math.floor(Math.random() * (2000 - 400 + 1)) + 400;
                 } else {
-                    reservePrice = Math.floor(item.otisValue * (RESERVE_MULTIPLIERS[item.rarity] || 1.10));
+                    reservePrice = Math.floor(effectiveValue * (RESERVE_MULTIPLIERS[item.rarity] || 1.10));
                 }
-                const resolveAt = Date.now() + Math.floor(Math.random() * RESERVE_MAX_EXTRA_MS) + RESERVE_MIN_RESOLVE_MS;
+                const resolveAt = Date.now() + TIMING.RESERVE_RESOLVE_MIN_MS +
+                    Math.floor(Math.random() * (TIMING.RESERVE_RESOLVE_MAX_MS - TIMING.RESERVE_RESOLVE_MIN_MS));
                 if (!gameState.state.shippingQueue) gameState.state.shippingQueue = [];
                 gameState.state.shippingQueue.push({ name: item.name, price: reservePrice, resolveAt });
                 gameState._save();
@@ -418,16 +605,14 @@
                 updateSystemsStatus();
                 clearItemQueue();
                 appendOTIS(`Reserve listing: ${item.name}. Reserve: ${reservePrice} cr. Awaiting buyer. ${itemContext}`, 'DECLARATION_RESERVE');
-                if (gameState.state.dropActive) setTimeout(handleBeltScan, 400);
 
             } else if (method === 'NORESERVE') {
-                const earned = Math.floor(item.otisValue * 0.75);
+                const earned = Math.floor(effectiveValue * 0.75);
                 gameState.state.credits += earned;
                 gameState._save();
                 gameState._updateUI();
                 clearItemQueue();
                 appendOTIS(`Selling below OTIS price (no reserve): ${item.name}. +${earned} cr.`, 'DECLARATION_NORESERVE');
-                if (gameState.state.dropActive) setTimeout(handleBeltScan, 400);
 
             } else if (method === 'KEEP') {
                 if (!gameState.state.keepLog) gameState.state.keepLog = [];
@@ -441,7 +626,6 @@
                 } else {
                     appendOTIS('Keeping: ' + item.name, 'DECLARE_KEEP');
                 }
-                if (gameState.state.dropActive) setTimeout(handleBeltScan, 400);
 
             } else if (method === 'SCRAP') {
                 gameState.state.scrapFill = Math.min(100, (gameState.state.scrapFill || 0) + 12);
@@ -450,7 +634,6 @@
                 updateSystemsStatus();
                 clearItemQueue();
                 appendOTIS('Scrapping: ' + item.name, 'DECLARE_SCRAP');
-                if (gameState.state.dropActive) setTimeout(handleBeltScan, 400);
             }
 
             syncLedger();
@@ -503,6 +686,10 @@
         }
 
         function handleMakePayment() {
+            if ((gameState.state.outstandingDebt || 0) > 0) {
+                appendOTIS('Cannot make loan payment while arrears outstanding. Clear arrears first.', 'PAYMENT_FAILED');
+                return;
+            }
             const PAYMENT_AMOUNT = 650;
             const credits = gameState.state.credits;
             if (credits < PAYMENT_AMOUNT) {
@@ -511,20 +698,11 @@
             }
             gameState.state.credits -= PAYMENT_AMOUNT;
             gameState.state.debt = Math.max(0, gameState.state.debt - PAYMENT_AMOUNT);
+            gameState.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
             gameState._save();
             gameState._updateUI();
             appendOTIS(`Processing payment of 650 credits. Remaining balance: ${gameState.state.debt.toLocaleString()} cr.`, 'PAYMENT');
             syncLedger();
-        }
-
-        function handleAdvanceDay() {
-            gameState.state.day++;
-            gameState.state.daysUntilPayment = Math.max(0, (gameState.state.daysUntilPayment || PAYMENT_CYCLE_DAYS) - 1);
-            if (gameState.state.daysUntilPayment <= 0) gameState.state.daysUntilPayment = PAYMENT_CYCLE_DAYS;
-            gameState._save();
-            appendOTIS('Day advanced.', 'DAY_TICK');
-            syncLedger();
-            updateCommsIndicators();
         }
 
         function handleComms(channel) {
@@ -558,7 +736,7 @@
         }
 
         function updateCommsIndicators() {
-            const dup = gameState.state.daysUntilPayment || 28;
+            const dup = gameState.state.daysUntilPayment ?? TIMING.PAYMENT_CYCLE_DAYS;
             const bankDot = document.getElementById('comms-dot-bank');
             if (bankDot) {
                 if (dup <= 3) bankDot.className = 'comms-dot indicator-red';
@@ -586,7 +764,7 @@
             // POWER
             const sysPower = document.getElementById('sys-power');
             if (sysPower) {
-                const dup = gameState.state.daysUntilPayment || 28;
+                const dup = gameState.state.daysUntilPayment ?? TIMING.PAYMENT_CYCLE_DAYS;
                 sysPower.textContent = dup <= 3 ? 'ALERT' : 'NOMINAL';
                 sysPower.className = dup <= 3 ? 'status-warn' : 'status-ok';
             }
@@ -594,9 +772,36 @@
 
         function syncLedger() {
             gameState._updateUI();
-            // Ledger-specific fields
-            const daysUntilEl = document.getElementById('ledger-days-until');
-            if (daysUntilEl) daysUntilEl.textContent = gameState.state.daysUntilPayment ?? 28;
+
+            // Payment countdown color
+            const dup = gameState.state.daysUntilPayment ?? TIMING.PAYMENT_CYCLE_DAYS;
+            const daysEl = document.getElementById('ledger-days-until');
+            if (daysEl) {
+                daysEl.textContent = dup;
+                if (dup <= 0) {
+                    daysEl.style.color = 'var(--text-danger)';
+                    daysEl.style.animation = '';
+                } else if (dup <= 3) {
+                    daysEl.style.color = 'var(--text-danger)';
+                    daysEl.style.animation = 'pulse-warn 0.8s infinite';
+                } else if (dup <= 7) {
+                    daysEl.style.color = 'var(--text-danger)';
+                    daysEl.style.animation = '';
+                } else if (dup <= 14) {
+                    daysEl.style.color = 'var(--text-warn)';
+                    daysEl.style.animation = '';
+                } else {
+                    daysEl.style.color = '';
+                    daysEl.style.animation = '';
+                }
+            }
+
+            // Arrears
+            const arrears = gameState.state.outstandingDebt || 0;
+            const arrearsRow = document.getElementById('arrears-row');
+            const arrearsEl = document.getElementById('ledger-arrears');
+            if (arrearsRow) arrearsRow.style.display = arrears > 0 ? '' : 'none';
+            if (arrearsEl) arrearsEl.textContent = arrears.toLocaleString() + ' cr';
 
             // Debt bar
             const debtBarFill = document.getElementById('debt-bar-fill');
@@ -609,9 +814,24 @@
                 else debtBarFill.style.background = 'var(--text-danger)';
             }
 
+            // Barge countdown
+            const daysUntilDrop = gameState.state.daysUntilNextDrop ?? TIMING.DAYS_BETWEEN_DROPS;
+            const bargeDaysEl = document.getElementById('barge-days');
+            if (bargeDaysEl) {
+                bargeDaysEl.textContent = daysUntilDrop;
+                bargeDaysEl.style.color = daysUntilDrop <= 0 ? 'var(--ind-on)' : daysUntilDrop <= 2 ? 'var(--ind-amber)' : '';
+            }
+            const beltDropEl = document.getElementById('belt-drop-countdown');
+            if (beltDropEl) beltDropEl.textContent = daysUntilDrop;
+
             updateCommsIndicators();
             updateSystemsStatus();
             updateScrapBar();
+        }
+
+        function updateAllDisplays() {
+            syncLedger();
+            updateBeltStatus(gameState.state.dropActive ? 'DELIVERING' : 'CLEAR');
         }
 
         function renderShippingQueue() {
@@ -687,6 +907,17 @@
             }
         }
 
+        // --- Debug helpers ---
+
+        function debugAdvanceDay() { gameState.advanceDay(); syncLedger(); }
+        function debugAdvanceWeek() { for (let i = 0; i < 7; i++) gameState.advanceDay(); syncLedger(); }
+        function debugAddCredits() { gameState.state.credits += 500; gameState._save(); gameState._updateUI(); syncLedger(); }
+        function debugForcePaymentDue() { gameState.state.daysUntilPayment = 0; gameState._save(); syncLedger(); }
+        function debugToggleFastMode() {
+            TIMING.DEBUG_FAST_MODE = !TIMING.DEBUG_FAST_MODE;
+            appendOTIS('Fast mode: ' + (TIMING.DEBUG_FAST_MODE ? 'ON' : 'OFF'), 'ZONE_SYSTEMS');
+        }
+
         // Boot sequence
         gameState.initUI();
         syncLedger();
@@ -696,7 +927,9 @@
         updateScrapBar();
         updateSystemsStatus();
         updateCommsIndicators();
+        updateBeltStatus('CLEAR');
         gameState.startSessionTimer();
+        gameState.startDayTimer();
         appendOTIS('Operator logging in.', 'LOGIN');
     </script>
 </body>

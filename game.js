@@ -1,29 +1,78 @@
+const TIMING = {
+    // CLOCK TIMER — payment pressure
+    // 1 in-game day = 4 real minutes
+    MS_PER_INGAME_DAY: 240000,
+
+    // BELT TIMER — item pressure, independent of clock
+    // 1 item arrives every 30 real seconds during active drop
+    BELT_DELIVERY_MS: 30000,
+
+    // DROP SCHEDULE — in in-game days
+    DAYS_BETWEEN_DROPS: 7,
+    DROP_VARIANCE_DAYS: 2,
+
+    // DROP SIZE — number of items, not time-based
+    DROP_SIZE_ACT1: 6,
+    DROP_SIZE_ACT2_MIN: 9,
+    DROP_SIZE_ACT2_MAX: 11,
+    DROP_SIZE_ACT3_MIN: 13,
+    DROP_SIZE_ACT3_MAX: 15,
+
+    // PAYMENT
+    PAYMENT_CYCLE_DAYS: 28,
+
+    // RESERVE RESOLUTION — real time
+    RESERVE_RESOLVE_MIN_MS: 120000,   // 2 real minutes min
+    RESERVE_RESOLVE_MAX_MS: 480000,   // 8 real minutes max
+
+    // WAREHOUSE SEARCH — real time
+    WAREHOUSE_SEARCH_MS: 20000,
+
+    // DEBUG
+    DEBUG_FAST_MODE: false,
+    DEBUG_SPEED_MULTIPLIER: 10,
+};
+
+// Apply debug multiplier if enabled (affects all _MS keys)
+if (TIMING.DEBUG_FAST_MODE) {
+    Object.keys(TIMING).forEach(k => {
+        if (k.endsWith('_MS')) {
+            TIMING[k] = Math.floor(TIMING[k] / TIMING.DEBUG_SPEED_MULTIPLIER);
+        }
+    });
+}
+
 const MS_PER_MINUTE = 60000;
 const MINUTES_PER_HOUR = 60;
 
 const NAMING_TIERS = ['Mr. Serling', 'Vernon', 'Vern', 'Buddy', 'Pal', 'Coworker', 'Boss', 'Mr. Serling', 'Oh. You.'];
 
 const MANIFEST_POOL = [
-    { name: 'Corroded fuel cell casing', category: 'Industrial', rarity: 'Common', condition: 'Poor', otisValue: 45 },
-    { name: 'Partial navigation array', category: 'Vessel', rarity: 'Uncommon', condition: 'Used', otisValue: 180 },
-    { name: 'Cracked coolant housing', category: 'Industrial', rarity: 'Common', condition: 'Poor', otisValue: 38 },
+    // Common (otisValue 20–55)
+    { name: 'Personal effects bundle — civilian origin', category: 'Civilian', rarity: 'Common', condition: 'Used', otisValue: 40 },
+    { name: 'Corroded fuel cell casing', category: 'Industrial', rarity: 'Common', condition: 'Used', otisValue: 30 },
+    { name: 'Settlement cooking unit — communal', category: 'Settlement', rarity: 'Common', condition: 'Used', otisValue: 55 },
+    { name: 'Burned circuit board cluster', category: 'Industrial', rarity: 'Common', condition: 'Used', otisValue: 20 },
+    { name: 'Bent structural strut', category: 'Industrial', rarity: 'Common', condition: 'Used', otisValue: 25 },
+    { name: "Children's toy — unidentified origin", category: 'Civilian', rarity: 'Common', condition: 'Used', otisValue: 35 },
+    { name: 'Settlement water filter — ceramic', category: 'Settlement', rarity: 'Common', condition: 'Used', otisValue: 28 },
+    // Uncommon (otisValue 70–180)
+    { name: 'Partial navigation array', category: 'Vessel', rarity: 'Uncommon', condition: 'Used', otisValue: 140 },
+    { name: 'Cracked coolant housing', category: 'Industrial', rarity: 'Uncommon', condition: 'Used', otisValue: 85 },
+    { name: 'Civilian medical kit — partial', category: 'Civilian', rarity: 'Uncommon', condition: 'Used', otisValue: 90 },
+    { name: 'Coolant manifold — intact', category: 'Industrial', rarity: 'Uncommon', condition: 'Used', otisValue: 175 },
+    { name: 'Settlement community archive — partial', category: 'Settlement', rarity: 'Uncommon', condition: 'Used', otisValue: 110 },
+    { name: 'Pressure suit fragment — marked', category: 'Vessel', rarity: 'Uncommon', condition: 'Used', otisValue: 95 },
+    { name: 'Decommissioned beacon housing', category: 'Vessel', rarity: 'Uncommon', condition: 'Used', otisValue: 160 },
+    // Rare (otisValue 200–500)
+    { name: 'Pre-collapse data crystal', category: 'Vessel', rarity: 'Rare', condition: 'Used', otisValue: 480 },
+    { name: 'Fused relay core — pre-collapse', category: 'Vessel', rarity: 'Rare', condition: 'Used', otisValue: 380 },
+    { name: 'Encrypted data slate', category: 'Vessel', rarity: 'Rare', condition: 'Used', otisValue: 310 },
+    { name: 'Autonomous drone chassis — inert', category: 'Industrial', rarity: 'Rare', condition: 'Used', otisValue: 220 },
+    // Anomalous (otisValue 0 — OTIS cannot assess)
     { name: 'Unidentified alloy fragment', category: 'Unknown', rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
-    { name: 'Burned circuit board cluster', category: 'Industrial', rarity: 'Common', condition: 'Broken', otisValue: 22 },
     { name: 'Pressurized canister — unknown contents', category: 'Unknown', rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
-    { name: 'Pre-collapse data crystal', category: 'Vessel', rarity: 'Rare', condition: 'Excellent', otisValue: 620 },
-    { name: 'Personal effects bundle — civilian', category: 'Civilian', rarity: 'Common', condition: 'Used', otisValue: 65 },
-    { name: 'Ceramic figure — no catalogue match', category: 'Unknown', rarity: 'Anomalous', condition: 'Excellent', otisValue: 0 },
-    { name: 'Decommissioned beacon housing', category: 'Vessel', rarity: 'Uncommon', condition: 'Used', otisValue: 210 },
-    { name: 'Bent structural strut', category: 'Industrial', rarity: 'Common', condition: 'Poor', otisValue: 28 },
-    { name: 'Civilian medical kit — partial', category: 'Civilian', rarity: 'Uncommon', condition: 'Used', otisValue: 95 },
-    { name: 'Fused relay core — pre-collapse', category: 'Vessel', rarity: 'Rare', condition: 'Used', otisValue: 450 },
-    { name: 'Settlement water filter — ceramic', category: 'Settlement', rarity: 'Common', condition: 'Poor', otisValue: 32 },
-    { name: "Children's toy — unidentified origin", category: 'Civilian', rarity: 'Common', condition: 'Used', otisValue: 55 },
-    { name: 'Encrypted data slate', category: 'Vessel', rarity: 'Rare', condition: 'Used', otisValue: 380 },
-    { name: 'Coolant manifold — intact', category: 'Industrial', rarity: 'Uncommon', condition: 'Excellent', otisValue: 275 },
-    { name: 'Settlement cooking unit — communal', category: 'Settlement', rarity: 'Uncommon', condition: 'Used', otisValue: 120 },
-    { name: 'Pressure suit fragment — marked', category: 'Vessel', rarity: 'Uncommon', condition: 'Poor', otisValue: 145 },
-    { name: 'Autonomous drone chassis — inert', category: 'Industrial', rarity: 'Rare', condition: 'Broken', otisValue: 190 },
+    { name: 'Ceramic figure — no catalogue match', category: 'Unknown', rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
 ];
 
 function buildManifestSummary(manifest) {
@@ -54,6 +103,7 @@ const TRIGGERS = {
     BARGE_IMMINENT: 'BARGE_IMMINENT',
     PAYMENT: 'PAYMENT',
     PAYMENT_FAILED: 'PAYMENT_FAILED',
+    PAYMENT_MISSED: 'PAYMENT_MISSED',
     RECOGNITION_BONUS: 'RECOGNITION_BONUS',
     RESERVE_EXPIRED: 'RESERVE_EXPIRED',
     KEEP: 'KEEP',
@@ -69,16 +119,20 @@ const TRIGGERS = {
     DAY_TICK: 'DAY_TICK',
     ZONE_SYSTEMS: 'ZONE_SYSTEMS',
     LOGOFF: 'LOGOFF',
+    ARREARS_NOTICE: 'ARREARS_NOTICE',
+    ARREARS_WARNING: 'ARREARS_WARNING',
+    ARREARS_CLEARED: 'ARREARS_CLEARED',
+    ARREARS_CRITICAL: 'ARREARS_CRITICAL',
 };
 
 class GameState {
     constructor() {
         this.state = {
             debt: 25000,
-            credits: 0,
+            credits: 200,
             day: 1,
             paymentDue: 650,
-            daysUntilPayment: 28,
+            daysUntilPayment: TIMING.PAYMENT_CYCLE_DAYS,
             sessionHours: 0,
             namingTier: 0,
             skipCount: 0,
@@ -88,11 +142,16 @@ class GameState {
             shippingQueue: [],
             recentEvents: [],
             dropActive: false,
+            bargeActive: false,
             dropItemsRemaining: 0,
             manifestItems: [],
+            outstandingDebt: 0,
+            missedPayments: 0,
+            daysUntilNextDrop: TIMING.DAYS_BETWEEN_DROPS,
         };
         this._sessionStart = null;
         this._sessionTimer = null;
+        this._dayTimer = null;
     }
 
     init() {
@@ -100,10 +159,10 @@ class GameState {
             const loaded = stateManager.getState();
             this.state = {
                 debt: loaded.debt ?? 25000,
-                credits: loaded.credits || 0,
+                credits: loaded.credits ?? 200,
                 day: loaded.day || 1,
                 paymentDue: loaded.paymentDue ?? 650,
-                daysUntilPayment: loaded.daysUntilPayment ?? 28,
+                daysUntilPayment: loaded.daysUntilPayment ?? TIMING.PAYMENT_CYCLE_DAYS,
                 sessionHours: loaded.sessionHours || 0,
                 namingTier: loaded.namingTier || 0,
                 skipCount: loaded.skipCount || 0,
@@ -113,8 +172,12 @@ class GameState {
                 shippingQueue: loaded.shippingQueue || [],
                 recentEvents: loaded.recentEvents || [],
                 dropActive: loaded.dropActive || false,
+                bargeActive: loaded.bargeActive || false,
                 dropItemsRemaining: loaded.dropItemsRemaining || 0,
                 manifestItems: loaded.manifestItems || [],
+                outstandingDebt: loaded.outstandingDebt ?? 0,
+                missedPayments: loaded.missedPayments ?? 0,
+                daysUntilNextDrop: loaded.daysUntilNextDrop ?? TIMING.DAYS_BETWEEN_DROPS,
             };
         }
         this.fire(TRIGGERS.LOGIN);
@@ -130,6 +193,79 @@ class GameState {
             this.state.sessionHours = Math.floor((Date.now() - this._sessionStart) / MS_PER_MINUTE);
             this._updateUI();
         }, MS_PER_MINUTE);
+    }
+
+    startDayTimer() {
+        if (this._dayTimer) return;
+        this._dayTimer = setInterval(() => {
+            this.advanceDay();
+        }, TIMING.MS_PER_INGAME_DAY);
+    }
+
+    stopDayTimer() {
+        clearInterval(this._dayTimer);
+        this._dayTimer = null;
+    }
+
+    advanceDay() {
+        this.state.day++;
+        this.state.daysUntilPayment = Math.max(0, (this.state.daysUntilPayment || TIMING.PAYMENT_CYCLE_DAYS) - 1);
+        this.state.daysUntilNextDrop = Math.max(0, (this.state.daysUntilNextDrop ?? TIMING.DAYS_BETWEEN_DROPS) - 1);
+
+        // Accrue interest on outstanding debt
+        if (this.state.outstandingDebt > 0) {
+            this.state.outstandingDebt = Math.ceil(this.state.outstandingDebt * 1.05);
+            if (this.state.outstandingDebt > 2000) {
+                if (typeof appendOTIS === 'function') {
+                    appendOTIS('Arrears critical. Functional insolvency threshold reached.', 'ARREARS_CRITICAL');
+                }
+            } else if (this.state.outstandingDebt > 500) {
+                if (typeof appendOTIS === 'function') {
+                    appendOTIS('Arrears exceeding 500 credits. Bank protocol flags this as secondary default risk.', 'ARREARS_WARNING');
+                }
+            }
+        }
+
+        this.checkPaymentDue();
+        this.checkDropSchedule();
+        if (typeof autoToast === 'function') autoToast();
+        this._save();
+        if (typeof updateAllDisplays === 'function') updateAllDisplays();
+    }
+
+    checkPaymentDue() {
+        if (this.state.daysUntilPayment <= 0) {
+            if (this.state.credits >= 650 && (this.state.outstandingDebt || 0) === 0) {
+                if (typeof appendOTIS === 'function') {
+                    appendOTIS('Payment due, Mr. Serling. 650 credits. Make payment when ready.', 'PAYMENT');
+                }
+            } else {
+                this.state.missedPayments = (this.state.missedPayments || 0) + 1;
+                this.state.outstandingDebt = (this.state.outstandingDebt || 0) + 650;
+                this.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
+                if (typeof appendOTIS === 'function') {
+                    appendOTIS(`Payment missed. Arrears increased. This is the ${this.state.missedPayments} missed payment, Mr. Serling.`, 'PAYMENT_MISSED');
+                }
+                if (this.state.missedPayments >= 3) {
+                    if (typeof appendOTIS === 'function') {
+                        appendOTIS('Three missed payments. Bank initiating foreclosure proceedings.', 'PAYMENT_FAILED');
+                    }
+                }
+            }
+        }
+    }
+
+    checkDropSchedule() {
+        if (this.state.daysUntilNextDrop <= 0 && !this.state.dropActive) {
+            if (typeof appendOTIS === 'function') {
+                appendOTIS('Barge inbound. Manifest incoming.', 'BARGE_IMMINENT');
+            }
+            this.state.daysUntilNextDrop = TIMING.DAYS_BETWEEN_DROPS +
+                Math.floor(Math.random() * (TIMING.DROP_VARIANCE_DAYS * 2 + 1)) - TIMING.DROP_VARIANCE_DAYS;
+            if (typeof triggerBargeArrival === 'function') {
+                triggerBargeArrival();
+            }
+        }
     }
 
     fire(trigger, payload = {}) {
