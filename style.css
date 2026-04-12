@@ -480,3 +480,83 @@ body::after {
     html, body { overflow: auto; }
     #console-frame { height: auto; }
 }
+
+/* ── Debt bar ────────────────────────────────── */
+.debt-bar-track {
+    height: 6px;
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+    margin: 0.3rem 0;
+}
+.debt-bar-fill {
+    height: 100%;
+    background: var(--text-ok);
+    transition: width 0.4s ease, background 0.4s ease;
+}
+
+/* ── Ledger rows ─────────────────────────────── */
+.ledger-row {
+    font-size: 11px;
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-dim);
+}
+.ledger-row span {
+    color: var(--text-primary);
+}
+
+/* ── Shipping queue items ────────────────────── */
+.shipping-item {
+    font-size: 10px;
+    color: var(--text-warn);
+    padding: 0.15rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+/* ── Item rarity tags ────────────────────────── */
+.tag-common    { color: var(--text-dim); font-size: 10px; }
+.tag-uncommon  { color: var(--text-primary); font-size: 10px; }
+.tag-rare      { color: var(--text-warn); font-size: 10px; }
+.tag-anomalous { color: var(--text-danger); font-size: 10px; }
+.item-tags     { display: flex; gap: 0.4rem; margin-bottom: 0.3rem; flex-wrap: wrap; }
+
+/* ── OTIS estimate ───────────────────────────── */
+.otis-estimate {
+    font-size: 11px;
+    color: var(--text-warn);
+    margin-bottom: 0.3rem;
+    font-style: italic;
+}
+
+/* ── Keep log items ──────────────────────────── */
+.keep-list-item {
+    font-size: 11px;
+    color: var(--text-dim);
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.2rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.keep-item-meta {
+    font-size: 10px;
+    color: var(--text-dim);
+    opacity: 0.7;
+}
+.btn-sellback {
+    font-size: 10px;
+    padding: 0.1rem 0.4rem;
+    align-self: flex-start;
+    margin-top: 0.1rem;
+}
+
+/* ── Bot status row ──────────────────────────── */
+.bot-status-row {
+    display: flex;
+    gap: 0.8rem;
+    font-size: 10px;
+    color: var(--text-dim);
+    align-items: center;
+}
