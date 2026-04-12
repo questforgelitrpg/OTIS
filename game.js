@@ -152,6 +152,7 @@ class GameState {
             outstandingDebt: 0,
             missedPayments: 0,
             daysUntilNextDrop: TIMING.DAYS_BETWEEN_DROPS,
+            toastFiredToday: false,
         };
         this._sessionStart = null;
         this._sessionTimer = null;
@@ -182,6 +183,7 @@ class GameState {
                 outstandingDebt: loaded.outstandingDebt ?? 0,
                 missedPayments: loaded.missedPayments ?? 0,
                 daysUntilNextDrop: loaded.daysUntilNextDrop ?? TIMING.DAYS_BETWEEN_DROPS,
+                toastFiredToday: loaded.toastFiredToday || false,
             };
         }
         this.fire(TRIGGERS.LOGIN);
@@ -234,6 +236,7 @@ class GameState {
         this.checkDropSchedule();
         this._save();
         if (typeof updateAllDisplays === 'function') updateAllDisplays();
+        this.state.toastFiredToday = false;
         if (typeof autoToast === 'function') autoToast();
     }
 
