@@ -164,8 +164,13 @@
                 <h2 class="zone-title">OTIS TERMINAL <span class="indicator indicator-on" id="ind-otis"></span></h2>
                 <div class="zone-body">
                     <div id="otis-output" role="log" aria-live="polite" aria-label="OTIS conversation log"></div>
-                    <div id="otis-status-bar" style="font-size:12px; color:var(--text-dim); margin-top:0.2rem;">
-                        OTIS: <span id="otis-status-text">READY</span>
+                    <div id="otis-control-bar" style="display:flex; align-items:center; justify-content:space-between; margin-top:0.2rem;">
+                        <div id="otis-status-bar" style="font-size:12px; color:var(--text-dim);">
+                            OTIS: <span id="otis-status-text">READY</span>
+                        </div>
+                        <button id="tts-mute-btn" class="quick-btn" onclick="handleTTSMuteToggle()" title="Toggle OTIS voice">
+                            TTS: ON
+                        </button>
                     </div>
                     <div id="otis-quick-actions">
                         <button class="quick-btn" onclick="appendOTIS('Operator logged in.', 'LOGIN')">LOGIN</button>
@@ -228,6 +233,7 @@
     <script src="state.js"></script>
     <script src="game.js"></script>
     <script src="otis.js"></script>
+    <script src="tts.js"></script>
     <script src="audio.js"></script>
     <script>
         // --- Mobile tab switching ---
@@ -240,6 +246,11 @@
         // Init first tab on mobile
         document.addEventListener('DOMContentLoaded', function() {
             if (window.innerWidth <= 480) switchTab('zone-otis');
+            // Sync TTS button label on load
+            const ttsBtn = document.getElementById('tts-mute-btn');
+            if (ttsBtn && window.OtisTTS) {
+                ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON';
+            }
         });
 
         // --- UI Helpers ---
@@ -287,6 +298,7 @@
                 const reply = await askOTIS(userText || '', gameState, trigger || 'COMMS');
                 otisLines.push({ role: 'otis', text: reply });
                 renderOTIS();
+                if (window.OtisTTS) window.OtisTTS.speak(reply);
                 if (statusText) statusText.textContent = 'READY';
                 if (sysOtis) { sysOtis.textContent = 'NOMINAL'; sysOtis.className = 'status-ok'; }
             } catch(e) {
@@ -294,6 +306,15 @@
                 if (sysOtis) { sysOtis.textContent = 'FAULT'; sysOtis.className = 'status-err'; }
             }
             syncLedger();
+        }
+
+        // --- TTS Controls ---
+
+        function handleTTSMuteToggle() {
+            if (!window.OtisTTS) return;
+            const muted = window.OtisTTS.toggleMute();
+            const btn = document.getElementById('tts-mute-btn');
+            if (btn) btn.textContent = muted ? 'TTS: OFF' : 'TTS: ON';
         }
 
         // --- Credits & Arrears ---
