@@ -8,7 +8,7 @@ class StateManager {
     _defaultState() {
         return {
             debt: 25000,
-            credits: 0,
+            credits: 200,
             day: 1,
             paymentDue: 650,
             daysUntilPayment: 28,
@@ -21,8 +21,12 @@ class StateManager {
             shippingQueue: [],
             recentEvents: [],
             dropActive: false,
+            bargeActive: false,
             dropItemsRemaining: 0,
             manifestItems: [],
+            outstandingDebt: 0,
+            missedPayments: 0,
+            daysUntilNextDrop: 7,
             savedAt: null,
         };
     }
@@ -52,12 +56,15 @@ class StateManager {
     advanceDay() {
         this.state.day++;
         this.state.daysUntilPayment = Math.max(0, (this.state.daysUntilPayment || 28) - 1);
+        this.state.daysUntilNextDrop = Math.max(0, (this.state.daysUntilNextDrop ?? 7) - 1);
         this.checkPaymentDue();
         this.save();
     }
 
     checkPaymentDue() {
         if (this.state.daysUntilPayment <= 0) {
+            this.state.missedPayments = (this.state.missedPayments || 0) + 1;
+            this.state.outstandingDebt = (this.state.outstandingDebt || 0) + 650;
             this.state.daysUntilPayment = 28;
         }
     }
