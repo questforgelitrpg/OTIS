@@ -103,7 +103,7 @@
                     <div class="debt-bar-track"><div class="debt-bar-fill" id="debt-bar-fill" style="width:0%"></div></div>
                     <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.3rem">
                         <button class="zone-btn" onclick="handleMakePayment()">MAKE PAYMENT</button>
-                        <button class="zone-btn" onclick="handleAdvanceDay()" style="color:var(--text-dim); border-color:var(--border);">&gt;&gt; DAY</button>
+                        <button class="zone-btn" onclick="handleAdvanceDay()" aria-label="Advance Day" style="color:var(--text-dim); border-color:var(--border);">&gt;&gt; DAY</button>
                         <button class="zone-btn" onclick="appendOTIS('How bad is the debt situation?', 'CONSULT_DEBT')">CONSULT DEBT</button>
                     </div>
                     <div id="shipping-queue-section">
@@ -185,6 +185,11 @@
         // --- UI Helpers ---
 
         const MAX_OTIS_LINES = 10;
+        const PAYMENT_CYCLE_DAYS = 28;
+        const RESERVE_MIN_RESOLVE_MS = 15000;
+        const RESERVE_MAX_EXTRA_MS = 30000;
+        const RESERVE_SALE_SUCCESS_RATE = 0.70;
+        const RESERVE_MULTIPLIERS = { Common: 1.10, Uncommon: 1.20, Rare: 1.35 };
         const otisLines = [];
 
         function renderOTIS() {
@@ -363,7 +368,7 @@
 
             // Randomly light one bot dot amber
             const botDots = ['bot-dot-1', 'bot-dot-2', 'bot-dot-3'];
-            const activeDot = document.getElementById(botDots[Math.floor(Math.random() * 3)]);
+            const activeDot = document.getElementById(botDots[Math.floor(Math.random() * botDots.length)]);
             if (activeDot) activeDot.className = 'comms-dot indicator-amber';
 
             appendOTIS(buildManifestSummary(manifest), 'BARGE_IMMINENT');
@@ -399,14 +404,13 @@
                 if (gameState.state.dropActive) setTimeout(handleBeltScan, 400);
 
             } else if (method === 'RESERVE') {
-                const multipliers = { Common: 1.10, Uncommon: 1.20, Rare: 1.35 };
                 let reservePrice;
                 if (item.rarity === 'Anomalous') {
                     reservePrice = Math.floor(Math.random() * 1600) + 400;
                 } else {
-                    reservePrice = Math.floor(item.otisValue * (multipliers[item.rarity] || 1.10));
+                    reservePrice = Math.floor(item.otisValue * (RESERVE_MULTIPLIERS[item.rarity] || 1.10));
                 }
-                const resolveAt = Date.now() + Math.floor(Math.random() * 30000) + 15000;
+                const resolveAt = Date.now() + Math.floor(Math.random() * RESERVE_MAX_EXTRA_MS) + RESERVE_MIN_RESOLVE_MS;
                 if (!gameState.state.shippingQueue) gameState.state.shippingQueue = [];
                 gameState.state.shippingQueue.push({ name: item.name, price: reservePrice, resolveAt });
                 gameState._save();
@@ -515,8 +519,8 @@
 
         function handleAdvanceDay() {
             gameState.state.day++;
-            gameState.state.daysUntilPayment = Math.max(0, (gameState.state.daysUntilPayment || 28) - 1);
-            if (gameState.state.daysUntilPayment <= 0) gameState.state.daysUntilPayment = 28;
+            gameState.state.daysUntilPayment = Math.max(0, (gameState.state.daysUntilPayment || PAYMENT_CYCLE_DAYS) - 1);
+            if (gameState.state.daysUntilPayment <= 0) gameState.state.daysUntilPayment = PAYMENT_CYCLE_DAYS;
             gameState._save();
             appendOTIS('Day advanced.', 'DAY_TICK');
             syncLedger();
@@ -633,7 +637,7 @@
                 else remaining.push(item);
             });
             resolved.forEach(item => {
-                if (Math.random() < 0.70) {
+                if (Math.random() < RESERVE_SALE_SUCCESS_RATE) {
                     gameState.state.credits += item.price;
                     gameState._save();
                     gameState._updateUI();

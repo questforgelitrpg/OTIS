@@ -195,7 +195,12 @@ class GameState {
 
         const keepLogEl = document.getElementById('keep-log-list');
         if (keepLogEl) {
-            const _esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const _esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
             keepLogEl.innerHTML = this.state.keepLog
                 .map((k, i) => `<li class="keep-list-item">
                     <span>${_esc(k.name)}</span>
