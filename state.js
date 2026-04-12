@@ -43,37 +43,6 @@ class StateManager {
         this.state.recentEvents = [event, ...this.state.recentEvents].slice(0, 5);
     }
 
-    addCredits(amount) {
-        this.state.credits += amount;
-        this.save();
-    }
-
-    deductCredits(amount) {
-        this.state.credits = Math.max(0, this.state.credits - amount);
-        this.save();
-    }
-
-    advanceDay() {
-        this.state.day++;
-        this.state.daysUntilPayment = Math.max(0, (this.state.daysUntilPayment || 28) - 1);
-        this.state.daysUntilNextDrop = Math.max(0, (this.state.daysUntilNextDrop ?? 7) - 1);
-        this.checkPaymentDue();
-        this.save();
-    }
-
-    checkPaymentDue() {
-        if (this.state.daysUntilPayment <= 0) {
-            this.state.missedPayments = (this.state.missedPayments || 0) + 1;
-            this.state.outstandingDebt = (this.state.outstandingDebt || 0) + 650;
-            this.state.daysUntilPayment = 28;
-        }
-    }
-
-    getNamingLabel() {
-        const tiers = ['Mr. Serling', 'Vernon', 'Vern', 'Buddy'];
-        return tiers[Math.min(this.state.namingTier, tiers.length - 1)];
-    }
-
     save() {
         this.state.savedAt = Date.now();
         localStorage.setItem(STATE_KEY, JSON.stringify(this.state));

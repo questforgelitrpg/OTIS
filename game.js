@@ -234,6 +234,7 @@ class GameState {
         this.checkDropSchedule();
         this._save();
         if (typeof updateAllDisplays === 'function') updateAllDisplays();
+        if (typeof autoToast === 'function') autoToast();
     }
 
     checkPaymentDue() {
@@ -296,11 +297,11 @@ class GameState {
 
     getFatigueTier() {
         const h = this.state.sessionHours;
-        if (h < 12) return 'NONE';
-        if (h < 20) return 'LOW';
-        if (h < 32) return 'MODERATE';
-        if (h < 48) return 'HIGH';
-        return 'CRITICAL';
+        if (h < 30) return 'NONE';      // 30 real minutes
+        if (h < 60) return 'LOW';       // 1 hour
+        if (h < 120) return 'MODERATE'; // 2 hours
+        if (h < 180) return 'HIGH';     // 3 hours
+        return 'CRITICAL';              // 3+ hours
     }
 
     incrementSkipCount() {
@@ -309,11 +310,15 @@ class GameState {
     }
 
     addKeepItem(item) {
-        this.state.keepLog = [
-            { item, day: this.state.day },
-            ...this.state.keepLog,
-        ].slice(0, 12);
-        this.fire(TRIGGERS.KEEP, { item });
+        // item should be the full currentItem object, not just a name string
+        this.state.keepLog.push({
+            name: item.name,
+            day: this.state.day,
+            condition: item.condition,
+            otisValue: item.otisValue
+        });
+        this.state.keepLog = this.state.keepLog.slice(0, 12);
+        this._save();
     }
 
     _updateUI() {

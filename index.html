@@ -139,6 +139,7 @@
                             <button class="consult-card" onclick="handleConsult('CONSULT_WHATIS')">EXAMINE</button>
                             <button class="consult-card" onclick="handleConsult('CONSULT_WORTH')">ASSESS VALUE</button>
                             <button class="consult-card" onclick="handleConsult('CONSULT_GEORGE')">GEORGE ARCHIVE</button>
+                            <button class="consult-card btn-skip" onclick="handleSkip()">SKIP</button>
                         </div>
                         <div class="item-actions" id="item-declaration" style="display:none">
                             <button class="zone-btn" onclick="handleDeclare('OTIS')">SELL — OTIS PRICE</button>
@@ -161,7 +162,6 @@
                     </div>
                     <div id="otis-quick-actions">
                         <button class="quick-btn" onclick="appendOTIS('Operator logged in.', 'LOGIN')">LOGIN</button>
-                        <button class="quick-btn" onclick="autoToast()">TOAST</button>
                         <button class="quick-btn" onclick="appendOTIS('What is the current status?', 'CONSULT_STATUS')">STATUS</button>
                         <button class="quick-btn" onclick="handleLogoff()">LOGOFF</button>
                     </div>
@@ -313,6 +313,26 @@
         // --- Item Queue ---
 
         let currentItem = null;
+
+        function handleSkip() {
+            if (!currentItem) return;
+            gameState.state.skipCount = (gameState.state.skipCount || 0) + 1;
+            gameState._save();
+            // Show declaration without requiring consult
+            const declarationEl = document.getElementById('item-declaration');
+            if (declarationEl) declarationEl.style.display = 'flex';
+            // RESERVE stays disabled — no worth consult happened
+            const btnReserve = document.getElementById('btn-reserve');
+            if (btnReserve) btnReserve.disabled = true;
+            // OTIS responds based on skip tier
+            const skipCount = gameState.state.skipCount;
+            let skipMsg = 'Item skipped.';
+            if (skipCount >= 7) skipMsg = 'Skipped again.';
+            else if (skipCount >= 5) skipMsg = 'George consulted on everything. Just noting that.';
+            else if (skipCount >= 3) skipMsg = 'I have intake data that does not surface unless you ask. Raising it as a resource.';
+            else if (skipCount >= 1) skipMsg = 'Consulting before declaration increases recognition bonus eligibility. That benefits the ledger.';
+            appendOTIS(skipMsg, 'ITEM_SCAN');
+        }
 
         function buildItemContext(item) {
             if (!item) return '';
@@ -479,8 +499,7 @@
                 if (bar) {
                     bar.style.setProperty('--belt-duration', (TIMING.BELT_DELIVERY_MS / 1000) + 's');
                     bar.className = 'belt-bar-fill';
-                    void bar.offsetWidth; // force reflow to restart CSS animation
-                    bar.classList.add('belt-bar-active');
+                    setTimeout(() => bar.classList.add('belt-bar-active'), 0);
                 }
                 if (backedUpMsg) backedUpMsg.style.display = 'none';
                 if (statusText) statusText.textContent = 'ACTIVE — ' + remaining + ' items remaining';
@@ -890,6 +909,11 @@
                     gameState._save();
                     gameState._updateUI();
                     appendOTIS('Reserve sale confirmed: ' + item.name + '. +' + item.price + ' cr.', 'RECOGNITION_BONUS');
+                    // Track reserve successes and advance naming tier every 3
+                    gameState.state.reserveSuccesses = (gameState.state.reserveSuccesses || 0) + 1;
+                    if (gameState.state.reserveSuccesses % 3 === 0 && gameState.state.namingTier < 3) {
+                        gameState.advanceNamingTier();
+                    }
                 } else {
                     appendOTIS('Reserve listing expired: ' + item.name + '. No buyer.', 'RESERVE_EXPIRED');
                 }
@@ -948,7 +972,21 @@
         function debugForcePaymentDue() { gameState.state.daysUntilPayment = 0; gameState._save(); syncLedger(); }
         function debugToggleFastMode() {
             TIMING.DEBUG_FAST_MODE = !TIMING.DEBUG_FAST_MODE;
-            appendOTIS('Fast mode: ' + (TIMING.DEBUG_FAST_MODE ? 'ON' : 'OFF'), 'ZONE_SYSTEMS');
+            // Restart day timer with new speed
+            gameState.stopDayTimer();
+            const newDayMs = TIMING.DEBUG_FAST_MODE
+                ? Math.floor(TIMING.MS_PER_INGAME_DAY / TIMING.DEBUG_SPEED_MULTIPLIER)
+                : TIMING.MS_PER_INGAME_DAY;
+            gameState._dayTimer = setInterval(() => gameState.advanceDay(), newDayMs);
+            // Restart belt timer if active
+            if (beltTimer) {
+                stopBeltDelivery();
+                const newBeltMs = TIMING.DEBUG_FAST_MODE
+                    ? Math.floor(TIMING.BELT_DELIVERY_MS / TIMING.DEBUG_SPEED_MULTIPLIER)
+                    : TIMING.BELT_DELIVERY_MS;
+                beltTimer = setInterval(() => deliverNextBeltItem(), newBeltMs);
+            }
+            appendOTIS('Fast mode: ' + (TIMING.DEBUG_FAST_MODE ? 'ON (10x)' : 'OFF'), 'ZONE_SYSTEMS');
         }
 
         // Boot sequence
