@@ -26,10 +26,15 @@
             <section class="console-zone" id="zone-belt-monitor" tabindex="0">
                 <h2 class="zone-title">BELT MONITOR <span class="indicator" id="ind-belt"></span></h2>
                 <div class="zone-body">
-                    <p class="zone-hint" id="belt-status-text">No active belt signals.</p>
-                    <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-                        <button class="zone-btn" onclick="handleBeltScan()">SCAN BELT</button>
-                        <button class="zone-btn" onclick="handleBargeArrival()">BARGE DROP</button>
+                    <p class="zone-hint">DROP STATUS: <span id="drop-status-text">WINDOW: CLOSED</span></p>
+                    <div class="bot-status-row">
+                        <span>BOT-1 <span class="comms-dot" id="bot-dot-1"></span></span>
+                        <span>BOT-2 <span class="comms-dot" id="bot-dot-2"></span></span>
+                        <span>BOT-3 <span class="comms-dot" id="bot-dot-3"></span></span>
+                    </div>
+                    <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.4rem">
+                        <button class="zone-btn" id="btn-barge-drop" onclick="handleBargeArrival()">BARGE DROP</button>
+                        <button class="zone-btn" id="btn-scan-belt" onclick="handleBeltScan()">SCAN BELT</button>
                     </div>
                 </div>
             </section>
@@ -38,20 +43,25 @@
             <section class="console-zone" id="zone-comms" tabindex="0">
                 <h2 class="zone-title">COMMS <span class="indicator" id="ind-comms"></span></h2>
                 <div class="zone-body">
+                    <!-- BANK -->
                     <div class="comms-slot">
                         <span class="comms-dot" id="comms-dot-bank"></span>
-                        <span class="comms-label">BANK</span>
-                        <button class="zone-btn" onclick="handleComms('BANK')">OPEN</button>
+                        <span class="comms-label">UNIVERSAL BANK CONGLOMERATE</span>
+                        <button class="zone-btn" onclick="handleComms('BANK')">ANSWER BANK</button>
                     </div>
-                    <div class="comms-slot">
+                    <!-- SVEN -->
+                    <div class="comms-slot" style="flex-wrap:wrap; gap:0.3rem;">
                         <span class="comms-dot" id="comms-dot-sven"></span>
-                        <span class="comms-label">SVEN</span>
-                        <button class="zone-btn" onclick="handleComms('SVEN')">OPEN</button>
+                        <span class="comms-label">SVEN DIGUT / DIGUT OPS</span>
+                        <button class="zone-btn" onclick="handleComms('SVEN')">ANSWER SVEN</button>
+                        <button class="zone-btn" onclick="handleComms('IGNORE_SVEN')">IGNORE SVEN</button>
+                        <button class="zone-btn" onclick="handleComms('COMPLAINT')">FILE COMPLAINT</button>
                     </div>
+                    <!-- MAY -->
                     <div class="comms-slot">
                         <span class="comms-dot" id="comms-dot-may"></span>
-                        <span class="comms-label">MAY</span>
-                        <button class="zone-btn" onclick="handleComms('MAY')">OPEN</button>
+                        <span class="comms-label">MAY FINSTER / LEFTOVER RECYCLING</span>
+                        <button class="zone-btn" onclick="handleComms('MAY')">ANSWER MAY</button>
                     </div>
                 </div>
             </section>
@@ -61,19 +71,18 @@
                 <h2 class="zone-title">SYSTEMS <span class="indicator" id="ind-systems"></span></h2>
                 <div class="zone-body">
                     <ul class="sys-list">
-                        <li>BOT-1: <span class="status-ok">NOMINAL</span></li>
-                        <li>BOT-2: <span class="status-ok">NOMINAL</span></li>
-                        <li>BOT-3: <span class="status-ok">NOMINAL</span></li>
+                        <li>BOT-1: <span class="status-ok" id="sys-bot1">NOMINAL</span></li>
+                        <li>BOT-2: <span class="status-ok" id="sys-bot2">NOMINAL</span></li>
+                        <li>BOT-3: <span class="status-ok" id="sys-bot3">NOMINAL</span></li>
                         <li>CONV: <span class="status-ok">NOMINAL</span></li>
                         <li>RECV: <span class="status-ok">NOMINAL</span></li>
-                        <li>SHIP: <span class="status-ok">NOMINAL</span></li>
-                        <li>POWER: <span class="status-ok">NOMINAL</span></li>
-                        <li>STORE: <span class="status-ok" id="store-status">NOMINAL</span></li>
-                        <li>TOAST: <span class="status-ok">NOMINAL</span></li>
-                        <li>SVEN: <span class="status-ok">NOMINAL</span></li>
-                        <li>OTIS: <span class="status-ok">NOMINAL</span></li>
-                        <li>TEMP: <span class="status-ok">NOMINAL</span></li>
+                        <li>SHIP: <span class="status-ok" id="sys-ship">NOMINAL</span></li>
+                        <li>POWER: <span class="status-ok" id="sys-power">NOMINAL</span></li>
+                        <li>STORE: <span class="status-ok" id="sys-store">NOMINAL</span></li>
+                        <li>SVEN: <span class="status-ok" id="sys-sven">NOMINAL</span></li>
+                        <li>OTIS: <span class="status-ok" id="sys-otis">NOMINAL</span></li>
                     </ul>
+                    <button class="zone-btn" onclick="appendOTIS('Running full systems diagnostic.', 'ZONE_SYSTEMS')" style="margin-top:0.3rem">DIAGNOSE SYSTEMS</button>
                     <div class="scrap-section">
                         <div class="scrap-label">SCRAP CHANNEL: <span id="scrap-pct">0%</span></div>
                         <div class="scrap-bar-track">
@@ -88,11 +97,20 @@
             <section class="console-zone" id="zone-ledger" tabindex="0">
                 <h2 class="zone-title">LEDGER <span class="indicator" id="ind-ledger"></span></h2>
                 <div class="zone-body">
-                    <p>Loan balance: <span id="ledger-debt">25,000 cr</span></p>
-                    <p>Credits: <span id="ledger-credits">0 cr</span></p>
-                    <p>Day: <span id="ledger-day">1</span></p>
-                    <button class="zone-btn" onclick="appendOTIS('How bad is the debt situation?', 'CONSULT_DEBT')">CONSULT DEBT</button>
-                    <button class="zone-btn" onclick="handleMakePayment()">MAKE PAYMENT</button>
+                    <div class="ledger-row">LOAN BALANCE: <span id="ledger-debt">25,000 cr</span></div>
+                    <div class="ledger-row">CREDITS IN HAND: <span id="ledger-credits">0 cr</span></div>
+                    <div class="ledger-row">PAYMENT DUE: 650 cr in <span id="ledger-days-until">28</span> days</div>
+                    <div class="debt-bar-track"><div class="debt-bar-fill" id="debt-bar-fill" style="width:0%"></div></div>
+                    <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.3rem">
+                        <button class="zone-btn" onclick="handleMakePayment()">MAKE PAYMENT</button>
+                        <button class="zone-btn" onclick="handleAdvanceDay()" aria-label="Advance Day" style="color:var(--text-dim); border-color:var(--border);">&gt;&gt; DAY</button>
+                        <button class="zone-btn" onclick="appendOTIS('How bad is the debt situation?', 'CONSULT_DEBT')">CONSULT DEBT</button>
+                    </div>
+                    <div id="shipping-queue-section">
+                        <p class="zone-hint" style="font-size:10px; margin-top:0.4rem">PENDING SALES:</p>
+                        <div id="shipping-queue-list"></div>
+                        <p class="zone-hint" id="shipping-queue-empty" style="font-size:10px; font-style:italic">No pending sales.</p>
+                    </div>
                 </div>
             </section>
 
@@ -103,21 +121,19 @@
                     <p class="zone-hint" id="item-queue-empty">-- WAITING FOR DROP --</p>
                     <div id="item-queue-present" style="display:none">
                         <p class="item-queue-name" id="item-queue-name"></p>
+                        <div class="item-tags" id="item-tags"></div>
+                        <p class="otis-estimate" id="otis-estimate" style="display:none"></p>
                         <div class="consult-cards">
-                            <button class="consult-card" onclick="handleConsult('CONSULT_WHATIS', 'What is that item?')">EXAMINE</button>
-                            <button class="consult-card" onclick="handleConsult('CONSULT_WORTH', 'What do you think it\'s worth?')">ASSESS VALUE</button>
-                            <button class="consult-card" onclick="handleConsult('CONSULT_GEORGE', 'What are you not telling me?')">GEORGE ARCHIVE</button>
+                            <button class="consult-card" onclick="handleConsult('CONSULT_WHATIS')">EXAMINE</button>
+                            <button class="consult-card" onclick="handleConsult('CONSULT_WORTH')">ASSESS VALUE</button>
+                            <button class="consult-card" onclick="handleConsult('CONSULT_GEORGE')">GEORGE ARCHIVE</button>
                         </div>
-                        <div class="item-actions">
-                            <button class="zone-btn" onclick="handleKeep()">KEEP</button>
-                            <button class="zone-btn btn-warn" onclick="handleScrap()">SCRAP</button>
-                            <button class="zone-btn btn-skip" onclick="handleSkip()">SKIP</button>
-                        </div>
-                        <div class="sell-actions" id="sell-actions" style="display:none">
-                            <span class="zone-hint" style="font-size:10px; font-style:normal;">SELL:</span>
-                            <button class="zone-btn" onclick="handleSell('OTIS_PRICE')">OTIS PRICE</button>
-                            <button class="zone-btn" id="btn-reserve" onclick="handleSell('RESERVE')" disabled>RESERVE</button>
-                            <button class="zone-btn btn-warn" onclick="handleSell('NO_RESERVE')">NO RESERVE</button>
+                        <div class="item-actions" id="item-declaration" style="display:none">
+                            <button class="zone-btn" onclick="handleDeclare('OTIS')">SELL — OTIS PRICE</button>
+                            <button class="zone-btn" id="btn-reserve" onclick="handleDeclare('RESERVE')" disabled>SELL — RESERVE</button>
+                            <button class="zone-btn btn-warn" onclick="handleDeclare('NORESERVE')">SELL — NO RESERVE</button>
+                            <button class="zone-btn" onclick="handleDeclare('KEEP')">KEEP</button>
+                            <button class="zone-btn btn-warn" onclick="handleDeclare('SCRAP')">SCRAP</button>
                         </div>
                     </div>
                 </div>
@@ -128,9 +144,12 @@
                 <h2 class="zone-title">OTIS TERMINAL <span class="indicator indicator-on" id="ind-otis"></span></h2>
                 <div class="zone-body">
                     <div id="otis-output" role="log" aria-live="polite" aria-label="OTIS conversation log"></div>
+                    <div id="otis-status-bar" style="font-size:10px; color:var(--text-dim); margin-top:0.2rem;">
+                        OTIS: <span id="otis-status-text">READY</span>
+                    </div>
                     <div id="otis-quick-actions">
                         <button class="quick-btn" onclick="appendOTIS('Operator logged in.', 'LOGIN')">LOGIN</button>
-                        <button class="quick-btn" onclick="appendOTIS('Vernon used George\'s toaster. Morning bread ritual.', 'TOAST')">TOAST</button>
+                        <button class="quick-btn" onclick="appendOTIS('Vernon is making toast in George\'s toaster. Morning bread ritual. Energy draw logged.', 'TOAST')">TOAST</button>
                         <button class="quick-btn" onclick="appendOTIS('What is the current status?', 'CONSULT_STATUS')">STATUS</button>
                         <button class="quick-btn" onclick="handleLogoff()">LOGOFF</button>
                     </div>
@@ -141,6 +160,7 @@
             <section class="console-zone" id="zone-keep-log" tabindex="0">
                 <h2 class="zone-title">KEEP LOG</h2>
                 <div class="zone-body">
+                    <p id="keep-log-count" class="zone-hint" style="font-size:10px"></p>
                     <ul id="keep-log-list" class="keep-list"></ul>
                     <p class="zone-hint" id="keep-log-empty">Log empty.</p>
                 </div>
@@ -165,6 +185,11 @@
         // --- UI Helpers ---
 
         const MAX_OTIS_LINES = 10;
+        const PAYMENT_CYCLE_DAYS = 28;
+        const RESERVE_MIN_RESOLVE_MS = 15000;
+        const RESERVE_MAX_EXTRA_MS = 30000;
+        const RESERVE_SALE_SUCCESS_RATE = 0.70;
+        const RESERVE_MULTIPLIERS = { Common: 1.10, Uncommon: 1.20, Rare: 1.35 };
         const otisLines = [];
 
         function renderOTIS() {
@@ -178,7 +203,7 @@
         }
 
         function escapeHtml(str) {
-            return str
+            return String(str)
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
@@ -187,32 +212,50 @@
         }
 
         async function appendOTIS(userText, trigger) {
-            if (userText) {
-                otisLines.push({ role: 'user', text: userText });
+            const statusText = document.getElementById('otis-status-text');
+            const sysOtis = document.getElementById('sys-otis');
+            if (statusText) statusText.textContent = 'THINKING';
+            if (sysOtis) { sysOtis.textContent = 'ACTIVE'; sysOtis.className = 'status-warn'; }
+
+            if (userText) otisLines.push({ role: 'user', text: userText });
+            renderOTIS();
+
+            try {
+                const reply = await askOTIS(userText || '', gameState, trigger || 'COMMS');
+                otisLines.push({ role: 'otis', text: reply });
+                renderOTIS();
+                if (statusText) statusText.textContent = 'READY';
+                if (sysOtis) { sysOtis.textContent = 'NOMINAL'; sysOtis.className = 'status-ok'; }
+            } catch(e) {
+                if (statusText) statusText.textContent = 'ERROR';
+                if (sysOtis) { sysOtis.textContent = 'FAULT'; sysOtis.className = 'status-err'; }
             }
-            renderOTIS();
-            const reply = await askOTIS(userText || '', gameState, trigger || 'COMMS');
-            otisLines.push({ role: 'otis', text: reply });
-            renderOTIS();
             syncLedger();
         }
 
         // --- Item Queue ---
 
-        const MOCK_ITEMS = [
-            'Corroded fuel cell casing',
-            'Partial navigation array',
-            'Cracked coolant housing',
-            'Unidentified alloy fragment',
-            'Burned circuit board cluster',
-            'Pressurized canister, unknown contents',
-            'Bent structural strut, Sector 4',
-        ];
-
         let currentItem = null;
 
-        function setItemInQueue(itemName) {
-            currentItem = { name: itemName, consultedWorth: false };
+        function buildItemContext(item) {
+            if (!item) return '';
+            const estimateStr = (item.otisValue === 0 && (item.rarity === 'Anomalous' || item.category === 'Unknown'))
+                ? 'OTIS estimate: ERROR — NO COMPARABLE.'
+                : `OTIS estimate: ${item.otisValue} cr.`;
+            return `Item: ${item.name}. Category: ${item.category}. Rarity: ${item.rarity}. Condition: ${item.condition}. ${estimateStr}`;
+        }
+
+        function setItemInQueue(item) {
+            currentItem = {
+                name: item.name,
+                category: item.category,
+                rarity: item.rarity,
+                condition: item.condition,
+                otisValue: item.otisValue,
+                consultedExamine: false,
+                consultedWorth: false,
+                consultedGeorge: false,
+            };
             renderItemQueue();
         }
 
@@ -225,165 +268,404 @@
             const emptyMsg = document.getElementById('item-queue-empty');
             const itemView = document.getElementById('item-queue-present');
             const itemNameEl = document.getElementById('item-queue-name');
-            const sellActions = document.getElementById('sell-actions');
+            const itemTagsEl = document.getElementById('item-tags');
+            const estimateEl = document.getElementById('otis-estimate');
+            const declarationEl = document.getElementById('item-declaration');
             const btnReserve = document.getElementById('btn-reserve');
+
             if (currentItem) {
                 if (emptyMsg) emptyMsg.style.display = 'none';
                 if (itemView) itemView.style.display = '';
                 if (itemNameEl) itemNameEl.textContent = currentItem.name;
-                if (sellActions) sellActions.style.display = 'flex';
+
+                // Tags row
+                if (itemTagsEl) {
+                    const rarityClass = {
+                        'Common': 'tag-common',
+                        'Uncommon': 'tag-uncommon',
+                        'Rare': 'tag-rare',
+                        'Anomalous': 'tag-anomalous',
+                    }[currentItem.rarity] || 'tag-common';
+                    itemTagsEl.innerHTML = `<span class="tag-common">${escapeHtml(currentItem.category)}</span>`
+                        + ` <span class="${rarityClass}">${escapeHtml(currentItem.rarity)}</span>`
+                        + ` <span class="tag-common">${escapeHtml(currentItem.condition)}</span>`;
+                }
+
+                // OTIS estimate — show only after CONSULT_WORTH
+                if (estimateEl) {
+                    if (currentItem.consultedWorth) {
+                        const isUnknown = currentItem.otisValue === 0 && (currentItem.rarity === 'Anomalous' || currentItem.category === 'Unknown');
+                        estimateEl.textContent = isUnknown
+                            ? 'OTIS ESTIMATE: ERROR — NO COMPARABLE'
+                            : `OTIS ESTIMATE: ${currentItem.otisValue} cr`;
+                        estimateEl.style.display = '';
+                    } else {
+                        estimateEl.style.display = 'none';
+                    }
+                }
+
+                // Declaration row — show after any consult
+                const anyConsulted = currentItem.consultedExamine || currentItem.consultedWorth || currentItem.consultedGeorge;
+                if (declarationEl) declarationEl.style.display = anyConsulted ? 'flex' : 'none';
                 if (btnReserve) btnReserve.disabled = !currentItem.consultedWorth;
             } else {
                 if (emptyMsg) emptyMsg.style.display = '';
                 if (itemView) itemView.style.display = 'none';
-                if (sellActions) sellActions.style.display = 'none';
+                if (declarationEl) declarationEl.style.display = 'none';
             }
         }
 
         function handleBeltScan() {
-            if (currentItem) return; // queue already occupied
-            const item = MOCK_ITEMS[Math.floor(Math.random() * MOCK_ITEMS.length)];
+            if (!gameState.state.dropActive) return;
+            if (currentItem) return; // queue occupied
+
+            if (gameState.state.manifestItems.length === 0) {
+                gameState.state.dropActive = false;
+                gameState.state.dropItemsRemaining = 0;
+                const dropStatusEl = document.getElementById('drop-status-text');
+                if (dropStatusEl) dropStatusEl.textContent = 'WINDOW: CLOSED';
+                const bargeBtn = document.getElementById('btn-barge-drop');
+                if (bargeBtn) bargeBtn.disabled = false;
+                // Reset bot dots
+                ['bot-dot-1', 'bot-dot-2', 'bot-dot-3'].forEach(id => {
+                    const dot = document.getElementById(id);
+                    if (dot) dot.className = 'comms-dot';
+                });
+                gameState._save();
+                appendOTIS('Drop window closed. Bots returning.', 'DROP_COMPLETE');
+                return;
+            }
+
+            const item = gameState.state.manifestItems.shift();
+            gameState.state.dropItemsRemaining--;
+            gameState._save();
             setItemInQueue(item);
-            appendOTIS(`Item detected on belt: ${item}`, 'ITEM_SCAN');
+            appendOTIS('Item detected on belt: ' + item.name, 'ITEM_SCAN');
         }
 
-        function handleConsult(trigger, text) {
+        function handleBargeArrival() {
+            if (gameState.state.dropActive) return;
+            const bargeBtn = document.getElementById('btn-barge-drop');
+            if (bargeBtn && bargeBtn.disabled) return;
+
+            // Build manifest: 4-6 random items from MANIFEST_POOL, no duplicates
+            const poolCopy = [...MANIFEST_POOL];
+            const count = 4 + Math.floor(Math.random() * 3); // 4, 5, or 6
+            const manifest = [];
+            for (let i = 0; i < count && poolCopy.length > 0; i++) {
+                const idx = Math.floor(Math.random() * poolCopy.length);
+                manifest.push(poolCopy.splice(idx, 1)[0]);
+            }
+
+            gameState.state.manifestItems = [...manifest];
+            gameState.state.dropActive = true;
+            gameState.state.dropItemsRemaining = manifest.length;
+            gameState._save();
+
+            const dropStatusEl = document.getElementById('drop-status-text');
+            if (dropStatusEl) dropStatusEl.textContent = 'WINDOW: ACTIVE';
+            if (bargeBtn) bargeBtn.disabled = true;
+
+            // Randomly light one bot dot amber
+            const botDots = ['bot-dot-1', 'bot-dot-2', 'bot-dot-3'];
+            const activeDot = document.getElementById(botDots[Math.floor(Math.random() * botDots.length)]);
+            if (activeDot) activeDot.className = 'comms-dot indicator-amber';
+
+            appendOTIS(buildManifestSummary(manifest), 'BARGE_IMMINENT');
+            setTimeout(() => { handleBeltScan(); }, 1500);
+        }
+
+        function handleConsult(trigger) {
             if (!currentItem) return;
+            const context = buildItemContext(currentItem);
+            if (trigger === 'CONSULT_WHATIS') currentItem.consultedExamine = true;
             if (trigger === 'CONSULT_WORTH') {
                 currentItem.consultedWorth = true;
                 const btnReserve = document.getElementById('btn-reserve');
                 if (btnReserve) btnReserve.disabled = false;
             }
-            appendOTIS(`${text} Item: ${currentItem.name}`, trigger);
+            if (trigger === 'CONSULT_GEORGE') currentItem.consultedGeorge = true;
+            renderItemQueue();
+            appendOTIS(context, trigger);
         }
 
-        function handleKeep() {
+        function handleDeclare(method) {
             if (!currentItem) return;
-            const item = currentItem.name;
-            clearItemQueue();
-            gameState.addKeepItem(item);
-            appendOTIS(`Keeping: ${item}`, 'DECLARE_KEEP');
+            const item = currentItem;
+            const itemContext = buildItemContext(item);
+
+            if (method === 'OTIS') {
+                gameState.state.credits += item.otisValue;
+                gameState._save();
+                gameState._updateUI();
+                gameState.state.recentEvents.unshift('Sold at OTIS price: ' + item.name);
+                clearItemQueue();
+                appendOTIS(`Selling at OTIS price: ${item.name}. +${item.otisValue} cr. ${itemContext}`, 'DECLARATION_OTIS');
+                if (gameState.state.dropActive) setTimeout(handleBeltScan, 400);
+
+            } else if (method === 'RESERVE') {
+                let reservePrice;
+                if (item.rarity === 'Anomalous') {
+                    reservePrice = Math.floor(Math.random() * 1600) + 400;
+                } else {
+                    reservePrice = Math.floor(item.otisValue * (RESERVE_MULTIPLIERS[item.rarity] || 1.10));
+                }
+                const resolveAt = Date.now() + Math.floor(Math.random() * RESERVE_MAX_EXTRA_MS) + RESERVE_MIN_RESOLVE_MS;
+                if (!gameState.state.shippingQueue) gameState.state.shippingQueue = [];
+                gameState.state.shippingQueue.push({ name: item.name, price: reservePrice, resolveAt });
+                gameState._save();
+                renderShippingQueue();
+                updateSystemsStatus();
+                clearItemQueue();
+                appendOTIS(`Reserve listing: ${item.name}. Reserve: ${reservePrice} cr. Awaiting buyer. ${itemContext}`, 'DECLARATION_RESERVE');
+                if (gameState.state.dropActive) setTimeout(handleBeltScan, 400);
+
+            } else if (method === 'NORESERVE') {
+                const earned = Math.floor(item.otisValue * 0.75);
+                gameState.state.credits += earned;
+                gameState._save();
+                gameState._updateUI();
+                clearItemQueue();
+                appendOTIS(`Selling below OTIS price (no reserve): ${item.name}. +${earned} cr.`, 'DECLARATION_NORESERVE');
+                if (gameState.state.dropActive) setTimeout(handleBeltScan, 400);
+
+            } else if (method === 'KEEP') {
+                if (!gameState.state.keepLog) gameState.state.keepLog = [];
+                gameState.state.keepLog.push({ name: item.name, day: gameState.state.day, condition: item.condition, otisValue: item.otisValue });
+                gameState._save();
+                gameState._updateUI();
+                updateKeepLogEmpty();
+                clearItemQueue();
+                if (gameState.state.keepLog.length >= 12) {
+                    appendOTIS('Keep log at capacity. Storage risk noted.', 'DECLARE_KEEP');
+                } else {
+                    appendOTIS('Keeping: ' + item.name, 'DECLARE_KEEP');
+                }
+                if (gameState.state.dropActive) setTimeout(handleBeltScan, 400);
+
+            } else if (method === 'SCRAP') {
+                gameState.state.scrapFill = Math.min(100, (gameState.state.scrapFill || 0) + 12);
+                gameState._save();
+                updateScrapBar();
+                updateSystemsStatus();
+                clearItemQueue();
+                appendOTIS('Scrapping: ' + item.name, 'DECLARE_SCRAP');
+                if (gameState.state.dropActive) setTimeout(handleBeltScan, 400);
+            }
+
+            syncLedger();
+        }
+
+        function handleSellBack(index) {
+            const item = gameState.state.keepLog[index];
+            if (!item) return;
+            gameState.state.credits += item.otisValue || 0;
+            gameState.state.keepLog.splice(index, 1);
+            gameState._save();
+            gameState._updateUI();
+            appendOTIS('Selling from keep log: ' + item.name + '.', 'SELL_FROM_LOG');
+            syncLedger();
             updateKeepLogEmpty();
         }
 
-        let scrapFill = 0; // 0–100
-
         function updateScrapBar() {
+            const fill = gameState.state.scrapFill || 0;
             const pct = document.getElementById('scrap-pct');
             const bar = document.getElementById('scrap-bar-fill');
-            const storeStatus = document.getElementById('store-status');
-            if (pct) pct.textContent = scrapFill + '%';
+            if (pct) pct.textContent = fill + '%';
             if (bar) {
-                bar.style.width = scrapFill + '%';
-                // Reset classes then apply threshold colour
+                bar.style.width = fill + '%';
                 bar.className = 'scrap-bar-fill';
-                if (scrapFill >= 90) {
-                    bar.classList.add('scrap-bar-red');
-                } else if (scrapFill >= 75) {
-                    bar.classList.add('scrap-bar-amber');
-                }
-            }
-            if (storeStatus) {
-                if (scrapFill >= 90) {
-                    storeStatus.textContent = 'CRITICAL';
-                    storeStatus.className = 'status-err';
-                } else if (scrapFill >= 75) {
-                    storeStatus.textContent = 'ATTENTION';
-                    storeStatus.className = 'status-warn';
-                } else {
-                    storeStatus.textContent = 'NOMINAL';
-                    storeStatus.className = 'status-ok';
-                }
+                if (fill >= 90) bar.classList.add('scrap-bar-red');
+                else if (fill >= 75) bar.classList.add('scrap-bar-amber');
             }
         }
 
         function handleDispatchMay() {
+            const scrapFill = gameState.state.scrapFill || 0;
             if (scrapFill === 0) return;
+            const earned = Math.floor(scrapFill * 2);
+            gameState.state.credits += earned;
             const prevFill = scrapFill;
-            scrapFill = 0;
-            updateScrapBar();
-            // Scrap pays 5–10 cr per fill percentage point
-            const earned = Math.floor(prevFill * (5 + Math.random() * 5));
-            gameState.state.credits += earned;
+            gameState.state.scrapFill = 0;
             gameState._save();
             gameState._updateUI();
-            appendOTIS(`Dispatching scrap to May Finster. Volume: ${prevFill}%. +${earned} cr`, 'SCRAP_DISPATCH');
-        }
-
-        function handleScrap() {
-            if (!currentItem) return;
-            const item = currentItem.name;
-            clearItemQueue();
-            scrapFill = Math.min(100, scrapFill + 12);
             updateScrapBar();
-            appendOTIS(`Scrapping: ${item}`, 'DECLARE_SCRAP');
-        }
+            updateSystemsStatus();
 
-        // Item sale credit values per sell method
-        const SELL_VALUES = {
-            OTIS_PRICE:  { min: 80,  max: 180 },
-            RESERVE:     { min: 120, max: 250 },
-            NO_RESERVE:  { min: 30,  max: 90  },
-        };
+            if (prevFill >= 75) {
+                const mayDot = document.getElementById('comms-dot-may');
+                if (mayDot) mayDot.className = 'comms-dot indicator-on';
+            }
 
-        function handleSell(method) {
-            if (!currentItem) return;
-            const item = currentItem.name;
-            clearItemQueue();
-            const range = SELL_VALUES[method] || { min: 50, max: 120 };
-            const earned = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-            gameState.state.credits += earned;
-            gameState._save();
-            gameState._updateUI();
-            const msgMap = {
-                OTIS_PRICE: `Selling at OTIS price: ${item}. +${earned} cr`,
-                RESERVE:    `Listing at reserve price: ${item}. +${earned} cr`,
-                NO_RESERVE: `Selling below OTIS price (no reserve): ${item}. +${earned} cr`
-            };
-            appendOTIS(msgMap[method] || `Selling: ${item}. +${earned} cr`, 'DECLARE_SELL');
-        }
-
-        function handleBargeArrival() {
-            const statusEl = document.getElementById('belt-status-text');
-            if (statusEl) statusEl.textContent = 'BARGE INBOUND — DROP ACTIVE';
-            appendOTIS('Barge inbound. Prepare for drop.', 'BARGE_IMMINENT');
-            setTimeout(() => {
-                handleBeltScan();
-            }, 1500);
-        }
-
-        function handleComms(channel) {
-            const msgs = {
-                BANK: 'Opening channel to the Bank. Loan status inquiry.',
-                SVEN: 'Opening channel to Sven Digut.',
-                MAY: 'Opening channel to May Finster.'
-            };
-            appendOTIS(msgs[channel] || 'Opening comms channel.', 'COMMS');
+            appendOTIS(`Dispatching scrap to May Finster. Fill level: ${prevFill}%. +${earned} cr.`, 'SCRAP_DISPATCH');
+            syncLedger();
         }
 
         function handleMakePayment() {
             const PAYMENT_AMOUNT = 650;
-            if (gameState.state.credits < PAYMENT_AMOUNT) {
-                appendOTIS(`Insufficient credits for payment. Need ${PAYMENT_AMOUNT} cr, have ${gameState.state.credits} cr.`, 'PAYMENT');
+            const credits = gameState.state.credits;
+            if (credits < PAYMENT_AMOUNT) {
+                appendOTIS(`Insufficient credits. Payment failed. Need 650, have ${credits}.`, 'PAYMENT_FAILED');
                 return;
             }
             gameState.state.credits -= PAYMENT_AMOUNT;
             gameState.state.debt = Math.max(0, gameState.state.debt - PAYMENT_AMOUNT);
             gameState._save();
             gameState._updateUI();
+            appendOTIS(`Processing payment of 650 credits. Remaining balance: ${gameState.state.debt.toLocaleString()} cr.`, 'PAYMENT');
             syncLedger();
-            appendOTIS(`Loan payment of ${PAYMENT_AMOUNT} cr submitted. Remaining balance: ${gameState.state.debt.toLocaleString()} cr.`, 'PAYMENT');
         }
 
-        function handleSkip() {
-            if (!currentItem) return;
-            clearItemQueue();
-            gameState.incrementSkipCount();
+        function handleAdvanceDay() {
+            gameState.state.day++;
+            gameState.state.daysUntilPayment = Math.max(0, (gameState.state.daysUntilPayment || PAYMENT_CYCLE_DAYS) - 1);
+            if (gameState.state.daysUntilPayment <= 0) gameState.state.daysUntilPayment = PAYMENT_CYCLE_DAYS;
+            gameState._save();
+            appendOTIS('Day advanced.', 'DAY_TICK');
+            syncLedger();
+            updateCommsIndicators();
+        }
+
+        function handleComms(channel) {
+            const msgs = {
+                BANK: ["Bank channel open. Payment status requested.", 'COMMS_BANK'],
+                SVEN: ["Sven's messenger bot. Interference report incoming.", 'COMMS_SVEN'],
+                IGNORE_SVEN: ["Sven signal dismissed.", 'COMMS_IGNORE_SVEN'],
+                COMPLAINT: ["Filing formal interference complaint with moon transit authority.", 'COMMS_COMPLAINT'],
+                MAY: ["May Finster channel. Scrap dispatch acknowledged.", 'COMMS_MAY'],
+            };
+            const [text, trigger] = msgs[channel] || ["Opening comms channel.", 'COMMS'];
+            appendOTIS(text, trigger);
+            if (channel === 'SVEN' || channel === 'IGNORE_SVEN') {
+                const svenDot = document.getElementById('comms-dot-sven');
+                if (svenDot) svenDot.className = 'comms-dot';
+                const sysSven = document.getElementById('sys-sven');
+                if (sysSven) sysSven.textContent = 'NOMINAL';
+            }
+            if (channel === 'MAY') {
+                const mayDot = document.getElementById('comms-dot-may');
+                if (mayDot) mayDot.className = 'comms-dot';
+            }
+        }
+
+        function handleLogoff() {
+            gameState._save();
+            appendOTIS('Logging off.', 'LOGOFF');
+            const footer = document.querySelector('#console-footer span');
+            if (footer) footer.textContent = 'OTIS v0.3 // SAVED';
+            setTimeout(() => { if (footer) footer.textContent = 'OTIS v0.3 // PHASE 0'; }, 2000);
+        }
+
+        function updateCommsIndicators() {
+            const dup = gameState.state.daysUntilPayment || 28;
+            const bankDot = document.getElementById('comms-dot-bank');
+            if (bankDot) {
+                if (dup <= 3) bankDot.className = 'comms-dot indicator-red';
+                else if (dup <= 7) bankDot.className = 'comms-dot indicator-amber';
+                else bankDot.className = 'comms-dot';
+            }
+        }
+
+        function updateSystemsStatus() {
+            // STORE
+            const sf = gameState.state.scrapFill || 0;
+            const sysStore = document.getElementById('sys-store');
+            if (sysStore) {
+                if (sf >= 90) { sysStore.textContent = 'CRITICAL'; sysStore.className = 'status-err'; }
+                else if (sf >= 75) { sysStore.textContent = 'ATTENTION'; sysStore.className = 'status-warn'; }
+                else { sysStore.textContent = 'NOMINAL'; sysStore.className = 'status-ok'; }
+            }
+            // SHIP
+            const sysShip = document.getElementById('sys-ship');
+            if (sysShip) {
+                const hasShipping = gameState.state.shippingQueue && gameState.state.shippingQueue.length > 0;
+                sysShip.textContent = hasShipping ? 'ACTIVE' : 'NOMINAL';
+                sysShip.className = hasShipping ? 'status-warn' : 'status-ok';
+            }
+            // POWER
+            const sysPower = document.getElementById('sys-power');
+            if (sysPower) {
+                const dup = gameState.state.daysUntilPayment || 28;
+                sysPower.textContent = dup <= 3 ? 'ALERT' : 'NOMINAL';
+                sysPower.className = dup <= 3 ? 'status-warn' : 'status-ok';
+            }
+        }
+
+        function syncLedger() {
+            gameState._updateUI();
+            // Ledger-specific fields
+            const daysUntilEl = document.getElementById('ledger-days-until');
+            if (daysUntilEl) daysUntilEl.textContent = gameState.state.daysUntilPayment ?? 28;
+
+            // Debt bar
+            const debtBarFill = document.getElementById('debt-bar-fill');
+            if (debtBarFill) {
+                const paidPct = Math.max(0, Math.min(100, ((25000 - gameState.state.debt) / 25000) * 100));
+                debtBarFill.style.width = paidPct + '%';
+                const debt = gameState.state.debt;
+                if (debt > 15000) debtBarFill.style.background = 'var(--text-ok)';
+                else if (debt >= 8000) debtBarFill.style.background = 'var(--ind-amber)';
+                else debtBarFill.style.background = 'var(--text-danger)';
+            }
+
+            updateCommsIndicators();
+            updateSystemsStatus();
+            updateScrapBar();
+        }
+
+        function renderShippingQueue() {
+            const list = document.getElementById('shipping-queue-list');
+            const empty = document.getElementById('shipping-queue-empty');
+            const queue = gameState.state.shippingQueue || [];
+            if (list) {
+                list.innerHTML = queue.map(item =>
+                    `<div class="shipping-item">${escapeHtml(item.name)} — ${item.price} cr — PENDING</div>`
+                ).join('');
+            }
+            if (empty) empty.style.display = queue.length ? 'none' : '';
+        }
+
+        function checkShippingQueue() {
+            const queue = gameState.state.shippingQueue;
+            if (!queue || queue.length === 0) return;
+            const now = Date.now();
+            const resolved = [];
+            const remaining = [];
+            queue.forEach(item => {
+                if (now >= item.resolveAt) resolved.push(item);
+                else remaining.push(item);
+            });
+            resolved.forEach(item => {
+                if (Math.random() < RESERVE_SALE_SUCCESS_RATE) {
+                    gameState.state.credits += item.price;
+                    gameState._save();
+                    gameState._updateUI();
+                    appendOTIS('Reserve sale confirmed: ' + item.name + '. +' + item.price + ' cr.', 'RECOGNITION_BONUS');
+                } else {
+                    appendOTIS('Reserve listing expired: ' + item.name + '. No buyer.', 'RESERVE_EXPIRED');
+                }
+            });
+            if (resolved.length > 0) {
+                gameState.state.shippingQueue = remaining;
+                gameState._save();
+                renderShippingQueue();
+                updateSystemsStatus();
+                syncLedger();
+            }
+        }
+        setInterval(checkShippingQueue, 5000);
+
+        function updateKeepLogEmpty() {
+            const list = document.getElementById('keep-log-list');
+            const empty = document.getElementById('keep-log-empty');
+            if (list && empty) {
+                empty.style.display = list.children.length ? 'none' : '';
+            }
         }
 
         let _clearPending = false;
         let _clearTimer = null;
-        // 3-second window gives the operator time to reconsider without being too long.
         const CLEAR_CONFIRM_TIMEOUT_MS = 3000;
         function handleClearSave(btn) {
             if (!_clearPending) {
@@ -405,33 +687,15 @@
             }
         }
 
-        function handleLogoff() {
-            gameState._save();
-            appendOTIS('Logging off.', 'LOGOFF');
-        }
-
-        function syncLedger() {
-            // Delegate entirely to _updateUI so there is one source of truth
-            gameState._updateUI();
-            // Also sync the ledger-day span which _updateUI doesn't cover
-            const day = document.getElementById('ledger-day');
-            if (day) day.textContent = gameState.state.day;
-        }
-
-        function updateKeepLogEmpty() {
-            const list = document.getElementById('keep-log-list');
-            const empty = document.getElementById('keep-log-empty');
-            if (list && empty) {
-                empty.style.display = list.children.length ? 'none' : '';
-            }
-        }
-
         // Boot sequence
         gameState.initUI();
         syncLedger();
         updateKeepLogEmpty();
         renderItemQueue();
-        // Session timer starts on LOGIN (fired inside initUI → init)
+        renderShippingQueue();
+        updateScrapBar();
+        updateSystemsStatus();
+        updateCommsIndicators();
         gameState.startSessionTimer();
         appendOTIS('Operator logging in.', 'LOGIN');
     </script>
