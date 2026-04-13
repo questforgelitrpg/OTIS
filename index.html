@@ -986,6 +986,8 @@
             manifest.push(eeItem);
         }
         gameState.state.manifestItems = manifest.slice();
+        gameState.state.dropActive = true;
+        gameState.state.bargeActive = true;
         gameState.state.dropItemsRemaining = manifest.length;
         gameState._save();
         if (btn) btn.disabled = true;
@@ -1421,7 +1423,7 @@
         var s = gameState.state;
         s.georgeWarehouseRevealed = true;
         // 10% chance to surface a random easter egg item as an unlisted find
-        s._warehouseEasterEgg = (Math.random() < 0.10) ? Object.assign({}, EASTER_EGG_POOL[Math.floor(Math.random() * EASTER_EGG_POOL.length)]) : null;
+        s.warehouseEasterEggFind = (Math.random() < 0.10) ? Object.assign({}, EASTER_EGG_POOL[Math.floor(Math.random() * EASTER_EGG_POOL.length)]) : null;
         gameState._save();
         renderGeorgeWarehouse();
         appendOTIS('Vernon is accessing George\'s personal warehouse archive.', 'CONSULT_GEORGE');
@@ -1455,8 +1457,8 @@
             }).join('');
         }
         // Show unlisted easter egg find if surfaced
-        if (s._warehouseEasterEgg) {
-            var ee = s._warehouseEasterEgg;
+        if (s.warehouseEasterEggFind) {
+            var ee = s.warehouseEasterEggFind;
             var eePrice = Math.floor((ee.otisValue || 0) * 4 * (CONDITION_MULTIPLIERS['Used'] || 1.0));
             html += '<div style="padding:0.3rem 0;border-top:1px dashed var(--border-dim);margin-top:0.4rem">' +
                 '<div class="item-name" style="font-size:12px"><span style="color:var(--text-warn)">[UNLISTED FIND]</span> ' + escapeHtml(ee.name) + '</div>' +
@@ -1502,10 +1504,10 @@
 
     function handleWarehouseEasterEggSell(price) {
         var s = gameState.state;
-        var ee = s._warehouseEasterEgg;
+        var ee = s.warehouseEasterEggFind;
         if (!ee) return;
         s.credits += price;
-        s._warehouseEasterEgg = null;
+        s.warehouseEasterEggFind = null;
         gameState._save(); gameState._updateUI();
         renderGeorgeWarehouse();
         appendOTIS('Sold unlisted find: ' + ee.name + '. +' + price + ' cr.', 'DECLARATION_OTIS');
@@ -1513,10 +1515,10 @@
 
     function handleWarehouseEasterEggMoveToBelt() {
         var s = gameState.state;
-        var ee = s._warehouseEasterEgg;
+        var ee = s.warehouseEasterEggFind;
         if (!ee) return;
         var item = Object.assign({}, ee, { condition: 'Used' });
-        s._warehouseEasterEgg = null;
+        s.warehouseEasterEggFind = null;
         if (!s.manifestItems) s.manifestItems = [];
         s.manifestItems.push(item);
         s.dropItemsRemaining = s.manifestItems.length;
