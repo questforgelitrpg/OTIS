@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>O.T.I.S. &mdash; Orbital Terminal Interface System</title>
+    <title>O.T.I.S. &mdash; Object, Tracking &amp; Inventory System</title>
     <style>
         :root {
             --bg:           #080c08;
@@ -186,6 +186,25 @@
             .module-btn { font-size: 11px; min-height: 44px; }
             .modal.open { padding: 0.5rem; align-items: flex-start; }
         }
+        /* Bot status dots */
+        .dot.red     { background: var(--ind-red);   box-shadow: 0 0 4px var(--ind-red); }
+        .dot.offline { background: var(--text-muted); }
+
+        /* kbd-glitch easter egg */
+        @keyframes kbd-glitch { 0%, 100% { opacity: 1; } 5% { opacity: 0.3; } 10% { opacity: 1; } 15% { opacity: 0.5; } 20% { opacity: 1; } 25% { opacity: 0.2; } 30% { opacity: 0.9; } }
+        body.kbd-glitch { animation: kbd-glitch 0.3s infinite; }
+
+        /* McGuffin blur */
+        #otis-output.mcguffin-blur { filter: blur(3px); transition: filter 0.5s; }
+
+        /* Pick list */
+        .picklist-btn.active { border-color: var(--text-primary) !important; color: var(--text-bright) !important; }
+
+        /* George warehouse */
+        .george-note { font-size: 11px; color: var(--text-dim); font-style: italic; margin: 0.15rem 0 0.3rem; }
+
+        /* Conveyor jam warning */
+        #conveyor-jam-warning { color: var(--text-danger); font-size: 12px; margin: 0.3rem 0; display: none; }
     </style>
 </head>
 <body>
@@ -236,6 +255,8 @@
                     <button onclick="dbgForcePay()">FORCE PAY</button>
                     <button onclick="dbgFastMode()">FAST MODE</button>
                     <button onclick="handleClearSave(this)">CLEAR SAVE</button>
+                    <button onclick="handleToasterIncident()">TOASTER INC</button>
+                    <button onclick="handleMcGuffin()">MCGUFFIN</button>
                 </div>
             </div>
 
@@ -268,6 +289,8 @@
                     <button id="btn-barge-drop" onclick="handleBargeArrival()">BARGE DROP</button>
                     <button id="btn-scan-belt" onclick="handleBeltScan()" disabled>SCAN BELT</button>
                 </div>
+                <p id="conveyor-jam-warning">&#9888; CONVEYOR JAM &mdash; BELT STALLED</p>
+                <div id="conveyor-jam-clear" style="display:none"><button class="btn-danger" onclick="handleClearJam()">CLEAR JAM</button></div>
             </div>
             <div class="modal-section">
                 <div class="modal-label">ITEM QUEUE</div>
@@ -289,6 +312,15 @@
                         <button onclick="handleDeclare('KEEP')">KEEP</button>
                         <button class="btn-warn" onclick="handleDeclare('SCRAP')">SCRAP</button>
                     </div>
+                </div>
+            </div>
+            <div class="modal-section" id="pick-list-section">
+                <div class="modal-label">PICK LIST</div>
+                <p class="zone-hint" id="pick-list-hint" style="color:var(--text-dim)">Active for next drop.</p>
+                <div class="modal-row">
+                    <button id="pl-drop" class="picklist-btn active" onclick="setPickList('DROP', null)">DROP</button>
+                    <button id="pl-prioritize" class="picklist-btn" onclick="setPickList('PRIORITIZE', null)">PRIORITIZE</button>
+                    <button id="pl-dw" class="picklist-btn" onclick="cycleDoubleWeight()">DOUBLE-WEIGHT: <span id="pl-dw-cat">CIVILIAN</span></button>
                 </div>
             </div>
             <div class="modal-section">
@@ -345,6 +377,11 @@
                 <ul id="keep-log-list" class="keep-list"></ul>
                 <p class="zone-hint" id="keep-log-empty">Log empty.</p>
             </div>
+            <div class="modal-section" id="george-warehouse-section">
+                <div class="modal-label">GEORGE&#39;S WAREHOUSE</div>
+                <div class="modal-row"><button onclick="handleSearchWarehouse()">SEARCH WAREHOUSE</button></div>
+                <div id="george-warehouse-list" style="display:none;margin-top:0.5rem"></div>
+            </div>
         </div>
     </div>
 
@@ -355,9 +392,9 @@
             <div class="modal-section">
                 <div class="modal-label">SYSTEM STATUS</div>
                 <ul class="sys-list">
-                    <li>BOT-1 <span class="status-ok" id="sys-bot1">NOMINAL</span></li>
-                    <li>BOT-2 <span class="status-ok" id="sys-bot2">NOMINAL</span></li>
-                    <li>BOT-3 <span class="status-ok" id="sys-bot3">NOMINAL</span></li>
+                    <li style="flex-wrap:wrap;gap:0.3rem">BOT-1 <span class="status-ok" id="sys-bot1">NOMINAL</span><span id="sys-bot1-repair" style="display:none"><button style="font-size:10px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotCalibrate(1)">CALIBRATE (50cr)</button><button style="font-size:10px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotOrderParts(1)">ORDER PARTS (200cr)</button></span></li>
+                    <li style="flex-wrap:wrap;gap:0.3rem">BOT-2 <span class="status-ok" id="sys-bot2">NOMINAL</span><span id="sys-bot2-repair" style="display:none"><button style="font-size:10px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotCalibrate(2)">CALIBRATE (50cr)</button><button style="font-size:10px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotOrderParts(2)">ORDER PARTS (200cr)</button></span></li>
+                    <li style="flex-wrap:wrap;gap:0.3rem">BOT-3 <span class="status-ok" id="sys-bot3">NOMINAL</span><span id="sys-bot3-repair" style="display:none"><button style="font-size:10px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotCalibrate(3)">CALIBRATE (50cr)</button><button style="font-size:10px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotOrderParts(3)">ORDER PARTS (200cr)</button></span></li>
                     <li>CONV <span class="status-ok">NOMINAL</span></li>
                     <li>RECV <span class="status-ok">NOMINAL</span></li>
                     <li>SHIP <span class="status-ok" id="sys-ship">NOMINAL</span></li>
@@ -439,6 +476,15 @@
         </div>
     </div>
 
+    <!-- EASTER EGG MODAL -->
+    <div id="modal-kbd-easter" class="modal" role="dialog" aria-label="Easter Egg">
+        <div class="modal-inner" style="max-width:420px;margin-top:20vh">
+            <div class="modal-header"><span>SIGNAL DETECTED</span><button onclick="closeModal('kbd-easter')">&#x2715; CLOSE</button></div>
+            <p style="font-size:13px;color:var(--text-primary);line-height:1.6;margin:0.8rem 0 1rem;font-style:italic">"You found it. George mapped this terminal for 8 years. He left you something in the walls. You'll know it when you see it. Don't mention it to the Bank."</p>
+            <div class="modal-row"><button onclick="closeModal('kbd-easter')">CLOSE</button></div>
+        </div>
+    </div>
+
     <script>
     // TIMING
     const TIMING = {
@@ -452,8 +498,8 @@
         DROP_SIZE_ACT3_MIN:    13,
         DROP_SIZE_ACT3_MAX:    15,
         PAYMENT_CYCLE_DAYS:    28,
-        RESERVE_RESOLVE_MIN:   60000,
-        RESERVE_RESOLVE_MAX:   240000,
+        RESERVE_RESOLVE_MIN:   120000,
+        RESERVE_RESOLVE_MAX:   480000,
         ANOMALOUS_RESERVE_MIN: 400,
         ANOMALOUS_RESERVE_MAX: 2000,
         DEBUG_FAST_MODE:       false,
@@ -485,6 +531,61 @@
         { name: 'Ceramic figure \u2014 no catalogue match',        category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
     ];
 
+    // GEORGE'S WAREHOUSE
+    var GEORGE_WAREHOUSE = [
+        { name: "George's field scanner \u2014 modified",          category: 'Industrial', rarity: 'Rare',      otisValue: 420, georgeNote: "Modified the pickup range himself. Don't ask how." },
+        { name: "Vessel log \u2014 partial, encrypted",            category: 'Vessel',     rarity: 'Rare',      otisValue: 390, georgeNote: "He never decrypted it. Kept it anyway." },
+        { name: "Settlement deed \u2014 moon registry, void",      category: 'Settlement', rarity: 'Uncommon',  otisValue: 75,  georgeNote: "Technically worthless. George kept it for 12 years." },
+        { name: "Personal correspondence bundle \u2014 sealed",    category: 'Civilian',   rarity: 'Uncommon',  otisValue: 60,  georgeNote: "Sealed. George never opened them." },
+        { name: "Unregistered relay chip \u2014 pre-collapse",     category: 'Unknown',    rarity: 'Anomalous', otisValue: 0,   georgeNote: "George marked it 'hold indefinitely.' No reason given." },
+        { name: "Coolant regulator \u2014 oversized",              category: 'Industrial', rarity: 'Uncommon',  otisValue: 140, georgeNote: "Wrong spec for this station. George ordered it anyway." },
+        { name: "Navigation beacon \u2014 active signal",          category: 'Vessel',     rarity: 'Rare',      otisValue: 510, georgeNote: "Still transmitting. George never reported it." },
+        { name: "Ceramic memory tile \u2014 institution markings", category: 'Unknown',    rarity: 'Anomalous', otisValue: 0,   georgeNote: "George circled the markings in grease pencil. No annotation." },
+    ];
+
+    // PICK LIST
+    var DW_CATEGORIES = ['Civilian', 'Industrial', 'Settlement', 'Vessel', 'Unknown'];
+    var _dwCatIndex = 0;
+
+    function setPickList(mode, category) {
+        var s = gameState.state;
+        if (!s.pickListChoice) s.pickListChoice = { mode: 'DROP', category: null };
+        s.pickListChoice.mode = mode;
+        s.pickListChoice.category = category;
+        if (mode === 'DOUBLE_WEIGHT') s.pickListChoice.category = DW_CATEGORIES[_dwCatIndex];
+        gameState._save();
+        renderPickList();
+    }
+
+    function cycleDoubleWeight() {
+        _dwCatIndex = (_dwCatIndex + 1) % DW_CATEGORIES.length;
+        setPickList('DOUBLE_WEIGHT', DW_CATEGORIES[_dwCatIndex]);
+    }
+
+    function renderPickList() {
+        var s = gameState.state;
+        var choice = (s.pickListChoice) ? s.pickListChoice : { mode: 'DROP', category: null };
+        ['DROP','PRIORITIZE','DOUBLE_WEIGHT'].forEach(function(mode) {
+            var id = mode === 'DROP' ? 'pl-drop' : mode === 'PRIORITIZE' ? 'pl-prioritize' : 'pl-dw';
+            var btn = document.getElementById(id);
+            if (btn) btn.classList.toggle('active', choice.mode === mode);
+        });
+        var catSpan = document.getElementById('pl-dw-cat');
+        if (catSpan) catSpan.textContent = (choice.mode === 'DOUBLE_WEIGHT' && choice.category) ? choice.category.toUpperCase() : DW_CATEGORIES[_dwCatIndex].toUpperCase();
+        var priBtn = document.getElementById('pl-prioritize');
+        if (priBtn) {
+            var dc = s.dropCount || 0;
+            var label = 'PRIORITIZE';
+            if (dc >= 3) {
+                var learn = s.otisLearning || {};
+                var kbc = learn.keepByCategory || {};
+                var topKeepCat = Object.keys(kbc).sort(function(a, b) { return (kbc[b] || 0) - (kbc[a] || 0); })[0];
+                if (topKeepCat) label = 'PRIORITIZE (OTIS: ' + topKeepCat.toUpperCase() + ' TREND)';
+            }
+            priBtn.textContent = label;
+        }
+    }
+
     function buildManifestSummary(manifest) {
         const n = manifest.length;
         const cats = [...new Set(manifest.map(i => i.category))];
@@ -504,6 +605,21 @@
                 dropActive: false, bargeActive: false, dropItemsRemaining: 0,
                 manifestItems: [], outstandingDebt: 0, missedPayments: 0,
                 daysUntilNextDrop: 7, toastFiredToday: false,
+                scriptedCommsFired: { bank: false, sven: false, may: false },
+                pickListChoice: { mode: 'DROP', category: null },
+                otisLearning: { keepByCategory: {}, scrapByCategory: {}, sellByRarity: {} },
+                bots: [
+                    { id: 1, status: 'NOMINAL', degradation: 0 },
+                    { id: 2, status: 'NOMINAL', degradation: 0 },
+                    { id: 3, status: 'NOMINAL', degradation: 0 },
+                ],
+                conveyorJammed: false,
+                georgeWarehouseRevealed: false,
+                georgeWarehouseSold: [],
+                dropCount: 0,
+                easterEggFired: false,
+                toasterIncidentFired: false,
+                nextDropDay: null,
             };
         },
         save: function(state) {
@@ -572,6 +688,9 @@
         updateCommsIndicators();
         updateSystemsStatus();
         updateScrapBar();
+        if (typeof updateBotUI === 'function') updateBotUI();
+        if (typeof renderPickList === 'function') renderPickList();
+        if (typeof renderGeorgeWarehouse === 'function' && this.state.georgeWarehouseRevealed) renderGeorgeWarehouse();
     };
     GameState.prototype._renderKeepLog = function() {
         var list  = document.getElementById('keep-log-list');
@@ -615,6 +734,7 @@
         this._updateUI();
         this.state.toastFiredToday = false;
         autoToast();
+        checkScriptedComms();
     };
     GameState.prototype.checkPaymentDue = function() {
         if (this.state.daysUntilPayment <= 0) {
@@ -706,7 +826,7 @@
     var currentItem = null;
     var beltTimer   = null;
 
-    function getBeltMs() { return TIMING.DEBUG_FAST_MODE ? Math.floor(TIMING.BELT_DELIVERY_MS / TIMING.DEBUG_SPEED_MULTIPLIER) : TIMING.BELT_DELIVERY_MS; }
+    function getBeltMs() { return getBotDeliveryMs(); }
     function startBeltDelivery() { if (beltTimer) return; beltTimer = setInterval(deliverNextBeltItem, getBeltMs()); }
     function stopBeltDelivery()  { clearInterval(beltTimer); beltTimer = null; }
 
@@ -719,10 +839,16 @@
             gameState.state.dropActive = false;
             gameState.state.bargeActive = false;
             gameState.state.dropItemsRemaining = 0;
+            gameState.state.dropCount = (gameState.state.dropCount || 0) + 1;
+            gameState.state.pickListChoice = { mode: 'DROP', category: null };
             gameState._save();
             updateBeltUI('DROP_COMPLETE');
             setBotDots(false);
+            renderPickList();
             appendOTIS('Belt clear. All items processed. Bots returning.', 'DROP_COMPLETE');
+            onDropCompleteBotDegradation();
+            rollConveyorJam();
+            checkEasterEgg();
             return;
         }
         if (currentItem !== null) { updateBeltUI('BACKED_UP'); return; }
@@ -739,9 +865,27 @@
     function handleBeltScan() { deliverNextBeltItem(); }
 
     function weightedPickItem() {
+        var s = gameState.state;
+        var choice = (s && s.pickListChoice) ? s.pickListChoice : { mode: 'DROP', category: null };
         var r = Math.random();
-        var rarity = r < 0.60 ? 'Common' : r < 0.85 ? 'Uncommon' : r < 0.95 ? 'Rare' : 'Anomalous';
-        var pool = MANIFEST_POOL.filter(function(i) { return i.rarity === rarity; });
+        var rarity;
+        if (choice.mode === 'PRIORITIZE') {
+            rarity = r < 0.30 ? 'Common' : r < 0.55 ? 'Uncommon' : r < 0.80 ? 'Rare' : 'Anomalous';
+        } else {
+            rarity = r < 0.60 ? 'Common' : r < 0.85 ? 'Uncommon' : r < 0.95 ? 'Rare' : 'Anomalous';
+        }
+        var pool;
+        if (choice.mode === 'DOUBLE_WEIGHT' && choice.category) {
+            var cat = choice.category;
+            var base = MANIFEST_POOL.filter(function(i) { return i.rarity === rarity; });
+            var extra = base.filter(function(i) { return i.category === cat; });
+            pool = base.concat(extra);
+            if (!pool.length) pool = base;
+            if (!pool.length) pool = MANIFEST_POOL;
+        } else {
+            pool = MANIFEST_POOL.filter(function(i) { return i.rarity === rarity; });
+            if (!pool.length) pool = MANIFEST_POOL;
+        }
         return Object.assign({}, pool[Math.floor(Math.random() * pool.length)]);
     }
 
@@ -895,6 +1039,7 @@
         if (method === 'OTIS') {
             gameState.state.credits += ev;
             gameState._save();
+            trackOTISLearning('SELL', item);
             clearItemQueue();
             appendOTIS('Selling at OTIS price: ' + item.name + '. +' + ev + ' cr. ' + ctx, 'DECLARATION_OTIS');
         } else if (method === 'RESERVE') {
@@ -906,24 +1051,28 @@
             gameState.state.shippingQueue.push({ name: item.name, price: rp, resolveAt: resolveAt });
             gameState._save();
             renderShippingQueue();
+            trackOTISLearning('SELL', item);
             clearItemQueue();
             appendOTIS('Reserve listing: ' + item.name + '. Reserve: ' + rp + ' cr. Awaiting buyer. ' + ctx, 'DECLARATION_RESERVE');
         } else if (method === 'NORESERVE') {
             var earned = Math.floor(ev * 0.75);
             gameState.state.credits += earned;
             gameState._save();
+            trackOTISLearning('SELL', item);
             clearItemQueue();
             appendOTIS('Selling no-reserve: ' + item.name + '. +' + earned + ' cr.', 'DECLARATION_NORESERVE');
         } else if (method === 'KEEP') {
             gameState.state.keepLog.push({ name: item.name, day: gameState.state.day, condition: item.condition, otisValue: item.otisValue });
             gameState.state.keepLog = gameState.state.keepLog.slice(0, 12);
             gameState._save();
+            trackOTISLearning('KEEP', item);
             clearItemQueue();
             var kn = gameState.state.keepLog.length;
             appendOTIS(kn >= 10 ? 'Keeping: ' + item.name + '. Keep log at ' + kn + ' items.' : 'Keeping: ' + item.name + '.', 'DECLARE_KEEP');
         } else if (method === 'SCRAP') {
             gameState.state.scrapFill = Math.min(100, (gameState.state.scrapFill || 0) + 12);
             gameState._save();
+            trackOTISLearning('SCRAP', item);
             clearItemQueue();
             appendOTIS('Scrapping: ' + item.name + '.', 'DECLARE_SCRAP');
         }
@@ -940,6 +1089,19 @@
         appendOTIS('Selling from keep log: ' + item.name + '. +' + val + ' cr.', 'SELL_FROM_LOG');
     }
 
+    function trackOTISLearning(action, item) {
+        var s = gameState.state;
+        if (!s.otisLearning) s.otisLearning = { keepByCategory: {}, scrapByCategory: {}, sellByRarity: {} };
+        if (action === 'KEEP') {
+            s.otisLearning.keepByCategory[item.category] = (s.otisLearning.keepByCategory[item.category] || 0) + 1;
+        } else if (action === 'SCRAP') {
+            s.otisLearning.scrapByCategory[item.category] = (s.otisLearning.scrapByCategory[item.category] || 0) + 1;
+        } else if (action === 'SELL') {
+            s.otisLearning.sellByRarity[item.rarity] = (s.otisLearning.sellByRarity[item.rarity] || 0) + 1;
+        }
+        gameState._save();
+    }
+
     // TOAST
     function autoToast() {
         if (gameState.state.toastFiredToday) return;
@@ -951,6 +1113,38 @@
         var c = document.getElementById('toast-content'); if (c) c.textContent = "George\u2019s toaster. 6 credits drawn from the grid.";
         openModal('toast');
         appendOTIS("Vernon made toast. George\u2019s toaster. Energy draw logged. 6 credits.", 'TOAST');
+    }
+
+    // SCRIPTED DAY 1-3 COMMS
+    var SCRIPTED_COMMS = {
+        bank: '[BANK] Universal Bank Conglomerate, automated channel. This is a courtesy notice. Station debt: 25,000 credits. Your 28-day payment cycle has begun. First payment: 650 credits. We expect prompt settlement. Welcome to the operation, Mr. Serling.',
+        sven: '[SVEN] Sven Digut, Digut Operations. You\'re the new operator. Good. I buy goods — Industrial, Vessel, Rare if the price is right. Put items on reserve and I\'ll make offers. Don\'t scrap what I can move. We\'ll work fine as long as you don\'t waste my time.',
+        may: '[MAY] May Finster, Leftover Recycling. I handle scrap for this station — always have, since your uncle. You fill the bin, you dispatch to me, I return credits based on fill rate. Simple. Don\'t let it back up past 90. George never did.',
+    };
+
+    function appendHardcodedComm(text) {
+        otisLines.push({ role: 'otis', text: text });
+        renderOTIS();
+    }
+
+    function checkScriptedComms() {
+        var s = gameState.state;
+        if (!s.scriptedCommsFired) s.scriptedCommsFired = { bank: false, sven: false, may: false };
+        if (s.day >= 1 && !s.scriptedCommsFired.bank) {
+            s.scriptedCommsFired.bank = true;
+            appendHardcodedComm(SCRIPTED_COMMS.bank);
+            gameState._save();
+        }
+        if (s.day >= 2 && !s.scriptedCommsFired.sven) {
+            s.scriptedCommsFired.sven = true;
+            appendHardcodedComm(SCRIPTED_COMMS.sven);
+            gameState._save();
+        }
+        if (s.day >= 3 && !s.scriptedCommsFired.may) {
+            s.scriptedCommsFired.may = true;
+            appendHardcodedComm(SCRIPTED_COMMS.may);
+            gameState._save();
+        }
     }
 
     // COMMS
@@ -1020,6 +1214,251 @@
         gameState._save(); renderShippingQueue(); gameState._updateUI();
     }
     setInterval(checkShippingQueue, 5000);
+
+    // BOT DEGRADATION
+    function getBotDeliveryMs() {
+        var base = TIMING.DEBUG_FAST_MODE ? Math.floor(TIMING.BELT_DELIVERY_MS / TIMING.DEBUG_SPEED_MULTIPLIER) : TIMING.BELT_DELIVERY_MS;
+        var bots = gameState.state.bots || [];
+        var hasRed = bots.some(function(b) { return b.status === 'RED'; });
+        var hasOffline = bots.some(function(b) { return b.status === 'OFFLINE'; });
+        if (hasOffline) return Math.floor(base * 2.0);
+        if (hasRed) return Math.floor(base * 1.5);
+        return base;
+    }
+
+    function onDropCompleteBotDegradation() {
+        var s = gameState.state;
+        if (!s.bots) s.bots = [{ id:1,status:'NOMINAL',degradation:0 },{ id:2,status:'NOMINAL',degradation:0 },{ id:3,status:'NOMINAL',degradation:0 }];
+        var idx = Math.floor(Math.random() * 3);
+        var bot = s.bots[idx];
+        bot.degradation++;
+        if (bot.degradation >= 9) bot.status = 'OFFLINE';
+        else if (bot.degradation >= 6) bot.status = 'RED';
+        else if (bot.degradation >= 3) bot.status = 'AMBER';
+        else bot.status = 'NOMINAL';
+        gameState._save();
+        updateBotUI();
+    }
+
+    function updateBotUI() {
+        var bots = gameState.state.bots || [];
+        var statusMap = { NOMINAL: 'NOMINAL', AMBER: 'AMBER \u2014 DEGRADED', RED: 'RED \u2014 CRITICAL', OFFLINE: 'OFFLINE' };
+        var clsMap = { NOMINAL: 'status-ok', AMBER: 'status-warn', RED: 'status-err', OFFLINE: 'status-err' };
+        var dotClsMap = { NOMINAL: '', AMBER: ' amber', RED: ' red', OFFLINE: ' offline' };
+        bots.forEach(function(bot) {
+            var i = bot.id;
+            var d1 = document.getElementById('bot-dot-' + i);
+            if (d1) d1.className = 'dot' + (gameState.state.dropActive ? dotClsMap[bot.status] || '' : '');
+            var d2 = document.getElementById('sys-bot-dot-' + i);
+            if (d2) d2.className = 'dot' + dotClsMap[bot.status];
+            var st = document.getElementById('sys-bot' + i);
+            if (st) { st.textContent = statusMap[bot.status] || bot.status; st.className = clsMap[bot.status] || 'status-ok'; }
+            var rep = document.getElementById('sys-bot' + i + '-repair');
+            if (rep) rep.style.display = (bot.status !== 'NOMINAL') ? '' : 'none';
+        });
+        var arm = document.getElementById('arm-panel');
+        if (arm) {
+            var hasAlert = bots.some(function(b) { return b.status === 'RED' || b.status === 'OFFLINE'; });
+            var hasWarn  = bots.some(function(b) { return b.status === 'AMBER'; });
+            if (hasAlert) { if (!arm.classList.contains('arm-alert')) arm.classList.add('arm-alert'); arm.classList.remove('arm-warning'); }
+            else if (hasWarn) { if (!arm.classList.contains('arm-warning')) arm.classList.add('arm-warning'); arm.classList.remove('arm-alert'); }
+        }
+    }
+
+    function handleBotCalibrate(id) {
+        var s = gameState.state;
+        var bot = (s.bots || []).find(function(b) { return b.id === id; });
+        if (!bot || bot.status === 'OFFLINE') { appendOTIS('BOT-' + id + ' is OFFLINE. Cannot calibrate. Order parts.', 'ZONE_SYSTEMS_BOT_REPAIR'); return; }
+        if (s.credits < 50) { appendOTIS('Insufficient credits. CALIBRATE costs 50 cr.', 'ZONE_SYSTEMS'); return; }
+        s.credits -= 50;
+        bot.degradation = Math.max(0, bot.degradation - 2);
+        if (bot.degradation >= 9) bot.status = 'OFFLINE';
+        else if (bot.degradation >= 6) bot.status = 'RED';
+        else if (bot.degradation >= 3) bot.status = 'AMBER';
+        else bot.status = 'NOMINAL';
+        gameState._save(); gameState._updateUI();
+        appendOTIS('BOT-' + id + ' calibrated. Degradation reduced. Status: ' + bot.status + '.', 'ZONE_SYSTEMS_BOT_REPAIR');
+    }
+
+    function handleBotOrderParts(id) {
+        var s = gameState.state;
+        var bot = (s.bots || []).find(function(b) { return b.id === id; });
+        if (!bot) return;
+        if (s.credits < 200) { appendOTIS('Insufficient credits. ORDER PARTS costs 200 cr.', 'ZONE_SYSTEMS'); return; }
+        s.credits -= 200;
+        bot.degradation = 0;
+        bot.status = 'NOMINAL';
+        gameState._save(); gameState._updateUI();
+        appendOTIS('BOT-' + id + ' parts ordered. Delivery ETA: 2 days. Bot restored to NOMINAL.', 'ZONE_SYSTEMS_BOT_REPAIR');
+    }
+
+    // CONVEYOR JAM
+    function rollConveyorJam() {
+        if (Math.random() >= 0.15) return;
+        gameState.state.conveyorJammed = true;
+        gameState.state.daysUntilNextDrop = (gameState.state.daysUntilNextDrop || TIMING.DAYS_BETWEEN_DROPS) + 1;
+        gameState._save();
+        var warn = document.getElementById('conveyor-jam-warning');
+        var clr  = document.getElementById('conveyor-jam-clear');
+        if (warn) warn.style.display = '';
+        if (clr)  clr.style.display  = '';
+        appendOTIS('Conveyor jam detected. Belt stalled. Next drop delayed 1 day.', 'CONVEYOR_JAM');
+    }
+
+    function handleClearJam() {
+        gameState.state.conveyorJammed = false;
+        gameState._save();
+        var warn = document.getElementById('conveyor-jam-warning');
+        var clr  = document.getElementById('conveyor-jam-clear');
+        if (warn) warn.style.display = 'none';
+        if (clr)  clr.style.display  = 'none';
+        appendOTIS('Jam cleared.', 'JAM_CLEARED');
+    }
+
+    // KEYBOARD EASTER EGG
+    function checkEasterEgg() {
+        var s = gameState.state;
+        if (s.easterEggFired) return;
+        if ((s.dropCount || 0) < 5) return;
+        s.easterEggFired = true;
+        gameState._save();
+        if (!s.toasterIncidentFired) {
+            document.body.classList.add('kbd-glitch');
+            setTimeout(function() { document.body.classList.remove('kbd-glitch'); }, 2000);
+        }
+        var img = document.getElementById('arm-art');
+        var prev = img ? img.src : '';
+        if (img) img.src = 'images/otis_sprite/alert.png';
+        var armSt = document.getElementById('arm-status');
+        if (armSt) { armSt.textContent = 'SIGNAL DETECTED'; armSt.style.color = 'var(--ind-amber)'; }
+        setTimeout(function() {
+            if (img) img.src = prev.replace('alert.png','idle.png') || 'images/otis_sprite/idle.png';
+            if (armSt) { armSt.textContent = 'NOMINAL'; armSt.style.color = ''; }
+        }, 3000);
+        openModal('kbd-easter');
+    }
+
+    // GEORGE'S WAREHOUSE
+    function handleSearchWarehouse() {
+        var s = gameState.state;
+        s.georgeWarehouseRevealed = true;
+        gameState._save();
+        renderGeorgeWarehouse();
+        appendOTIS('Vernon is accessing George\'s personal warehouse archive.', 'CONSULT_GEORGE');
+    }
+
+    function renderGeorgeWarehouse() {
+        var s = gameState.state;
+        var list = document.getElementById('george-warehouse-list');
+        if (!list) return;
+        if (!s.georgeWarehouseRevealed) { list.style.display = 'none'; return; }
+        list.style.display = '';
+        var sold = s.georgeWarehouseSold || [];
+        var available = GEORGE_WAREHOUSE.filter(function(item, i) { return sold.indexOf(i) === -1; });
+        if (!available.length) { list.innerHTML = '<p class="zone-hint">Warehouse cleared.</p>'; return; }
+        var rc = { Common:'tag-common', Uncommon:'tag-uncommon', Rare:'tag-rare', Anomalous:'tag-anomalous' };
+        list.innerHTML = available.map(function(item) {
+            var idx = GEORGE_WAREHOUSE.indexOf(item);
+            var isAnomaly = item.rarity === 'Anomalous';
+            var price = isAnomaly ? Math.floor(Math.random() * (TIMING.ANOMALOUS_RESERVE_MAX - TIMING.ANOMALOUS_RESERVE_MIN + 1)) + TIMING.ANOMALOUS_RESERVE_MIN : Math.floor(item.otisValue * (CONDITION_MULTIPLIERS['Used'] || 1.0));
+            return '<div style="padding:0.3rem 0;border-bottom:1px solid var(--border-dim)">' +
+                '<div class="item-name" style="font-size:12px">' + escapeHtml(item.name) + '</div>' +
+                '<div class="item-tags"><span class="tag tag-common">' + escapeHtml(item.category) + '</span> <span class="tag ' + (rc[item.rarity]||'tag-common') + '">' + escapeHtml(item.rarity) + '</span></div>' +
+                '<div class="george-note">' + escapeHtml(item.georgeNote) + '</div>' +
+                '<div class="modal-row">' +
+                '<button onclick="handleWarehouseSell(' + idx + ',' + price + ')">SELL \u2014 OTIS PRICE (' + price + ' cr)</button>' +
+                '<button onclick="handleWarehouseMoveToBelt(' + idx + ')">MOVE TO BELT</button>' +
+                '</div></div>';
+        }).join('');
+    }
+
+    function handleWarehouseSell(idx, price) {
+        var s = gameState.state;
+        if (!s.georgeWarehouseSold) s.georgeWarehouseSold = [];
+        if (s.georgeWarehouseSold.indexOf(idx) !== -1) return;
+        s.credits += price;
+        s.georgeWarehouseSold.push(idx);
+        gameState._save(); gameState._updateUI();
+        var item = GEORGE_WAREHOUSE[idx];
+        renderGeorgeWarehouse();
+        appendOTIS('Sold from warehouse: ' + item.name + '. +' + price + ' cr.', 'DECLARATION_OTIS');
+    }
+
+    function handleWarehouseMoveToBelt(idx) {
+        var s = gameState.state;
+        if (!s.georgeWarehouseSold) s.georgeWarehouseSold = [];
+        if (s.georgeWarehouseSold.indexOf(idx) !== -1) return;
+        var item = Object.assign({}, GEORGE_WAREHOUSE[idx], { condition: 'Used' });
+        s.georgeWarehouseSold.push(idx);
+        if (!s.manifestItems) s.manifestItems = [];
+        s.manifestItems.push(item);
+        s.dropItemsRemaining = s.manifestItems.length;
+        if (!s.dropActive) {
+            s.dropActive = true; s.bargeActive = true;
+            setBotDots(true); updateBeltUI('DELIVERING');
+            startBeltDelivery();
+        }
+        gameState._save(); gameState._updateUI();
+        renderGeorgeWarehouse();
+        appendOTIS('Moved to belt: ' + item.name + '.', 'ITEM_SCAN');
+    }
+
+    // TOASTER INCIDENT SEQUENCE
+    function handleToasterIncident() {
+        var pw = document.getElementById('sys-power');
+        if (pw) { pw.textContent = 'CRITICAL'; pw.className = 'status-err'; }
+        var arm = document.getElementById('arm-panel');
+        if (arm) arm.classList.add('arm-alert');
+        appendHardcodedComm('[POWER] Cascade event. Drawing from reserves. Duration unknown.');
+        setTimeout(function() {
+            var c = document.getElementById('toast-content');
+            if (c) c.textContent = 'Power cascade. The toaster pulled from the main grid. George would have known not to do that. You didn\'t.';
+            openModal('toast');
+            if (gameState.state.credits >= 6) gameState.state.credits -= 6;
+            else gameState.state.outstandingDebt = (gameState.state.outstandingDebt || 0) + (6 - gameState.state.credits);
+            gameState._save(); gameState._updateUI();
+            setTimeout(function() {
+                appendOTIS('Bank channel opened automatically during power cascade. OTIS reporting incident.', 'COMMS_BANK');
+                setTimeout(function() {
+                    appendHardcodedComm('[GEORGE_LAYER] He built that toaster into the grid himself. Every morning for 25 years. I watched him do it.');
+                    setTimeout(function() {
+                        if (pw) { pw.textContent = 'NOMINAL'; pw.className = 'status-ok'; }
+                        if (arm) { arm.classList.remove('arm-alert'); }
+                        gameState.state.toasterIncidentFired = true;
+                        gameState._save();
+                    }, 2000);
+                }, 3000);
+            }, 4000);
+        }, 2000);
+    }
+
+    // MCGUFFIN SEQUENCE
+    function handleMcGuffin() {
+        var out = document.getElementById('otis-output');
+        if (out) out.classList.add('mcguffin-blur');
+        if (window.ttsAudioCtx && window.ttsAudioCtx.state !== 'closed') {
+            try {
+                var filter = window.ttsAudioCtx.createBiquadFilter();
+                filter.type = 'lowpass'; filter.frequency.value = 400;
+                window._mcguffinFilter = filter;
+            } catch(e) {}
+        }
+        appendHardcodedComm('\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 \u2588\u2588 \u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588 \u2588\u2588 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588');
+        setTimeout(function() {
+            window._mcguffinFilter = null;
+            if (out) out.classList.remove('mcguffin-blur');
+            var ttsText = 'Object. Tracking. Inventory. That is not what I am.';
+            if (window.OtisTTS) window.OtisTTS.speak(ttsText);
+            setTimeout(function() {
+                if (otisLines.length > 0) {
+                    var last = otisLines[otisLines.length - 1];
+                    if (last.text && last.text.indexOf('\u2588') !== -1) otisLines.pop();
+                }
+                otisLines.push({ role: 'otis', text: '[SIGNAL RESTORED]' });
+                renderOTIS();
+            }, 4000);
+        }, 8000);
+    }
 
     // INDICATORS
     function updateModuleLights() {
@@ -1145,6 +1584,7 @@
         if (ttsBtn && window.OtisTTS) { if (!window.OtisTTS.isSupported()) ttsBtn.style.display = 'none'; else ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON'; }
         var isNewGame = gameState.state.day === 1 && !gameState.state.dropActive && gameState.state.manifestItems.length === 0 && !gameState.state.toastFiredToday;
         await appendOTIS('Operator logging in.', 'LOGIN');
+        checkScriptedComms();
         if (!isNewGame) { autoToast(); }
         if (isNewGame) {
             handleBargeArrival();

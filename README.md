@@ -1,8 +1,8 @@
-# O.T.I.S. — Orbital Terminal Interface System
+# O.T.I.S. — Object, Tracking & Inventory System
 
 A browser-based narrative game set aboard a junk-processing moon salvage station. You run the operation entirely from a single terminal console — no walking, no inventory screens. The console is the world.
 
-**OTIS** — Orbital Terminal Interface System — is your AI co-star, powered by the Claude Haiku API. His slow drift from cold bank machine toward something George built is the story.
+**OTIS** — Object, Tracking & Inventory System — is your AI co-star, powered by the Claude Haiku API. His slow drift from cold bank machine toward something George built is the story.
 
 **Live demo:** https://deadsignal-seven.vercel.app
 
@@ -100,8 +100,8 @@ otis/
 | `BELT_DELIVERY_MS` | 12,000ms (12s) | Item arrival rate during drop |
 | `DAYS_BETWEEN_DROPS` | 7 days | ~28 real minutes between drops |
 | `PAYMENT_CYCLE_DAYS` | 28 days | ~112 real minutes per cycle |
-| `RESERVE_RESOLVE_MIN` | 60,000ms (1 min) | Min wait for reserve resolution |
-| `RESERVE_RESOLVE_MAX` | 240,000ms (4 min) | Max wait for reserve resolution |
+| `RESERVE_RESOLVE_MIN` | 120,000ms (2 min) | Min wait for reserve resolution |
+| `RESERVE_RESOLVE_MAX` | 480,000ms (8 min) | Max wait for reserve resolution |
 | `DEBUG_SPEED_MULTIPLIER` | 10× | Fast mode divides all _MS values |
 
 ---
