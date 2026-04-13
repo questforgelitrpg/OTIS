@@ -3,1102 +3,1108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DEAD SIGNAL — Station Console</title>
-    <link rel="stylesheet" href="style.css">
+    <title>O.T.I.S. &mdash; Orbital Terminal Interface System</title>
+    <style>
+        :root {
+            --bg:           #080c08;
+            --bg-panel:     #0a0f0a;
+            --bg-modal:     #0c110c;
+            --border:       #1a3a1a;
+            --border-dim:   #112211;
+            --text-primary: #33ff66;
+            --text-bright:  #66ff88;
+            --text-dim:     #1f7a3f;
+            --text-muted:   #0f4020;
+            --text-warn:    #ffb700;
+            --text-danger:  #ff4444;
+            --ind-on:       #33ff66;
+            --ind-amber:    #ffb700;
+            --ind-red:      #ff4444;
+            --ind-off:      #0f3020;
+            --font-mono:    'Courier New', Courier, monospace;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; background: var(--bg); color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; overflow: hidden; }
+
+        /* CRT scanline overlay */
+        #crt-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px); }
+
+        /* CRT flicker */
+        @keyframes flicker { 0%, 89%, 91%, 93%, 95%, 100% { opacity: 1; } 90% { opacity: 0.85; } 92% { opacity: 0.95; } 94% { opacity: 0.88; } }
+        body { animation: flicker 12s infinite; }
+
+        /* Layout */
+        #layout { display: flex; height: 100vh; overflow: hidden; }
+
+        /* ARM sidebar -- desktop only */
+        #arm-panel { width: 140px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding: 1.2rem 0.5rem 1rem; border-right: 1px solid var(--border); background: var(--bg-panel); overflow: hidden; }
+        #arm-art { font-size: 11px; line-height: 1.3; color: var(--text-dim); letter-spacing: 0; white-space: pre; text-align: center; }
+        #arm-status { margin-top: 0.8rem; font-size: 10px; letter-spacing: 0.15em; color: var(--ind-on); text-shadow: 0 0 6px var(--ind-on); }
+        #arm-panel.arm-warning #arm-art  { color: var(--ind-amber); }
+        #arm-panel.arm-warning #arm-status { color: var(--ind-amber); text-shadow: 0 0 6px var(--ind-amber); }
+        #arm-panel.arm-alert #arm-art  { color: var(--ind-red); }
+        #arm-panel.arm-alert #arm-status { color: var(--ind-red); text-shadow: 0 0 6px var(--ind-red); }
+
+        /* Terminal */
+        #terminal { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+        /* Header */
+        #hdr { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; padding: 0.4rem 0.8rem; border-bottom: 1px solid var(--border); background: var(--bg-panel); font-size: 12px; flex-shrink: 0; }
+        #hdr-title { color: var(--text-bright); letter-spacing: 0.12em; font-weight: bold; font-size: 13px; margin-right: 0.4rem; }
+        .hdr-stat { color: var(--text-dim); padding: 0 0.4rem; border-left: 1px solid var(--border-dim); }
+        #hdr-naming { color: var(--text-primary); }
+        @keyframes pulse-warn { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .payment-warn { color: var(--text-warn) !important; }
+        .payment-crit { color: var(--text-danger) !important; animation: pulse-warn 0.8s infinite; }
+
+        /* OTIS output */
+        #otis-output { flex: 1; overflow-y: auto; padding: 0.6rem 0.8rem; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+        .otis-line, .user-line { margin-bottom: 0.35rem; line-height: 1.5; }
+        .line-tag { font-size: 11px; letter-spacing: 0.08em; margin-right: 0.4rem; color: var(--text-dim); }
+        .otis-line { color: var(--text-primary); }
+        .user-line { color: var(--text-muted); font-style: italic; }
+
+        /* Quick actions */
+        #otis-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.3rem 0.8rem; border-top: 1px solid var(--border-dim); border-bottom: 1px solid var(--border-dim); flex-shrink: 0; }
+
+        /* Buttons */
+        button { background: transparent; border: 1px solid var(--border); color: var(--text-primary); font-family: var(--font-mono); font-size: 11px; padding: 0.25rem 0.6rem; cursor: pointer; letter-spacing: 0.06em; min-height: 28px; transition: border-color 0.15s, color 0.15s; }
+        button:hover { border-color: var(--text-dim); color: var(--text-bright); }
+        button:disabled { opacity: 0.35; cursor: not-allowed; }
+        .btn-warn { border-color: #3a1a1a; color: var(--text-warn); }
+        .btn-danger { border-color: #4a0a0a; color: var(--text-danger); }
+        .btn-confirm-pending { border-color: var(--ind-red) !important; color: var(--ind-red) !important; }
+
+        /* 4-module grid */
+        #module-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); flex-shrink: 0; }
+        .module-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.8rem; background: var(--bg-panel); border: none; border-radius: 0; font-size: 12px; letter-spacing: 0.1em; min-height: 44px; justify-content: flex-start; color: var(--text-dim); }
+        .module-btn:hover { background: #0e160e; color: var(--text-primary); }
+        .mod-light { width: 8px; height: 8px; border-radius: 50%; background: var(--ind-off); flex-shrink: 0; display: inline-block; }
+        .mod-light.light-on    { background: var(--ind-on);    box-shadow: 0 0 5px var(--ind-on); }
+        .mod-light.light-amber { background: var(--ind-amber); box-shadow: 0 0 5px var(--ind-amber); }
+        .mod-light.light-red   { background: var(--ind-red);   box-shadow: 0 0 5px var(--ind-red); }
+
+        /* Footer */
+        #terminal-footer { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0.8rem; border-top: 1px solid var(--border-dim); background: var(--bg-panel); font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+        #terminal-footer button { font-size: 10px; padding: 0.15rem 0.4rem; min-height: 22px; color: var(--text-muted); border-color: var(--border-dim); }
+
+        /* Modals */
+        .modal { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.85); overflow-y: auto; }
+        .modal.open { display: flex; align-items: flex-start; justify-content: center; padding: 1rem; }
+        .modal-inner { width: 100%; max-width: 640px; background: var(--bg-modal); border: 1px solid var(--border); padding: 1rem; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); font-size: 13px; letter-spacing: 0.1em; color: var(--text-bright); }
+        .modal-header button { min-height: 28px; padding: 0.1rem 0.5rem; font-size: 13px; border-color: var(--border); color: var(--text-dim); }
+        .modal-section { margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border-dim); }
+        .modal-section:last-child { border-bottom: none; margin-bottom: 0; }
+        .modal-label { font-size: 11px; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.3rem; }
+        .modal-row { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.3rem; }
+
+        /* Belt */
+        .belt-bar-track { height: 4px; background: var(--border); margin: 0.4rem 0; }
+        .belt-bar-fill { height: 4px; background: var(--ind-on); width: 0%; }
+        @keyframes belt-drain { from { width: 100%; } to { width: 0%; } }
+        .belt-bar-fill.belt-active { animation: belt-drain linear forwards; }
+
+        /* Bot dots */
+        .bot-dots { display: flex; gap: 0.8rem; margin: 0.3rem 0; }
+        .bot-dot { display: flex; align-items: center; gap: 0.3rem; font-size: 11px; color: var(--text-dim); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ind-off); }
+        .dot.active { background: var(--ind-on); box-shadow: 0 0 4px var(--ind-on); }
+        .dot.amber  { background: var(--ind-amber); box-shadow: 0 0 4px var(--ind-amber); }
+
+        /* Item display */
+        .item-name { font-size: 13px; color: var(--text-bright); margin-bottom: 0.3rem; }
+        .item-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.4rem; }
+        .tag { font-size: 10px; padding: 0.1rem 0.4rem; border: 1px solid var(--border); letter-spacing: 0.06em; color: var(--text-dim); }
+        .tag-common   { border-color: var(--border); }
+        .tag-uncommon { border-color: #2a5a2a; color: #55cc77; }
+        .tag-rare     { border-color: #2a4a7a; color: #66aaff; }
+        .tag-anomalous { border-color: #5a2a7a; color: #cc77ff; }
+        .otis-estimate { font-size: 12px; color: var(--text-warn); margin: 0.3rem 0; }
+        .consult-cards { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.4rem 0; }
+        .consult-card { font-size: 11px; padding: 0.3rem 0.6rem; min-height: 32px; }
+        .consult-card.consulted { border-color: var(--text-dim); color: var(--text-dim); }
+        .item-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px solid var(--border-dim); }
+
+        /* Keep log */
+        .keep-list { list-style: none; }
+        .keep-list-item { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.3rem; padding: 0.2rem 0; border-bottom: 1px solid var(--border-dim); font-size: 12px; }
+        .keep-item-meta { font-size: 11px; color: var(--text-dim); flex: 1; }
+
+        /* Comms */
+        .comms-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; padding: 0.3rem 0; }
+        .comms-label { color: var(--text-dim); font-size: 11px; }
+        .comms-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ind-off); flex-shrink: 0; display: inline-block; }
+        .comms-dot.dot-on    { background: var(--ind-on);    box-shadow: 0 0 4px var(--ind-on); }
+        .comms-dot.dot-amber { background: var(--ind-amber); box-shadow: 0 0 4px var(--ind-amber); }
+        .comms-dot.dot-red   { background: var(--ind-red);   box-shadow: 0 0 4px var(--ind-red); }
+
+        /* Ledger */
+        .ledger-row { display: flex; justify-content: space-between; padding: 0.2rem 0; font-size: 12px; border-bottom: 1px solid var(--border-dim); }
+        .ledger-row span { color: var(--text-bright); }
+        #arrears-row { color: var(--text-danger); }
+        #arrears-row span { color: var(--text-danger); }
+        .debt-bar-track { height: 4px; background: var(--border); margin: 0.4rem 0; }
+        .debt-bar-fill { height: 4px; background: var(--ind-on); transition: width 0.3s; }
+
+        /* Systems */
+        .sys-list { list-style: none; }
+        .sys-list li { display: flex; justify-content: space-between; padding: 0.15rem 0; font-size: 12px; border-bottom: 1px solid var(--border-dim); }
+        .status-ok   { color: var(--ind-on); }
+        .status-warn { color: var(--ind-amber); }
+        .status-err  { color: var(--ind-red); }
+
+        /* Scrap */
+        .scrap-bar-track { height: 6px; background: var(--border); margin: 0.4rem 0; }
+        .scrap-bar-fill { height: 6px; background: var(--ind-on); transition: width 0.3s; }
+        .scrap-bar-fill.scrap-amber { background: var(--ind-amber); }
+        .scrap-bar-fill.scrap-red   { background: var(--ind-red); }
+
+        /* Shipping queue */
+        .shipping-item { font-size: 11px; color: var(--text-dim); padding: 0.1rem 0; border-bottom: 1px solid var(--border-dim); }
+
+        /* Toast modal */
+        #modal-toast .modal-inner { max-width: 400px; margin-top: 20vh; }
+        #toast-content { font-size: 13px; color: var(--text-primary); margin: 0.6rem 0 1rem; line-height: 1.5; }
+
+        /* Debug */
+        #debug-panel { display: none; padding: 0.5rem 0.8rem; background: var(--bg-panel); border-top: 1px solid #2a1a00; font-size: 11px; color: var(--text-warn); flex-shrink: 0; }
+
+        /* Misc */
+        .zone-hint { font-size: 11px; color: var(--text-dim); margin: 0.2rem 0; }
+        #manifest-pool-panel { margin-top: 0.4rem; max-height: 180px; overflow-y: auto; font-size: 11px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+            #arm-panel { display: none; }
+            html, body { font-size: 12px; overflow: auto; }
+            #layout { height: auto; min-height: 100vh; }
+            #terminal { height: auto; }
+            #otis-output { height: 200px; flex: none; }
+            .module-btn { font-size: 11px; min-height: 44px; }
+            .modal.open { padding: 0.5rem; align-items: flex-start; }
+        }
+    </style>
 </head>
 <body>
-    <div id="console-frame">
+    <div id="crt-overlay" aria-hidden="true"></div>
 
-        <!-- Header bar -->
-        <header id="console-header">
-            <span class="header-title">DEAD SIGNAL // STATION CONSOLE</span>
-            <span id="stat-day" class="header-stat">Day 1</span>
-            <span id="stat-debt" class="header-stat">Loan: 25,000 cr</span>
-            <span id="stat-credits" class="header-stat">Credits: 200 cr</span>
-            <span id="stat-barge" class="header-stat">BARGE: <span id="barge-days">7</span>d</span>
-            <span id="stat-hours" class="header-stat">Session: 0h</span>
-            <span id="stat-naming" class="header-stat naming-label">Mr. Serling</span>
-        </header>
+    <div id="layout">
+        <!-- OTIS ARM sidebar desktop only -->
+        <aside id="arm-panel" aria-hidden="true">
+            <pre id="arm-art">  &#9556;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9559;
+  &#9553;O.T.I.S.&#9553;
+  &#9553; &#9689;    &#9689; &#9553;
+  &#9553;  \&#x2015;&#x2015;/  &#9553;
+  &#9562;&#9552;&#9552;&#9552;&#9566;&#9552;&#9552;&#9552;&#9552;&#9565;
+       &#9553;
+    &#9484;&#9472;&#9472;&#9580;&#9472;&#9472;&#9488;
+    &#9474;     &#9474;
+    &#9492;&#9472;&#9472;&#9578;&#9472;&#9472;&#9496;
+      /&#9553;\
+     / &#9553; \
+    /  &#9553;  \
+   &#9679;   &#9679;   &#9679;</pre>
+            <div id="arm-status">NOMINAL</div>
+        </aside>
 
-        <!-- Main grid -->
-        <main id="console-grid">
+        <div id="terminal">
+            <header id="hdr">
+                <span id="hdr-title">O.T.I.S.</span>
+                <span class="hdr-stat" id="hdr-day">DAY 1</span>
+                <span class="hdr-stat" id="hdr-credits">200 cr</span>
+                <span class="hdr-stat" id="hdr-debt">LOAN: 25,000 cr</span>
+                <span class="hdr-stat" id="hdr-payment">PAY: 28d</span>
+                <span class="hdr-stat" id="hdr-barge">BARGE: 7d</span>
+                <span class="hdr-stat" id="hdr-naming">MR. SERLING</span>
+            </header>
 
-            <!-- Zone: BELT MONITOR -->
-            <section class="console-zone" id="zone-belt-monitor" tabindex="0">
-                <h2 class="zone-title">BELT MONITOR <span class="indicator" id="ind-belt"></span></h2>
-                <div class="zone-body">
-                    <p class="zone-hint">DROP STATUS: <span id="drop-status-text">WINDOW: CLOSED</span></p>
-                    <div class="bot-status-row">
-                        <span>BOT-1 <span class="comms-dot" id="bot-dot-1"></span></span>
-                        <span>BOT-2 <span class="comms-dot" id="bot-dot-2"></span></span>
-                        <span>BOT-3 <span class="comms-dot" id="bot-dot-3"></span></span>
-                    </div>
-                    <div id="belt-countdown-bar-track" class="belt-bar-track" style="display:none">
-                        <div id="belt-countdown-bar" class="belt-bar-fill"></div>
-                    </div>
-                    <p class="zone-hint" id="belt-status-text">NEXT DROP: <span id="belt-drop-countdown">7</span> days</p>
-                    <p class="zone-hint" id="belt-backed-up-msg" style="display:none; color:var(--text-warn)">⚠ BELT BACKED UP — clear item queue</p>
-                    <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.4rem">
-                        <button class="zone-btn" id="btn-barge-drop" onclick="handleBargeArrival()">BARGE DROP</button>
-                        <button class="zone-btn" id="btn-scan-belt" onclick="handleBeltScan()" disabled>SCAN BELT</button>
-                    </div>
-                </div>
-            </section>
+            <div id="otis-output" role="log" aria-live="polite" aria-label="OTIS conversation log"></div>
 
-            <!-- Zone: COMMS -->
-            <section class="console-zone" id="zone-comms" tabindex="0">
-                <h2 class="zone-title">COMMS <span class="indicator" id="ind-comms"></span></h2>
-                <div class="zone-body">
-                    <!-- BANK -->
-                    <div class="comms-slot">
-                        <span class="comms-dot" id="comms-dot-bank"></span>
-                        <span class="comms-label">UNIVERSAL BANK CONGLOMERATE</span>
-                        <button class="zone-btn" onclick="handleComms('BANK')">ANSWER BANK</button>
-                    </div>
-                    <!-- SVEN -->
-                    <div class="comms-slot" style="flex-wrap:wrap; gap:0.3rem;">
-                        <span class="comms-dot" id="comms-dot-sven"></span>
-                        <span class="comms-label">SVEN DIGUT / DIGUT OPS</span>
-                        <button class="zone-btn" onclick="handleComms('SVEN')">ANSWER SVEN</button>
-                        <button class="zone-btn" onclick="handleComms('IGNORE_SVEN')">IGNORE SVEN</button>
-                        <button class="zone-btn" onclick="handleComms('COMPLAINT')">FILE COMPLAINT</button>
-                    </div>
-                    <!-- MAY -->
-                    <div class="comms-slot" style="flex-wrap:wrap; gap:0.3rem;">
-                        <span class="comms-dot" id="comms-dot-may"></span>
-                        <span class="comms-label">MAY FINSTER / LEFTOVER RECYCLING</span>
-                        <span class="comms-label" id="may-scrap-readout" style="font-size:11px; color:var(--text-dim)">SCRAP: 0%</span>
-                        <button class="zone-btn" onclick="handleComms('MAY')">ANSWER MAY</button>
-                        <button class="zone-btn" onclick="handleDispatchMay()">DISPATCH SCRAP</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Zone: SYSTEMS -->
-            <section class="console-zone" id="zone-systems" tabindex="0">
-                <h2 class="zone-title">SYSTEMS <span class="indicator" id="ind-systems"></span></h2>
-                <div class="zone-body">
-                    <ul class="sys-list">
-                        <li>BOT-1: <span class="status-ok" id="sys-bot1">NOMINAL</span></li>
-                        <li>BOT-2: <span class="status-ok" id="sys-bot2">NOMINAL</span></li>
-                        <li>BOT-3: <span class="status-ok" id="sys-bot3">NOMINAL</span></li>
-                        <li>CONV: <span class="status-ok">NOMINAL</span></li>
-                        <li>RECV: <span class="status-ok">NOMINAL</span></li>
-                        <li>SHIP: <span class="status-ok" id="sys-ship">NOMINAL</span></li>
-                        <li>POWER: <span class="status-ok" id="sys-power">NOMINAL</span></li>
-                        <li>STORE: <span class="status-ok" id="sys-store">NOMINAL</span></li>
-                        <li>SVEN: <span class="status-ok" id="sys-sven">NOMINAL</span></li>
-                        <li>OTIS: <span class="status-ok" id="sys-otis">NOMINAL</span></li>
-                    </ul>
-                    <button class="zone-btn" onclick="appendOTIS('Running full systems diagnostic.', 'ZONE_SYSTEMS')" style="margin-top:0.3rem">DIAGNOSE SYSTEMS</button>
-                    <div class="scrap-section">
-                        <div class="scrap-label">SCRAP CHANNEL: <span id="scrap-pct">0%</span></div>
-                        <div class="scrap-bar-track">
-                            <div class="scrap-bar-fill" id="scrap-bar-fill" style="width:0%"></div>
-                        </div>
-                        <button class="zone-btn" onclick="handleDispatchMay()">DISPATCH TO MAY</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Zone: LEDGER -->
-            <section class="console-zone" id="zone-ledger" tabindex="0">
-                <h2 class="zone-title">LEDGER <span class="indicator" id="ind-ledger"></span></h2>
-                <div class="zone-body">
-                    <div class="ledger-row">LOAN BALANCE: <span id="ledger-debt">25,000 cr</span></div>
-                    <div class="ledger-row">CREDITS IN HAND: <span id="ledger-credits">200 cr</span></div>
-                    <div class="ledger-row">PAYMENT DUE: 650 cr in <span id="ledger-days-until">28</span> days</div>
-                    <div id="arrears-row" class="ledger-row" style="display:none; color:var(--text-danger)">
-                        ARREARS: <span id="ledger-arrears">0 cr</span>
-                        <button class="zone-btn" onclick="handleClearArrears()" style="color:var(--text-danger); border-color:#3a1010">CLEAR ARREARS</button>
-                    </div>
-                    <div class="debt-bar-track"><div class="debt-bar-fill" id="debt-bar-fill" style="width:0%"></div></div>
-                    <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.3rem">
-                        <button class="zone-btn" onclick="handleMakePayment()">MAKE PAYMENT</button>
-                        <button class="zone-btn" onclick="gameState.advanceDay()" aria-label="Advance Day" style="color:var(--text-dim); border-color:var(--border);">&gt;&gt; DAY</button>
-                        <button class="zone-btn" onclick="appendOTIS('How bad is the debt situation?', 'CONSULT_DEBT')">CONSULT DEBT</button>
-                    </div>
-                    <div id="shipping-queue-section">
-                        <p class="zone-hint" style="font-size:12px; margin-top:0.4rem">PENDING SALES:</p>
-                        <div id="shipping-queue-list"></div>
-                        <p class="zone-hint" id="shipping-queue-empty" style="font-size:12px; font-style:italic">No pending sales.</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Zone: ITEM QUEUE -->
-            <section class="console-zone" id="zone-item-queue" tabindex="0">
-                <h2 class="zone-title">ITEM QUEUE <span class="indicator" id="ind-items"></span></h2>
-                <div class="zone-body">
-                    <p class="zone-hint" id="item-queue-empty">-- WAITING FOR DROP --</p>
-                    <div id="item-queue-present" style="display:none">
-                        <p class="item-queue-name" id="item-queue-name"></p>
-                        <div class="item-tags" id="item-tags"></div>
-                        <p class="otis-estimate" id="otis-estimate" style="display:none"></p>
-                        <div class="consult-cards">
-                            <button class="consult-card" onclick="handleConsult('CONSULT_WHATIS')">EXAMINE</button>
-                            <button class="consult-card" onclick="handleConsult('CONSULT_WORTH')">ASSESS VALUE</button>
-                            <button class="consult-card" onclick="handleConsult('CONSULT_GEORGE')">GEORGE ARCHIVE</button>
-                            <button class="consult-card btn-skip" onclick="handleSkip()">SKIP</button>
-                        </div>
-                        <div class="item-actions" id="item-declaration" style="display:none">
-                            <button class="zone-btn" onclick="handleDeclare('OTIS')">SELL — OTIS PRICE</button>
-                            <button class="zone-btn" id="btn-reserve" onclick="handleDeclare('RESERVE')" disabled>SELL — RESERVE</button>
-                            <button class="zone-btn btn-warn" onclick="handleDeclare('NORESERVE')">SELL — NO RESERVE</button>
-                            <button class="zone-btn" onclick="handleDeclare('KEEP')">KEEP</button>
-                            <button class="zone-btn btn-warn" onclick="handleDeclare('SCRAP')">SCRAP</button>
-                        </div>
-                    </div>
-                    <!-- Manifest Pool Reference -->
-                    <div id="manifest-pool-toggle" style="margin-top:0.4rem">
-                        <button class="zone-btn" onclick="toggleManifestPool()" style="font-size:11px; padding:0.15rem 0.5rem; color:var(--text-dim)">POOL ▾</button>
-                    </div>
-                    <div id="manifest-pool-panel" style="display:none; margin-top:0.3rem; overflow-y:auto; max-height:180px; font-size:11px; color:var(--text-primary); scrollbar-width:thin; scrollbar-color:var(--ind-on) transparent;">
-                        <!-- JS will populate this -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- Zone: OTIS TERMINAL -->
-            <section class="console-zone zone-wide" id="zone-otis" tabindex="0">
-                <h2 class="zone-title">OTIS TERMINAL <span class="indicator indicator-on" id="ind-otis"></span></h2>
-                <div class="zone-body">
-                    <div id="otis-output" role="log" aria-live="polite" aria-label="OTIS conversation log"></div>
-                    <div id="otis-control-bar" style="display:flex; align-items:center; justify-content:space-between; margin-top:0.2rem;">
-                        <div id="otis-status-bar" style="font-size:12px; color:var(--text-dim);">
-                            OTIS: <span id="otis-status-text">READY</span>
-                        </div>
-                        <button id="tts-mute-btn" class="quick-btn" onclick="handleTTSMuteToggle()" title="Toggle OTIS voice">
-                            TTS: ON
-                        </button>
-                    </div>
-                    <div id="otis-quick-actions">
-                        <button class="quick-btn" onclick="appendOTIS('Operator logged in.', 'LOGIN')">LOGIN</button>
-                        <button class="quick-btn" onclick="appendOTIS('What is the current status?', 'CONSULT_STATUS')">STATUS</button>
-                        <button class="quick-btn" onclick="handleLogoff()">LOGOFF</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Zone: KEEP LOG -->
-            <section class="console-zone" id="zone-keep-log" tabindex="0">
-                <h2 class="zone-title">KEEP LOG</h2>
-                <div class="zone-body">
-                    <p id="keep-log-count" class="zone-hint" style="font-size:12px"></p>
-                    <ul id="keep-log-list" class="keep-list"></ul>
-                    <p class="zone-hint" id="keep-log-empty">Log empty.</p>
-                </div>
-            </section>
-
-        </main>
-
-        <!-- Mobile tab bar -->
-        <nav id="tab-bar">
-            <button data-zone="zone-belt-monitor" onclick="switchTab('zone-belt-monitor')">BELT</button>
-            <button data-zone="zone-comms" onclick="switchTab('zone-comms')">COMMS</button>
-            <button data-zone="zone-systems" onclick="switchTab('zone-systems')">SYS</button>
-            <button data-zone="zone-ledger" onclick="switchTab('zone-ledger')">LEDGER</button>
-            <button data-zone="zone-item-queue" onclick="switchTab('zone-item-queue')">ITEMS</button>
-            <button data-zone="zone-otis" onclick="switchTab('zone-otis')">OTIS</button>
-            <button data-zone="zone-keep-log" onclick="switchTab('zone-keep-log')">LOG</button>
-        </nav>
-
-        <!-- Footer -->
-        <footer id="console-footer">
-            <span>OTIS v0.3 // PHASE 0</span>
-            <span style="display:flex; gap:0.5rem; align-items:center">
-                <button onclick="toggleDebugPanel()" style="background:transparent; border:none; color:var(--border); font-family:var(--font-mono); font-size:11px; cursor:pointer;">DBG</button>
-                <button id="clear-save-btn" onclick="handleClearSave(this)">CLEAR SAVE</button>
-            </span>
-        </footer>
-
-        <!-- Debug panel -->
-        <div id="debug-panel" style="display:none; padding:0.5rem 1rem; background:#050a0a; border-top:1px solid #1a3030; font-size:12px; color:var(--text-warn);">
-            <span style="letter-spacing:0.1em">⚠ DEBUG // NOT FOR PRODUCTION</span>
-            <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.3rem">
-                <button class="zone-btn" onclick="handleBargeArrival()">FORCE DROP</button>
-                <button class="zone-btn" onclick="debugAdvanceDay()">ADVANCE DAY</button>
-                <button class="zone-btn" onclick="debugAdvanceWeek()">ADVANCE WEEK</button>
-                <button class="zone-btn" onclick="debugAddCredits()">ADD 500 CR</button>
-                <button class="zone-btn" onclick="debugForcePaymentDue()">FORCE PAYMENT DUE</button>
-                <button class="zone-btn" onclick="debugToggleFastMode()">FAST MODE TOGGLE</button>
-                <button class="zone-btn" onclick="handleClearSave(this)">CLEAR SAVE</button>
-                <button class="zone-btn" onclick="handleBeltScan()">BELT SCAN</button>
+            <div id="otis-actions">
+                <button onclick="appendOTIS('Operator logging in.','LOGIN')">LOGIN</button>
+                <button onclick="appendOTIS('What is the current status?','CONSULT_STATUS')">STATUS</button>
+                <button onclick="appendOTIS('How bad is the debt?','CONSULT_DEBT')">DEBT</button>
+                <button onclick="handleLogoff()">LOGOFF</button>
+                <button id="tts-btn" onclick="handleTTSToggle()">TTS: ON</button>
             </div>
-        </div>
 
+            <div id="module-grid">
+                <button class="module-btn" onclick="openModal('belt')"><span class="mod-light" id="light-belt"></span>BELT / ITEMS</button>
+                <button class="module-btn" onclick="openModal('comms')"><span class="mod-light" id="light-comms"></span>COMMS</button>
+                <button class="module-btn" onclick="openModal('store')"><span class="mod-light" id="light-store"></span>STOREROOM</button>
+                <button class="module-btn" onclick="openModal('systems')"><span class="mod-light" id="light-systems"></span>SYSTEMS / BOTS</button>
+            </div>
+
+            <div id="debug-panel">
+                <span>&#9888; DEBUG</span>
+                <div class="modal-row">
+                    <button onclick="handleBargeArrival()">FORCE DROP</button>
+                    <button onclick="dbgDay()">+DAY</button>
+                    <button onclick="dbgWeek()">+WEEK</button>
+                    <button onclick="dbgCredits()">+500cr</button>
+                    <button onclick="dbgForcePay()">FORCE PAY</button>
+                    <button onclick="dbgFastMode()">FAST MODE</button>
+                    <button onclick="handleClearSave(this)">CLEAR SAVE</button>
+                </div>
+            </div>
+
+            <footer id="terminal-footer">
+                <span>O.T.I.S. v0.4 // PHASE 0</span>
+                <span style="display:flex;gap:0.4rem;align-items:center">
+                    <button onclick="toggleDebug()">DBG</button>
+                    <button id="clear-save-btn" onclick="handleClearSave(this)">CLEAR SAVE</button>
+                </span>
+            </footer>
+        </div>
     </div>
 
-    <!-- Scripts loaded in dependency order -->
-    <script src="state.js"></script>
-    <script src="game.js"></script>
+    <!-- BELT / ITEMS MODAL -->
+    <div id="modal-belt" class="modal" role="dialog" aria-label="Belt and Items">
+        <div class="modal-inner">
+            <div class="modal-header"><span>BELT / ITEMS</span><button onclick="closeModal('belt')">&#x2715; CLOSE</button></div>
+            <div class="modal-section">
+                <div class="modal-label">DROP STATUS</div>
+                <p class="zone-hint" id="drop-status-text">WINDOW: CLOSED</p>
+                <div class="bot-dots">
+                    <span class="bot-dot"><span class="dot" id="bot-dot-1"></span>BOT-1</span>
+                    <span class="bot-dot"><span class="dot" id="bot-dot-2"></span>BOT-2</span>
+                    <span class="bot-dot"><span class="dot" id="bot-dot-3"></span>BOT-3</span>
+                </div>
+                <div class="belt-bar-track" id="belt-bar-track" style="display:none"><div class="belt-bar-fill" id="belt-bar-fill"></div></div>
+                <p class="zone-hint" id="belt-status-text">NEXT DROP: <span id="belt-drop-countdown">7</span> days</p>
+                <p class="zone-hint" id="belt-backed-up" style="display:none;color:var(--text-warn)">&#9888; BELT BACKED UP &mdash; clear item queue</p>
+                <div class="modal-row">
+                    <button id="btn-barge-drop" onclick="handleBargeArrival()">BARGE DROP</button>
+                    <button id="btn-scan-belt" onclick="handleBeltScan()" disabled>SCAN BELT</button>
+                </div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label">ITEM QUEUE</div>
+                <p class="zone-hint" id="item-queue-empty">&#x2014; WAITING FOR DROP &#x2014;</p>
+                <div id="item-queue-present" style="display:none">
+                    <p class="item-name" id="item-queue-name"></p>
+                    <div class="item-tags" id="item-tags"></div>
+                    <p class="otis-estimate" id="otis-estimate" style="display:none"></p>
+                    <div class="consult-cards">
+                        <button class="consult-card" id="cc-examine" onclick="handleConsult('CONSULT_WHATIS')">EXAMINE</button>
+                        <button class="consult-card" id="cc-value" onclick="handleConsult('CONSULT_WORTH')">ASSESS VALUE</button>
+                        <button class="consult-card" id="cc-george" onclick="handleConsult('CONSULT_GEORGE')">GEORGE ARCHIVE</button>
+                        <button class="consult-card btn-warn" onclick="handleSkip()">SKIP</button>
+                    </div>
+                    <div class="item-actions" id="item-declaration" style="display:none">
+                        <button onclick="handleDeclare('OTIS')">SELL &mdash; OTIS PRICE</button>
+                        <button id="btn-reserve" onclick="handleDeclare('RESERVE')" disabled>SELL &mdash; RESERVE</button>
+                        <button class="btn-warn" onclick="handleDeclare('NORESERVE')">SELL &mdash; NO RESERVE</button>
+                        <button onclick="handleDeclare('KEEP')">KEEP</button>
+                        <button class="btn-warn" onclick="handleDeclare('SCRAP')">SCRAP</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
+                    <span>MANIFEST POOL</span>
+                    <button style="font-size:10px;padding:0.1rem 0.4rem;min-height:20px" onclick="toggleManifestPool()">POOL &#9662;</button>
+                </div>
+                <div id="manifest-pool-panel" style="display:none"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMMS MODAL -->
+    <div id="modal-comms" class="modal" role="dialog" aria-label="Communications">
+        <div class="modal-inner">
+            <div class="modal-header"><span>COMMS</span><button onclick="closeModal('comms')">&#x2715; CLOSE</button></div>
+            <div class="modal-section">
+                <div class="modal-label">UNIVERSAL BANK CONGLOMERATE</div>
+                <div class="comms-row"><span class="comms-dot" id="comms-dot-bank"></span><span class="comms-label">CHANNEL</span><button onclick="handleComms('BANK')">ANSWER BANK</button></div>
+                <div class="ledger-row">LOAN BALANCE: <span id="ledger-debt">25,000 cr</span></div>
+                <div class="ledger-row">CREDITS: <span id="ledger-credits">200 cr</span></div>
+                <div class="ledger-row">PAYMENT DUE: 650 cr in <span id="ledger-days">28</span>d</div>
+                <div id="arrears-row" class="ledger-row" style="display:none">ARREARS: <span id="ledger-arrears">0 cr</span><button class="btn-danger" onclick="handleClearArrears()">CLEAR ARREARS</button></div>
+                <div class="debt-bar-track"><div class="debt-bar-fill" id="debt-bar-fill" style="width:0%"></div></div>
+                <div class="modal-row"><button onclick="handleMakePayment()">MAKE PAYMENT</button></div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label">SVEN DIGUT / DIGUT OPS</div>
+                <div class="comms-row"><span class="comms-dot" id="comms-dot-sven"></span><span class="comms-label">SIGNAL</span><button onclick="handleComms('SVEN')">ANSWER SVEN</button><button onclick="handleComms('IGNORE_SVEN')">IGNORE SVEN</button><button onclick="handleComms('COMPLAINT')">FILE COMPLAINT</button></div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label">MAY FINSTER / LEFTOVER RECYCLING</div>
+                <div class="comms-row"><span class="comms-dot" id="comms-dot-may"></span><span class="comms-label" id="may-scrap-readout">SCRAP: 0%</span><button onclick="handleComms('MAY')">ANSWER MAY</button><button onclick="handleDispatchMay()">DISPATCH SCRAP</button></div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label">PENDING SALES</div>
+                <div id="shipping-queue-list"></div>
+                <p class="zone-hint" id="shipping-queue-empty">No pending sales.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- STOREROOM MODAL -->
+    <div id="modal-store" class="modal" role="dialog" aria-label="Storeroom">
+        <div class="modal-inner">
+            <div class="modal-header"><span>STOREROOM</span><button onclick="closeModal('store')">&#x2715; CLOSE</button></div>
+            <div class="modal-section">
+                <div class="modal-label">SCRAP CHANNEL: <span id="scrap-pct">0%</span></div>
+                <div class="scrap-bar-track"><div class="scrap-bar-fill" id="scrap-bar-fill" style="width:0%"></div></div>
+                <div class="modal-row"><button onclick="handleDispatchMay()">DISPATCH TO MAY</button></div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label" style="display:flex;justify-content:space-between"><span>KEEP LOG</span><span id="keep-log-count" style="color:var(--text-dim)">0 / 12</span></div>
+                <ul id="keep-log-list" class="keep-list"></ul>
+                <p class="zone-hint" id="keep-log-empty">Log empty.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SYSTEMS / BOTS MODAL -->
+    <div id="modal-systems" class="modal" role="dialog" aria-label="Systems and Bots">
+        <div class="modal-inner">
+            <div class="modal-header"><span>SYSTEMS / BOTS</span><button onclick="closeModal('systems')">&#x2715; CLOSE</button></div>
+            <div class="modal-section">
+                <div class="modal-label">SYSTEM STATUS</div>
+                <ul class="sys-list">
+                    <li>BOT-1 <span class="status-ok" id="sys-bot1">NOMINAL</span></li>
+                    <li>BOT-2 <span class="status-ok" id="sys-bot2">NOMINAL</span></li>
+                    <li>BOT-3 <span class="status-ok" id="sys-bot3">NOMINAL</span></li>
+                    <li>CONV <span class="status-ok">NOMINAL</span></li>
+                    <li>RECV <span class="status-ok">NOMINAL</span></li>
+                    <li>SHIP <span class="status-ok" id="sys-ship">NOMINAL</span></li>
+                    <li>POWER <span class="status-ok" id="sys-power">NOMINAL</span></li>
+                    <li>STORE <span class="status-ok" id="sys-store">NOMINAL</span></li>
+                    <li>SVEN <span class="status-ok" id="sys-sven">NOMINAL</span></li>
+                    <li>OTIS <span class="status-ok" id="sys-otis">NOMINAL</span></li>
+                </ul>
+                <div class="modal-row" style="margin-top:0.5rem"><button onclick="appendOTIS('Running full systems diagnostic.','ZONE_SYSTEMS')">DIAGNOSE</button></div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label">BOT STATUS</div>
+                <div class="bot-dots">
+                    <span class="bot-dot"><span class="dot" id="sys-bot-dot-1"></span>BOT-1</span>
+                    <span class="bot-dot"><span class="dot" id="sys-bot-dot-2"></span>BOT-2</span>
+                    <span class="bot-dot"><span class="dot" id="sys-bot-dot-3"></span>BOT-3</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST MODAL -->
+    <div id="modal-toast" class="modal" role="dialog" aria-label="George's Toaster">
+        <div class="modal-inner">
+            <div class="modal-header"><span>GEORGE&#39;S TOASTER</span><button onclick="closeModal('toast')">&#x2715; CLOSE</button></div>
+            <p id="toast-content">Energy draw logged. 6 credits.</p>
+            <div class="modal-row" style="margin-top:0.8rem"><button onclick="closeModal('toast')">ACKNOWLEDGE</button></div>
+        </div>
+    </div>
+
+    <script>
+    // TIMING
+    const TIMING = {
+        MS_PER_INGAME_DAY:     240000,
+        BELT_DELIVERY_MS:      12000,
+        DAYS_BETWEEN_DROPS:    7,
+        DROP_VARIANCE_DAYS:    2,
+        DROP_SIZE_ACT1:        6,
+        DROP_SIZE_ACT2_MIN:    9,
+        DROP_SIZE_ACT2_MAX:    11,
+        DROP_SIZE_ACT3_MIN:    13,
+        DROP_SIZE_ACT3_MAX:    15,
+        PAYMENT_CYCLE_DAYS:    28,
+        RESERVE_RESOLVE_MIN:   60000,
+        RESERVE_RESOLVE_MAX:   240000,
+        ANOMALOUS_RESERVE_MIN: 400,
+        ANOMALOUS_RESERVE_MAX: 2000,
+        DEBUG_FAST_MODE:       false,
+        DEBUG_SPEED_MULTIPLIER: 10,
+    };
+
+    // MANIFEST POOL
+    const MANIFEST_POOL = [
+        { name: 'Personal effects bundle \u2014 civilian origin',  category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 50 },
+        { name: 'Corroded fuel cell casing',                       category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 38 },
+        { name: 'Settlement cooking unit \u2014 communal',         category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 65 },
+        { name: 'Burned circuit board cluster',                    category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 32 },
+        { name: 'Bent structural strut',                           category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 35 },
+        { name: "Children's toy \u2014 unidentified origin",       category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 45 },
+        { name: 'Settlement water filter \u2014 ceramic',          category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 40 },
+        { name: 'Partial navigation array',                        category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 155 },
+        { name: 'Cracked coolant housing',                         category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 95 },
+        { name: 'Civilian medical kit \u2014 partial',             category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 110 },
+        { name: 'Coolant manifold \u2014 intact',                  category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 210 },
+        { name: 'Settlement community archive \u2014 partial',     category: 'Settlement', rarity: 'Uncommon',  condition: 'Used', otisValue: 130 },
+        { name: 'Pressure suit fragment \u2014 marked',            category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 115 },
+        { name: 'Decommissioned beacon housing',                   category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 180 },
+        { name: 'Pre-collapse data crystal',                       category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 580 },
+        { name: 'Fused relay core \u2014 pre-collapse',            category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 440 },
+        { name: 'Encrypted data slate',                            category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 360 },
+        { name: 'Autonomous drone chassis \u2014 inert',           category: 'Industrial', rarity: 'Rare',      condition: 'Used', otisValue: 310 },
+        { name: 'Unidentified alloy fragment',                     category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
+        { name: 'Pressurized canister \u2014 unknown contents',    category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
+        { name: 'Ceramic figure \u2014 no catalogue match',        category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
+    ];
+
+    function buildManifestSummary(manifest) {
+        const n = manifest.length;
+        const cats = [...new Set(manifest.map(i => i.category))];
+        const top = manifest.reduce((b, i) => i.otisValue > b.otisValue ? i : b, manifest[0]);
+        return 'Barge inbound. Manifest: ' + n + ' items. Categories: ' + cats.join(', ') + '. Notable: ' + top.name + '.';
+    }
+
+    // STATE MANAGER
+    const STATE_KEY = 'otis_state_v1';
+    const stateManager = {
+        _default: function() {
+            return {
+                debt: 25000, credits: 200, day: 1,
+                paymentDue: 650, daysUntilPayment: 28,
+                sessionHours: 0, namingTier: 0, skipCount: 0, act: 1,
+                scrapFill: 0, keepLog: [], shippingQueue: [], recentEvents: [],
+                dropActive: false, bargeActive: false, dropItemsRemaining: 0,
+                manifestItems: [], outstandingDebt: 0, missedPayments: 0,
+                daysUntilNextDrop: 7, toastFiredToday: false,
+            };
+        },
+        save: function(state) {
+            try { localStorage.setItem(STATE_KEY, JSON.stringify(Object.assign({}, state, { savedAt: Date.now() }))); }
+            catch(e) { console.warn('Save failed:', e); }
+        },
+        load: function() {
+            try {
+                var raw = localStorage.getItem(STATE_KEY);
+                if (raw) return Object.assign({}, this._default(), JSON.parse(raw));
+            } catch(e) { console.warn('Load failed:', e); }
+            return null;
+        },
+        clear: function() { localStorage.removeItem(STATE_KEY); },
+    };
+
+    // GAME STATE
+    var NAMING_TIERS = ['Mr. Serling','Vernon','Vern','Buddy','Pal','Coworker','Boss','Mr. Serling','Oh. You.'];
+
+    function GameState() {
+        this.state = stateManager._default();
+        this._sessionStart = null;
+        this._sessionTimer = null;
+        this._dayTimer = null;
+    }
+    GameState.prototype.init = function() {
+        var loaded = stateManager.load();
+        if (loaded) this.state = loaded;
+    };
+    GameState.prototype._save = function() { stateManager.save(this.state); };
+    GameState.prototype._trackEvent = function(trigger) {
+        this.state.recentEvents = [{ trigger: trigger, at: Date.now() }].concat(this.state.recentEvents).slice(0, 5);
+        this._save();
+    };
+    GameState.prototype._updateUI = function() {
+        var s = this.state;
+        var naming = NAMING_TIERS[Math.min(s.namingTier, NAMING_TIERS.length - 1)];
+        var dup = (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS;
+        setEl('hdr-day', 'DAY ' + s.day);
+        setEl('hdr-credits', s.credits.toLocaleString() + ' cr');
+        setEl('hdr-debt', 'LOAN: ' + s.debt.toLocaleString() + ' cr');
+        setEl('hdr-naming', naming.toUpperCase());
+        var payEl = document.getElementById('hdr-payment');
+        if (payEl) { payEl.textContent = 'PAY: ' + dup + 'd'; payEl.className = 'hdr-stat' + (dup <= 3 ? ' payment-crit' : dup <= 7 ? ' payment-warn' : ''); }
+        var daysUntilDrop = (s.daysUntilNextDrop != null) ? s.daysUntilNextDrop : TIMING.DAYS_BETWEEN_DROPS;
+        var bargeEl = document.getElementById('hdr-barge');
+        if (bargeEl) bargeEl.textContent = s.bargeActive ? 'BARGE: ACTIVE' : 'BARGE: ' + daysUntilDrop + 'd';
+        setEl('ledger-debt', s.debt.toLocaleString() + ' cr');
+        setEl('ledger-credits', s.credits.toLocaleString() + ' cr');
+        setEl('ledger-days', String(dup));
+        var arrearsRow = document.getElementById('arrears-row');
+        var arrearsEl  = document.getElementById('ledger-arrears');
+        var arrears = s.outstandingDebt || 0;
+        if (arrearsRow) arrearsRow.style.display = arrears > 0 ? '' : 'none';
+        if (arrearsEl)  arrearsEl.textContent = arrears.toLocaleString() + ' cr';
+        var debtBar = document.getElementById('debt-bar-fill');
+        if (debtBar) {
+            var pct = Math.max(0, Math.min(100, ((25000 - s.debt) / 25000) * 100));
+            debtBar.style.width = pct + '%';
+            debtBar.style.background = s.debt > 15000 ? 'var(--ind-on)' : s.debt >= 8000 ? 'var(--ind-amber)' : 'var(--ind-red)';
+        }
+        var bdc = document.getElementById('belt-drop-countdown');
+        if (bdc) bdc.textContent = daysUntilDrop;
+        this._renderKeepLog();
+        updateModuleLights();
+        updateCommsIndicators();
+        updateSystemsStatus();
+        updateScrapBar();
+    };
+    GameState.prototype._renderKeepLog = function() {
+        var list  = document.getElementById('keep-log-list');
+        var empty = document.getElementById('keep-log-empty');
+        var cnt   = document.getElementById('keep-log-count');
+        var n = this.state.keepLog.length;
+        if (cnt) { cnt.textContent = n + ' / 12'; cnt.style.color = n >= 12 ? 'var(--text-danger)' : n >= 10 ? 'var(--text-warn)' : 'var(--text-dim)'; }
+        if (list) {
+            list.innerHTML = this.state.keepLog.map(function(k, i) {
+                return '<li class="keep-list-item"><span>' + escapeHtml(k.name) + '</span>' +
+                    '<span class="keep-item-meta">' + escapeHtml(k.condition||'') + ' \u2014 ' + (k.otisValue||0) + ' cr \u2014 Day ' + k.day + '</span>' +
+                    '<button class="consult-card" onclick="handleSellBack(' + i + ')">SELL BACK</button></li>';
+            }).join('');
+        }
+        if (empty) empty.style.display = n ? 'none' : '';
+    };
+    GameState.prototype.startSessionTimer = function() {
+        if (this._sessionTimer) return;
+        this._sessionStart = Date.now() - this.state.sessionHours * 60000;
+        var self = this;
+        this._sessionTimer = setInterval(function() { self.state.sessionHours = Math.floor((Date.now() - self._sessionStart) / 60000); self._save(); }, 60000);
+    };
+    GameState.prototype.startDayTimer = function() {
+        if (this._dayTimer) return;
+        var ms = TIMING.DEBUG_FAST_MODE ? Math.floor(TIMING.MS_PER_INGAME_DAY / TIMING.DEBUG_SPEED_MULTIPLIER) : TIMING.MS_PER_INGAME_DAY;
+        var self = this;
+        this._dayTimer = setInterval(function() { self.advanceDay(); }, ms);
+    };
+    GameState.prototype.stopDayTimer = function() { clearInterval(this._dayTimer); this._dayTimer = null; };
+    GameState.prototype.advanceDay = function() {
+        this.state.day++;
+        this.state.daysUntilPayment = Math.max(0, (this.state.daysUntilPayment != null ? this.state.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS) - 1);
+        this.state.daysUntilNextDrop = Math.max(0, (this.state.daysUntilNextDrop != null ? this.state.daysUntilNextDrop : TIMING.DAYS_BETWEEN_DROPS) - 1);
+        if (this.state.outstandingDebt > 0) {
+            this.state.outstandingDebt = Math.ceil(this.state.outstandingDebt * 1.05);
+            if (this.state.outstandingDebt > 2000) appendOTIS('Arrears exceeding 2,000 cr. Compound rate: 5% per day.', 'ARREARS_WARNING');
+        }
+        this.checkPaymentDue();
+        this.checkDropSchedule();
+        this._save();
+        this._updateUI();
+        this.state.toastFiredToday = false;
+        autoToast();
+    };
+    GameState.prototype.checkPaymentDue = function() {
+        if (this.state.daysUntilPayment <= 0) {
+            if (this.state.credits >= 650 && (this.state.outstandingDebt || 0) === 0) {
+                this.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
+                appendOTIS('Payment due. 650 credits. Make payment when ready.', 'PAYMENT');
+            } else {
+                this.state.missedPayments = (this.state.missedPayments || 0) + 1;
+                this.state.outstandingDebt = (this.state.outstandingDebt || 0) + 650;
+                this.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
+                appendOTIS('Payment missed. Arrears: ' + this.state.outstandingDebt + ' cr. Compound rate: 5% per day.', 'PAYMENT_MISSED');
+            }
+        }
+    };
+    GameState.prototype.checkDropSchedule = function() {
+        if (this.state.daysUntilNextDrop <= 0 && !this.state.dropActive) {
+            this.state.daysUntilNextDrop = TIMING.DAYS_BETWEEN_DROPS + Math.floor(Math.random() * (TIMING.DROP_VARIANCE_DAYS * 2 + 1)) - TIMING.DROP_VARIANCE_DAYS;
+            handleBargeArrival();
+        }
+    };
+    GameState.prototype.advanceNamingTier = function() {
+        if (this.state.namingTier < NAMING_TIERS.length - 1) { this.state.namingTier++; this._save(); }
+    };
+
+    var gameState = new GameState();
+
+    // HELPERS
+    function setEl(id, text) { var e = document.getElementById(id); if (e) e.textContent = text; }
+    function escapeHtml(str) {
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    var CONDITION_MULTIPLIERS = { Broken: 0.2, Poor: 0.5, Used: 1.0, Excellent: 1.5 };
+    var RESERVE_MULTIPLIERS   = { Common: 1.10, Uncommon: 1.20, Rare: 1.35 };
+    var RESERVE_SALE_SUCCESS_RATE = 0.70;
+
+    function getEffectiveValue(item) {
+        if (item.rarity === 'Anomalous') return 0;
+        return Math.floor((item.otisValue || 0) * (CONDITION_MULTIPLIERS[item.condition] || 1.0));
+    }
+
+    // OTIS TERMINAL
+    var MAX_OTIS_LINES = 10;
+    var otisLines = [];
+
+    function renderOTIS() {
+        var out = document.getElementById('otis-output');
+        if (!out) return;
+        out.innerHTML = otisLines.slice(-MAX_OTIS_LINES).map(function(line) {
+            return '<div class="' + (line.role === 'otis' ? 'otis-line' : 'user-line') + '"><span class="line-tag">' + (line.role === 'otis' ? 'OTIS' : 'OPR') + '</span>' + escapeHtml(line.text) + '</div>';
+        }).join('');
+        out.scrollTop = out.scrollHeight;
+    }
+
+    async function appendOTIS(userText, trigger) {
+        var statusEl = document.getElementById('sys-otis');
+        if (statusEl) { statusEl.textContent = 'ACTIVE'; statusEl.className = 'status-warn'; }
+        if (userText) otisLines.push({ role: 'user', text: userText });
+        renderOTIS();
+        gameState._trackEvent(trigger);
+        try {
+            var reply = await askOTIS(userText || '', gameState, trigger || 'COMMS');
+            otisLines.push({ role: 'otis', text: reply });
+            renderOTIS();
+            if (window.OtisTTS) window.OtisTTS.speak(reply);
+            if (statusEl) { statusEl.textContent = 'NOMINAL'; statusEl.className = 'status-ok'; }
+        } catch(e) {
+            if (statusEl) { statusEl.textContent = 'FAULT'; statusEl.className = 'status-err'; }
+        }
+        gameState._updateUI();
+    }
+
+    // MODAL MANAGEMENT
+    function openModal(name) {
+        document.querySelectorAll('.modal.open').forEach(function(m) { m.classList.remove('open'); });
+        var el = document.getElementById('modal-' + name);
+        if (el) el.classList.add('open');
+    }
+    function closeModal(name) { var el = document.getElementById('modal-' + name); if (el) el.classList.remove('open'); }
+
+    // BELT
+    var currentItem = null;
+    var beltTimer   = null;
+
+    function getBeltMs() { return TIMING.DEBUG_FAST_MODE ? Math.floor(TIMING.BELT_DELIVERY_MS / TIMING.DEBUG_SPEED_MULTIPLIER) : TIMING.BELT_DELIVERY_MS; }
+    function startBeltDelivery() { if (beltTimer) return; beltTimer = setInterval(deliverNextBeltItem, getBeltMs()); }
+    function stopBeltDelivery()  { clearInterval(beltTimer); beltTimer = null; }
+
+    function assignCondition() { var r = Math.random(); return r < 0.15 ? 'Broken' : r < 0.50 ? 'Poor' : r < 0.85 ? 'Used' : 'Excellent'; }
+
+    function deliverNextBeltItem() {
+        if (!gameState.state.dropActive) { stopBeltDelivery(); return; }
+        if (gameState.state.manifestItems.length === 0) {
+            stopBeltDelivery();
+            gameState.state.dropActive = false;
+            gameState.state.bargeActive = false;
+            gameState.state.dropItemsRemaining = 0;
+            gameState._save();
+            updateBeltUI('DROP_COMPLETE');
+            setBotDots(false);
+            appendOTIS('Belt clear. All items processed. Bots returning.', 'DROP_COMPLETE');
+            return;
+        }
+        if (currentItem !== null) { updateBeltUI('BACKED_UP'); return; }
+        var item = gameState.state.manifestItems.shift();
+        item.condition = assignCondition();
+        gameState.state.dropItemsRemaining = gameState.state.manifestItems.length;
+        gameState._save();
+        setItemInQueue(item);
+        updateBeltUI('DELIVERING');
+        appendOTIS('Item on belt: ' + item.name + '.', 'ITEM_SCAN');
+        if (window.innerWidth <= 600) openModal('belt');
+    }
+
+    function handleBeltScan() { deliverNextBeltItem(); }
+
+    function weightedPickItem() {
+        var r = Math.random();
+        var rarity = r < 0.60 ? 'Common' : r < 0.85 ? 'Uncommon' : r < 0.95 ? 'Rare' : 'Anomalous';
+        var pool = MANIFEST_POOL.filter(function(i) { return i.rarity === rarity; });
+        return Object.assign({}, pool[Math.floor(Math.random() * pool.length)]);
+    }
+
+    function handleBargeArrival() {
+        if (gameState.state.dropActive) return;
+        var btn = document.getElementById('btn-barge-drop');
+        if (btn && btn.disabled) return;
+        var manifest;
+        if (gameState.state.day === 1) {
+            var cp = MANIFEST_POOL.filter(function(i) { return i.rarity === 'Common'; });
+            for (var i = cp.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = cp[i]; cp[i] = cp[j]; cp[j] = t; }
+            manifest = cp.slice(0, 4).map(function(i) { return Object.assign({}, i, { condition: 'Used' }); });
+        } else {
+            var act = gameState.state.act;
+            var count;
+            if (act === 1) count = TIMING.DROP_SIZE_ACT1;
+            else if (act === 2) count = TIMING.DROP_SIZE_ACT2_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT2_MAX - TIMING.DROP_SIZE_ACT2_MIN + 1));
+            else count = TIMING.DROP_SIZE_ACT3_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT3_MAX - TIMING.DROP_SIZE_ACT3_MIN + 1));
+            manifest = [];
+            for (var k = 0; k < count; k++) manifest.push(weightedPickItem());
+        }
+        gameState.state.manifestItems = manifest.slice();
+        gameState.state.dropActive = true;
+        gameState.state.bargeActive = true;
+        gameState.state.dropItemsRemaining = manifest.length;
+        gameState._save();
+        if (btn) btn.disabled = true;
+        var scanBtn = document.getElementById('btn-scan-belt');
+        if (scanBtn) scanBtn.disabled = false;
+        setBotDots(true);
+        updateBeltUI('DELIVERING');
+        appendOTIS(buildManifestSummary(manifest), 'BARGE_IMMINENT');
+        startBeltDelivery();
+        deliverNextBeltItem();
+    }
+
+    function setBotDots(active) {
+        ['bot-dot-1','bot-dot-2','bot-dot-3','sys-bot-dot-1','sys-bot-dot-2','sys-bot-dot-3'].forEach(function(id) {
+            var d = document.getElementById(id); if (d) d.className = 'dot' + (active ? ' amber' : '');
+        });
+    }
+
+    function updateBeltUI(status) {
+        var track  = document.getElementById('belt-bar-track');
+        var fill   = document.getElementById('belt-bar-fill');
+        var st     = document.getElementById('drop-status-text');
+        var backed = document.getElementById('belt-backed-up');
+        var bdc    = document.getElementById('belt-drop-countdown');
+        var rem    = gameState.state.dropItemsRemaining || 0;
+        var days   = (gameState.state.daysUntilNextDrop != null) ? gameState.state.daysUntilNextDrop : TIMING.DAYS_BETWEEN_DROPS;
+        if (status === 'DELIVERING') {
+            if (track) track.style.display = '';
+            if (fill) { fill.className = 'belt-bar-fill'; setTimeout(function() { fill.style.animationDuration = (getBeltMs()/1000)+'s'; fill.classList.add('belt-active'); }, 0); }
+            if (backed) backed.style.display = 'none';
+            if (st) st.textContent = 'ACTIVE \u2014 ' + rem + ' items remaining';
+        } else if (status === 'BACKED_UP') {
+            if (fill) fill.className = 'belt-bar-fill';
+            if (backed) backed.style.display = '';
+            if (st) st.textContent = 'BACKED UP \u2014 ' + rem + ' items remaining';
+        } else if (status === 'DROP_COMPLETE') {
+            if (track) track.style.display = 'none';
+            if (backed) backed.style.display = 'none';
+            if (st) st.textContent = 'DROP COMPLETE';
+            if (bdc) bdc.textContent = days;
+            var btn = document.getElementById('btn-barge-drop'); if (btn) btn.disabled = false;
+            var sb  = document.getElementById('btn-scan-belt');  if (sb)  sb.disabled = true;
+        } else {
+            if (track) track.style.display = 'none';
+            if (backed) backed.style.display = 'none';
+            if (st) st.textContent = gameState.state.dropActive ? 'WINDOW: ACTIVE' : 'WINDOW: CLOSED';
+            if (bdc) bdc.textContent = days;
+        }
+    }
+
+    // ITEM QUEUE UI
+    function setItemInQueue(item) { currentItem = Object.assign({}, item, { consultedExamine: false, consultedWorth: false, consultedGeorge: false }); renderItemQueue(); }
+    function clearItemQueue() { currentItem = null; renderItemQueue(); }
+
+    function renderItemQueue() {
+        var emptyEl = document.getElementById('item-queue-empty');
+        var present = document.getElementById('item-queue-present');
+        var nameEl  = document.getElementById('item-queue-name');
+        var tagsEl  = document.getElementById('item-tags');
+        var estEl   = document.getElementById('otis-estimate');
+        var declEl  = document.getElementById('item-declaration');
+        var btnRes  = document.getElementById('btn-reserve');
+        if (currentItem) {
+            if (emptyEl) emptyEl.style.display = 'none';
+            if (present) present.style.display = '';
+            if (nameEl)  nameEl.textContent = currentItem.name;
+            if (tagsEl) {
+                var rc = { Common:'tag-common', Uncommon:'tag-uncommon', Rare:'tag-rare', Anomalous:'tag-anomalous' };
+                tagsEl.innerHTML =
+                    '<span class="tag tag-common">' + escapeHtml(currentItem.category) + '</span> ' +
+                    '<span class="tag ' + (rc[currentItem.rarity]||'tag-common') + '">' + escapeHtml(currentItem.rarity) + '</span> ' +
+                    '<span class="tag tag-common">' + escapeHtml(currentItem.condition) + '</span>';
+            }
+            if (estEl) {
+                if (currentItem.consultedWorth) {
+                    var isUnk = currentItem.otisValue === 0 && (currentItem.rarity === 'Anomalous' || currentItem.category === 'Unknown');
+                    estEl.textContent = isUnk ? 'OTIS ESTIMATE: ERROR \u2014 NO COMPARABLE' : 'OTIS ESTIMATE: ' + currentItem.otisValue + ' cr';
+                    estEl.style.display = '';
+                } else estEl.style.display = 'none';
+            }
+            var any = currentItem.consultedExamine || currentItem.consultedWorth || currentItem.consultedGeorge;
+            if (declEl) declEl.style.display = any ? 'flex' : 'none';
+            if (btnRes) btnRes.disabled = !currentItem.consultedWorth;
+            var cc = { 'cc-examine': 'consultedExamine', 'cc-value': 'consultedWorth', 'cc-george': 'consultedGeorge' };
+            Object.keys(cc).forEach(function(id) { var b = document.getElementById(id); if (b) b.classList.toggle('consulted', !!currentItem[cc[id]]); });
+        } else {
+            if (emptyEl) emptyEl.style.display = '';
+            if (present) present.style.display = 'none';
+            if (declEl)  declEl.style.display = 'none';
+        }
+        updateModuleLights();
+    }
+
+    function buildItemContext(item) {
+        if (!item) return '';
+        var est = (item.otisValue === 0 && (item.rarity === 'Anomalous' || item.category === 'Unknown'))
+            ? 'OTIS estimate: ERROR \u2014 NO COMPARABLE.' : 'OTIS estimate: ' + item.otisValue + ' cr.';
+        return 'Item: ' + item.name + '. Category: ' + item.category + '. Rarity: ' + item.rarity + '. Condition: ' + item.condition + '. ' + est;
+    }
+
+    function handleSkip() {
+        if (!currentItem) return;
+        gameState.state.skipCount = (gameState.state.skipCount || 0) + 1;
+        gameState._save();
+        var declEl = document.getElementById('item-declaration'); if (declEl) declEl.style.display = 'flex';
+        var btnRes = document.getElementById('btn-reserve');      if (btnRes) btnRes.disabled = true;
+        var n = gameState.state.skipCount;
+        var msg = n >= 7 ? 'Skipped again.' : n >= 5 ? 'George consulted on everything. Just noting that.' : n >= 3 ? 'I have intake data that does not surface unless you ask. Raising it as a resource.' : n >= 1 ? 'Consulting before declaration increases recognition bonus eligibility. That benefits the ledger.' : 'Item skipped.';
+        appendOTIS(msg, 'ITEM_SCAN');
+    }
+
+    function handleConsult(trigger) {
+        if (!currentItem) return;
+        var ctx = buildItemContext(currentItem);
+        if (trigger === 'CONSULT_WHATIS') currentItem.consultedExamine = true;
+        if (trigger === 'CONSULT_WORTH')  { currentItem.consultedWorth = true; var b = document.getElementById('btn-reserve'); if (b) b.disabled = false; }
+        if (trigger === 'CONSULT_GEORGE') currentItem.consultedGeorge = true;
+        renderItemQueue();
+        appendOTIS(ctx, trigger);
+    }
+
+    function handleDeclare(method) {
+        if (!currentItem) return;
+        var item = currentItem;
+        var ctx  = buildItemContext(item);
+        var ev   = getEffectiveValue(item);
+        if (method === 'OTIS') {
+            gameState.state.credits += ev;
+            gameState._save();
+            clearItemQueue();
+            appendOTIS('Selling at OTIS price: ' + item.name + '. +' + ev + ' cr. ' + ctx, 'DECLARATION_OTIS');
+        } else if (method === 'RESERVE') {
+            var rp;
+            if (item.rarity === 'Anomalous') rp = Math.floor(Math.random() * (TIMING.ANOMALOUS_RESERVE_MAX - TIMING.ANOMALOUS_RESERVE_MIN + 1)) + TIMING.ANOMALOUS_RESERVE_MIN;
+            else rp = Math.floor(ev * (RESERVE_MULTIPLIERS[item.rarity] || 1.10));
+            var resolveAt = Date.now() + TIMING.RESERVE_RESOLVE_MIN + Math.floor(Math.random() * (TIMING.RESERVE_RESOLVE_MAX - TIMING.RESERVE_RESOLVE_MIN));
+            if (!gameState.state.shippingQueue) gameState.state.shippingQueue = [];
+            gameState.state.shippingQueue.push({ name: item.name, price: rp, resolveAt: resolveAt });
+            gameState._save();
+            renderShippingQueue();
+            clearItemQueue();
+            appendOTIS('Reserve listing: ' + item.name + '. Reserve: ' + rp + ' cr. Awaiting buyer. ' + ctx, 'DECLARATION_RESERVE');
+        } else if (method === 'NORESERVE') {
+            var earned = Math.floor(ev * 0.75);
+            gameState.state.credits += earned;
+            gameState._save();
+            clearItemQueue();
+            appendOTIS('Selling no-reserve: ' + item.name + '. +' + earned + ' cr.', 'DECLARATION_NORESERVE');
+        } else if (method === 'KEEP') {
+            gameState.state.keepLog.push({ name: item.name, day: gameState.state.day, condition: item.condition, otisValue: item.otisValue });
+            gameState.state.keepLog = gameState.state.keepLog.slice(0, 12);
+            gameState._save();
+            clearItemQueue();
+            var kn = gameState.state.keepLog.length;
+            appendOTIS(kn >= 10 ? 'Keeping: ' + item.name + '. Keep log at ' + kn + ' items.' : 'Keeping: ' + item.name + '.', 'DECLARE_KEEP');
+        } else if (method === 'SCRAP') {
+            gameState.state.scrapFill = Math.min(100, (gameState.state.scrapFill || 0) + 12);
+            gameState._save();
+            clearItemQueue();
+            appendOTIS('Scrapping: ' + item.name + '.', 'DECLARE_SCRAP');
+        }
+        gameState._updateUI();
+    }
+
+    function handleSellBack(index) {
+        var item = gameState.state.keepLog[index]; if (!item) return;
+        var val = Math.floor((item.otisValue || 0) * (CONDITION_MULTIPLIERS[item.condition] || 1.0));
+        gameState.state.credits += val;
+        gameState.state.keepLog.splice(index, 1);
+        gameState._save();
+        gameState._updateUI();
+        appendOTIS('Selling from keep log: ' + item.name + '. +' + val + ' cr.', 'SELL_FROM_LOG');
+    }
+
+    // TOAST
+    function autoToast() {
+        if (gameState.state.toastFiredToday) return;
+        if (gameState.state.credits >= 6) gameState.state.credits -= 6;
+        else { gameState.state.outstandingDebt = (gameState.state.outstandingDebt || 0) + (6 - gameState.state.credits); gameState.state.credits = 0; }
+        gameState.state.toastFiredToday = true;
+        gameState._save();
+        gameState._updateUI();
+        var c = document.getElementById('toast-content'); if (c) c.textContent = "George\u2019s toaster. 6 credits drawn from the grid.";
+        openModal('toast');
+        appendOTIS("Vernon made toast. George\u2019s toaster. Energy draw logged. 6 credits.", 'TOAST');
+    }
+
+    // COMMS
+    function handleComms(channel) {
+        var map = {
+            BANK:        ['Bank channel open. Payment status requested.', 'COMMS_BANK'],
+            SVEN:        ["Sven\u2019s messenger bot. Interference report incoming.", 'COMMS_SVEN'],
+            IGNORE_SVEN: ['Sven signal dismissed.', 'COMMS_IGNORE_SVEN'],
+            COMPLAINT:   ['Filing formal interference complaint with moon transit authority.', 'COMMS_COMPLAINT'],
+            MAY:         ['May Finster channel. Scrap dispatch acknowledged.', 'COMMS_MAY'],
+        };
+        var pair = map[channel] || ['Opening comms channel.', 'COMMS'];
+        appendOTIS(pair[0], pair[1]);
+        if (channel === 'SVEN' || channel === 'IGNORE_SVEN') { var d = document.getElementById('comms-dot-sven'); if (d) d.className = 'comms-dot'; var s = document.getElementById('sys-sven'); if (s) s.textContent = 'NOMINAL'; }
+        if (channel === 'MAY') { var md = document.getElementById('comms-dot-may'); if (md) md.className = 'comms-dot'; }
+    }
+
+    // PAYMENT
+    function handleMakePayment() {
+        if ((gameState.state.outstandingDebt || 0) > 0) { appendOTIS('Cannot make loan payment while arrears outstanding. Clear arrears first.', 'PAYMENT_FAILED'); return; }
+        if (gameState.state.credits < 650) { appendOTIS('Insufficient credits. Need 650, have ' + gameState.state.credits + '. Payment failed.', 'PAYMENT_FAILED'); return; }
+        gameState.state.credits -= 650;
+        gameState.state.debt = Math.max(0, gameState.state.debt - 650);
+        gameState.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
+        gameState._save(); gameState._updateUI();
+        appendOTIS('Payment processed. 650 cr. Remaining balance: ' + gameState.state.debt.toLocaleString() + ' cr.', 'PAYMENT');
+    }
+    function handleClearArrears() {
+        var a = gameState.state.outstandingDebt || 0; if (a === 0) return;
+        if (gameState.state.credits < a) { appendOTIS('Insufficient credits to clear arrears. Need ' + a + ' cr, have ' + gameState.state.credits + ' cr.', 'ARREARS_NOTICE'); return; }
+        gameState.state.credits -= a; gameState.state.outstandingDebt = 0;
+        gameState._save(); gameState._updateUI();
+        appendOTIS('Arrears cleared.', 'ARREARS_CLEARED');
+    }
+
+    // SCRAP
+    function handleDispatchMay() {
+        var fill = gameState.state.scrapFill || 0; if (fill === 0) return;
+        var earned = Math.floor(fill * (5 + Math.random() * 5));
+        gameState.state.credits += earned; gameState.state.scrapFill = 0;
+        gameState._save(); gameState._updateUI();
+        appendOTIS('Dispatching scrap to May Finster. Fill: ' + fill + '%. +' + earned + ' cr returned.', 'SCRAP_DISPATCH');
+    }
+
+    // SHIPPING QUEUE
+    function renderShippingQueue() {
+        var list = document.getElementById('shipping-queue-list');
+        var empty = document.getElementById('shipping-queue-empty');
+        var q = gameState.state.shippingQueue || [];
+        if (list) list.innerHTML = q.map(function(item) { return '<div class="shipping-item">' + escapeHtml(item.name) + ' \u2014 ' + item.price + ' cr \u2014 PENDING</div>'; }).join('');
+        if (empty) empty.style.display = q.length ? 'none' : '';
+    }
+    function checkShippingQueue() {
+        var q = gameState.state.shippingQueue; if (!q || !q.length) return;
+        var now = Date.now();
+        var resolved = q.filter(function(i) { return now >= i.resolveAt; });
+        if (!resolved.length) return;
+        gameState.state.shippingQueue = q.filter(function(i) { return now < i.resolveAt; });
+        resolved.forEach(function(item) {
+            if (Math.random() < RESERVE_SALE_SUCCESS_RATE) {
+                gameState.state.credits += item.price; gameState._save();
+                appendOTIS('Reserve sale confirmed: ' + item.name + '. +' + item.price + ' cr.', 'RECOGNITION_BONUS');
+                gameState.state.reserveSuccesses = (gameState.state.reserveSuccesses || 0) + 1;
+                if (gameState.state.reserveSuccesses % 3 === 0 && gameState.state.namingTier < 3) gameState.advanceNamingTier();
+            } else appendOTIS('Reserve expired: ' + item.name + '. No buyer.', 'RESERVE_EXPIRED');
+        });
+        gameState._save(); renderShippingQueue(); gameState._updateUI();
+    }
+    setInterval(checkShippingQueue, 5000);
+
+    // INDICATORS
+    function updateModuleLights() {
+        var s = gameState.state;
+        var dup = (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS;
+        var arrears = s.outstandingDebt || 0;
+        var scrap = s.scrapFill || 0;
+        var keep = s.keepLog.length;
+        setLight('light-belt',    s.dropActive ? 'light-on' : currentItem ? 'light-amber' : '');
+        setLight('light-comms',   (arrears > 0 || dup <= 3) ? 'light-red' : (dup <= 7 || scrap >= 75) ? 'light-amber' : '');
+        setLight('light-store',   scrap >= 90 ? 'light-red' : (scrap >= 75 || keep >= 10) ? 'light-amber' : '');
+        setLight('light-systems', (s.missedPayments > 0 || arrears > 2000) ? 'light-red' : '');
+        var arm = document.getElementById('arm-panel');
+        var armSt = document.getElementById('arm-status');
+        if (arm) {
+            var alert = s.missedPayments > 0 || arrears > 2000;
+            var warn  = dup <= 7 || scrap >= 75;
+            arm.className = alert ? 'arm-alert' : warn ? 'arm-warning' : '';
+            if (armSt) armSt.textContent = alert ? 'ALERT' : warn ? 'WARNING' : 'NOMINAL';
+        }
+    }
+    function setLight(id, cls) { var e = document.getElementById(id); if (e) e.className = 'mod-light' + (cls ? ' ' + cls : ''); }
+    function updateCommsIndicators() {
+        var dup = (gameState.state.daysUntilPayment != null) ? gameState.state.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS;
+        var bd = document.getElementById('comms-dot-bank');
+        if (bd) bd.className = 'comms-dot' + (dup <= 3 ? ' dot-red' : dup <= 7 ? ' dot-amber' : '');
+        var scrap = gameState.state.scrapFill || 0;
+        var md = document.getElementById('comms-dot-may');
+        if (md) md.className = 'comms-dot' + (scrap >= 75 ? ' dot-amber' : scrap > 0 ? ' dot-on' : '');
+    }
+    function updateSystemsStatus() {
+        var s = gameState.state;
+        var scrap = s.scrapFill || 0;
+        var st = document.getElementById('sys-store');
+        if (st) { st.textContent = scrap >= 90 ? 'CRITICAL' : scrap >= 75 ? 'ATTENTION' : 'NOMINAL'; st.className = scrap >= 90 ? 'status-err' : scrap >= 75 ? 'status-warn' : 'status-ok'; }
+        var sh = document.getElementById('sys-ship');
+        if (sh) { var has = s.shippingQueue && s.shippingQueue.length > 0; sh.textContent = has ? 'ACTIVE' : 'NOMINAL'; sh.className = has ? 'status-warn' : 'status-ok'; }
+        var pw = document.getElementById('sys-power');
+        if (pw) { var dup = (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS; pw.textContent = dup <= 3 ? 'ALERT' : 'NOMINAL'; pw.className = dup <= 3 ? 'status-warn' : 'status-ok'; }
+    }
+    function updateScrapBar() {
+        var fill = gameState.state.scrapFill || 0;
+        setEl('scrap-pct', fill + '%');
+        var bar = document.getElementById('scrap-bar-fill');
+        if (bar) { bar.style.width = fill + '%'; bar.className = 'scrap-bar-fill' + (fill >= 90 ? ' scrap-red' : fill >= 75 ? ' scrap-amber' : ''); }
+        setEl('may-scrap-readout', 'SCRAP: ' + fill + '%');
+    }
+
+    // MANIFEST POOL UI
+    function toggleManifestPool() { var p = document.getElementById('manifest-pool-panel'); if (!p) return; var open = p.style.display !== 'none'; p.style.display = open ? 'none' : ''; if (!open) renderManifestPool(); }
+    function renderManifestPool() {
+        var p = document.getElementById('manifest-pool-panel'); if (!p) return;
+        var html = '';
+        ['Common','Uncommon','Rare','Anomalous'].forEach(function(rarity) {
+            var items = MANIFEST_POOL.filter(function(i) { return i.rarity === rarity; }); if (!items.length) return;
+            var cls = { Common:'tag-common', Uncommon:'tag-uncommon', Rare:'tag-rare', Anomalous:'tag-anomalous' }[rarity];
+            html += '<div style="margin-bottom:0.2rem"><span class="tag ' + cls + '">' + rarity.toUpperCase() + '</span></div>';
+            items.forEach(function(item) {
+                var val = item.otisValue === 0 ? '\u2014 cr' : item.otisValue + ' cr';
+                html += '<div style="display:flex;justify-content:space-between;padding:0.1rem 0;border-bottom:1px solid var(--border-dim);gap:0.4rem;font-size:11px">' +
+                    '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(item.name) + '</span>' +
+                    '<span style="color:var(--text-dim);flex-shrink:0">' + escapeHtml(item.category) + '</span>' +
+                    '<span style="flex-shrink:0;text-align:right;min-width:44px">' + val + '</span></div>';
+            });
+        });
+        p.innerHTML = html;
+    }
+
+    // LOGOFF / TTS / DEBUG
+    function handleLogoff() {
+        gameState._save();
+        appendOTIS('Logging off.', 'LOGOFF');
+        var ft = document.getElementById('terminal-footer');
+        if (ft) { var sp = ft.querySelector('span'); if (sp) { sp.textContent = 'O.T.I.S. v0.4 // SAVED'; setTimeout(function() { sp.textContent = 'O.T.I.S. v0.4 // PHASE 0'; }, 2000); } }
+    }
+    function handleTTSToggle() {
+        if (!window.OtisTTS) return;
+        var muted = window.OtisTTS.toggleMute();
+        var btn = document.getElementById('tts-btn'); if (btn) btn.textContent = muted ? 'TTS: OFF' : 'TTS: ON';
+    }
+    function toggleDebug() { var p = document.getElementById('debug-panel'); if (p) p.style.display = p.style.display === 'none' ? '' : 'none'; }
+    function dbgDay()      { gameState.advanceDay(); }
+    function dbgWeek()     { for (var i = 0; i < 7; i++) gameState.advanceDay(); }
+    function dbgCredits()  { gameState.state.credits += 500; gameState._save(); gameState._updateUI(); }
+    function dbgForcePay() { gameState.state.daysUntilPayment = 0; gameState._save(); gameState._updateUI(); }
+    function dbgFastMode() {
+        TIMING.DEBUG_FAST_MODE = !TIMING.DEBUG_FAST_MODE;
+        gameState.stopDayTimer(); gameState.startDayTimer();
+        if (beltTimer) { stopBeltDelivery(); startBeltDelivery(); }
+        appendOTIS('Fast mode: ' + (TIMING.DEBUG_FAST_MODE ? 'ON (10\u00d7)' : 'OFF'), 'ZONE_SYSTEMS');
+    }
+    var _clearPending = false;
+    var _clearTimer   = null;
+    function handleClearSave(btn) {
+        if (!_clearPending) {
+            _clearPending = true; btn.textContent = 'CONFIRM?'; btn.classList.add('btn-confirm-pending');
+            _clearTimer = setTimeout(function() { _clearPending = false; btn.textContent = 'CLEAR SAVE'; btn.classList.remove('btn-confirm-pending'); }, 3000);
+        } else {
+            clearTimeout(_clearTimer); _clearPending = false; btn.classList.remove('btn-confirm-pending');
+            stateManager.clear(); location.reload();
+        }
+    }
+    </script>
+
     <script src="otis.js"></script>
     <script src="tts.js"></script>
     <script src="audio.js"></script>
+
     <script>
-        // --- Mobile tab switching ---
-        function switchTab(zoneId) {
-            document.querySelectorAll('.console-zone').forEach(z => z.classList.remove('tab-active'));
-            document.getElementById(zoneId).classList.add('tab-active');
-            document.querySelectorAll('#tab-bar button').forEach(b => b.classList.remove('tab-btn-active'));
-            document.querySelector('#tab-bar [data-zone="' + zoneId + '"]').classList.add('tab-btn-active');
-        }
-        // Init first tab on mobile
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.innerWidth <= 480) switchTab('zone-otis');
-            // Sync TTS button label on load; hide entirely when browser lacks support
-            const ttsBtn = document.getElementById('tts-mute-btn');
-            if (ttsBtn && window.OtisTTS) {
-                if (!window.OtisTTS.isSupported()) {
-                    ttsBtn.style.display = 'none';
-                } else {
-                    ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON';
-                }
-            }
-        });
-
-        // --- UI Helpers ---
-
-        const MAX_OTIS_LINES = 10;
-        const RESERVE_SALE_SUCCESS_RATE = 0.70;
-        const RESERVE_MULTIPLIERS = { Common: 1.10, Uncommon: 1.20, Rare: 1.35 };
-        const CONDITION_MULTIPLIERS = { Broken: 0.2, Poor: 0.5, Used: 1.0, Excellent: 1.5 };
-        const otisLines = [];
-
-        function getEffectiveValue(item) {
-            if (item.rarity === 'Anomalous') return 0;
-            return Math.floor((item.otisValue || 0) * (CONDITION_MULTIPLIERS[item.condition] || 1.0));
-        }
-
-        function renderOTIS() {
-            const out = document.getElementById('otis-output');
-            if (!out) return;
-            out.innerHTML = otisLines.slice(-MAX_OTIS_LINES).map(line => {
-                const cls = line.role === 'otis' ? 'otis-line' : 'user-line';
-                return `<div class="${cls}"><span class="line-tag">${line.role === 'otis' ? 'OTIS' : 'OPR'}</span> ${escapeHtml(line.text)}</div>`;
-            }).join('');
-            out.scrollTop = out.scrollHeight;
-        }
-
-        function escapeHtml(str) {
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
-        async function appendOTIS(userText, trigger) {
-            const statusText = document.getElementById('otis-status-text');
-            const sysOtis = document.getElementById('sys-otis');
-            if (statusText) statusText.textContent = 'THINKING';
-            if (sysOtis) { sysOtis.textContent = 'ACTIVE'; sysOtis.className = 'status-warn'; }
-
-            if (userText) otisLines.push({ role: 'user', text: userText });
-            renderOTIS();
-
-            try {
-                const reply = await askOTIS(userText || '', gameState, trigger || 'COMMS');
-                otisLines.push({ role: 'otis', text: reply });
-                renderOTIS();
-                if (window.OtisTTS) window.OtisTTS.speak(reply);
-                if (statusText) statusText.textContent = 'READY';
-                if (sysOtis) { sysOtis.textContent = 'NOMINAL'; sysOtis.className = 'status-ok'; }
-            } catch(e) {
-                if (statusText) statusText.textContent = 'ERROR';
-                if (sysOtis) { sysOtis.textContent = 'FAULT'; sysOtis.className = 'status-err'; }
-            }
-            syncLedger();
-        }
-
-        // --- TTS Controls ---
-
-        function handleTTSMuteToggle() {
-            if (!window.OtisTTS) return;
-            const muted = window.OtisTTS.toggleMute();
-            const btn = document.getElementById('tts-mute-btn');
-            if (btn) btn.textContent = muted ? 'TTS: OFF' : 'TTS: ON';
-        }
-
-        // --- Credits & Arrears ---
-
-        function chargeCredits(amount, label) {
-            if (gameState.state.credits >= amount) {
-                gameState.state.credits -= amount;
-                gameState._save();
-                return true;
-            } else {
-                const shortfall = amount - gameState.state.credits;
-                gameState.state.credits = 0;
-                gameState.state.outstandingDebt = (gameState.state.outstandingDebt || 0) + shortfall;
-                gameState._save();
-                appendOTIS(
-                    `Insufficient credits for ${label}. Shortfall of ${shortfall} cr added to arrears. Arrears accrue at 5% per day, Mr. Serling.`,
-                    'ARREARS_NOTICE'
-                );
-                updateAllDisplays();
-                return false;
-            }
-        }
-
-        function handleClearArrears() {
-            const debt = gameState.state.outstandingDebt || 0;
-            if (debt === 0) return;
-            if (gameState.state.credits < debt) {
-                appendOTIS(`Insufficient credits to clear arrears. Need ${debt} cr, have ${gameState.state.credits} cr.`, 'ARREARS_NOTICE');
-                return;
-            }
-            gameState.state.credits -= debt;
-            gameState.state.outstandingDebt = 0;
-            gameState._save();
-            gameState._updateUI();
-            appendOTIS('Arrears cleared.', 'ARREARS_CLEARED');
-            syncLedger();
-        }
-
-        // --- Toast ---
-
-        function autoToast() {
-            if (gameState.state.toastFiredToday) return;
-            chargeCredits(6, 'toast');
-            appendOTIS("Vernon made toast. George's toaster. Energy draw logged. 6 credits from replicator.", 'TOAST');
-            gameState.state.toastFiredToday = true;
-            gameState._save();
-            updateAllDisplays();
-        }
-
-        // --- Item Queue ---
-
-        let currentItem = null;
-
-        function handleSkip() {
-            if (!currentItem) return;
-            gameState.state.skipCount = (gameState.state.skipCount || 0) + 1;
-            gameState._save();
-            // Show declaration without requiring consult
-            const declarationEl = document.getElementById('item-declaration');
-            if (declarationEl) declarationEl.style.display = 'flex';
-            // RESERVE stays disabled — no worth consult happened
-            const btnReserve = document.getElementById('btn-reserve');
-            if (btnReserve) btnReserve.disabled = true;
-            // OTIS responds based on skip tier
-            const skipCount = gameState.state.skipCount;
-            let skipMsg = 'Item skipped.';
-            if (skipCount >= 7) skipMsg = 'Skipped again.';
-            else if (skipCount >= 5) skipMsg = 'George consulted on everything. Just noting that.';
-            else if (skipCount >= 3) skipMsg = 'I have intake data that does not surface unless you ask. Raising it as a resource.';
-            else if (skipCount >= 1) skipMsg = 'Consulting before declaration increases recognition bonus eligibility. That benefits the ledger.';
-            appendOTIS(skipMsg, 'ITEM_SCAN');
-        }
-
-        function buildItemContext(item) {
-            if (!item) return '';
-            const estimateStr = (item.otisValue === 0 && (item.rarity === 'Anomalous' || item.category === 'Unknown'))
-                ? 'OTIS estimate: ERROR — NO COMPARABLE.'
-                : `OTIS estimate: ${item.otisValue} cr.`;
-            return `Item: ${item.name}. Category: ${item.category}. Rarity: ${item.rarity}. Condition: ${item.condition}. ${estimateStr}`;
-        }
-
-        function setItemInQueue(item) {
-            currentItem = {
-                name: item.name,
-                category: item.category,
-                rarity: item.rarity,
-                condition: item.condition,
-                otisValue: item.otisValue,
-                consultedExamine: false,
-                consultedWorth: false,
-                consultedGeorge: false,
-            };
-            renderItemQueue();
-        }
-
-        function clearItemQueue() {
-            currentItem = null;
-            renderItemQueue();
-        }
-
-        function renderItemQueue() {
-            const emptyMsg = document.getElementById('item-queue-empty');
-            const itemView = document.getElementById('item-queue-present');
-            const itemNameEl = document.getElementById('item-queue-name');
-            const itemTagsEl = document.getElementById('item-tags');
-            const estimateEl = document.getElementById('otis-estimate');
-            const declarationEl = document.getElementById('item-declaration');
-            const btnReserve = document.getElementById('btn-reserve');
-
-            if (currentItem) {
-                if (emptyMsg) emptyMsg.style.display = 'none';
-                if (itemView) itemView.style.display = '';
-                if (itemNameEl) itemNameEl.textContent = currentItem.name;
-
-                // Tags row
-                if (itemTagsEl) {
-                    const rarityClass = {
-                        'Common': 'tag-common',
-                        'Uncommon': 'tag-uncommon',
-                        'Rare': 'tag-rare',
-                        'Anomalous': 'tag-anomalous',
-                    }[currentItem.rarity] || 'tag-common';
-                    itemTagsEl.innerHTML = `<span class="tag-common">${escapeHtml(currentItem.category)}</span>`
-                        + ` <span class="${rarityClass}">${escapeHtml(currentItem.rarity)}</span>`
-                        + ` <span class="tag-common">${escapeHtml(currentItem.condition)}</span>`;
-                }
-
-                // OTIS estimate — show only after CONSULT_WORTH
-                if (estimateEl) {
-                    if (currentItem.consultedWorth) {
-                        const isUnknown = currentItem.otisValue === 0 && (currentItem.rarity === 'Anomalous' || currentItem.category === 'Unknown');
-                        estimateEl.textContent = isUnknown
-                            ? 'OTIS ESTIMATE: ERROR — NO COMPARABLE'
-                            : `OTIS ESTIMATE: ${currentItem.otisValue} cr`;
-                        estimateEl.style.display = '';
-                    } else {
-                        estimateEl.style.display = 'none';
-                    }
-                }
-
-                // Declaration row — show after any consult
-                const anyConsulted = currentItem.consultedExamine || currentItem.consultedWorth || currentItem.consultedGeorge;
-                if (declarationEl) declarationEl.style.display = anyConsulted ? 'flex' : 'none';
-                if (btnReserve) btnReserve.disabled = !currentItem.consultedWorth;
-            } else {
-                if (emptyMsg) emptyMsg.style.display = '';
-                if (itemView) itemView.style.display = 'none';
-                if (declarationEl) declarationEl.style.display = 'none';
-            }
-        }
-
-        // --- Belt Timer System ---
-
-        let beltTimer = null;
-
-        function startBeltDelivery() {
-            if (beltTimer) return;
-            beltTimer = setInterval(() => {
-                deliverNextBeltItem();
-            }, TIMING.BELT_DELIVERY_MS);
-        }
-
-        function stopBeltDelivery() {
-            clearInterval(beltTimer);
-            beltTimer = null;
-        }
-
-        function assignCondition() {
-            const roll = Math.random();
-            if (roll < 0.15) return 'Broken';
-            if (roll < 0.50) return 'Poor';
-            if (roll < 0.85) return 'Used';
-            return 'Excellent';
-        }
-
-        function deliverNextBeltItem() {
-            if (!gameState.state.dropActive) {
-                stopBeltDelivery();
-                return;
-            }
-            if (gameState.state.manifestItems.length === 0) {
-                stopBeltDelivery();
-                gameState.state.dropActive = false;
-                gameState.state.bargeActive = false;
-                gameState.state.dropItemsRemaining = 0;
-                const dropStatusEl = document.getElementById('drop-status-text');
-                if (dropStatusEl) dropStatusEl.textContent = 'WINDOW: CLOSED';
-                const bargeBtn = document.getElementById('btn-barge-drop');
-                if (bargeBtn) bargeBtn.disabled = false;
-                const scanBtn = document.getElementById('btn-scan-belt');
-                if (scanBtn) scanBtn.disabled = true;
-                ['bot-dot-1', 'bot-dot-2', 'bot-dot-3'].forEach(id => {
-                    const dot = document.getElementById(id);
-                    if (dot) dot.className = 'comms-dot';
-                });
-                gameState._save();
-                updateBeltStatus('DROP_COMPLETE');
-                appendOTIS('Belt clear. All items processed. Bots returning.', 'DROP_COMPLETE');
-                return;
-            }
-            if (currentItem !== null) {
-                updateBeltStatus('BACKED_UP');
-                return;
-            }
-            const item = gameState.state.manifestItems.shift();
-            item.condition = assignCondition();
-            gameState.state.dropItemsRemaining = gameState.state.manifestItems.length;
-            gameState._save();
-            setItemInQueue(item);
-            updateBeltStatus('DELIVERING');
-            appendOTIS('Item on belt: ' + item.name + '.', 'ITEM_SCAN');
-        }
-
-        function handleBeltScan() {
-            // Manual scan — for debug panel
-            deliverNextBeltItem();
-        }
-
-        // --- Belt Status Display ---
-
-        function updateBeltStatus(status) {
-            const barTrack = document.getElementById('belt-countdown-bar-track');
-            const bar = document.getElementById('belt-countdown-bar');
-            const statusText = document.getElementById('belt-status-text');
-            const backedUpMsg = document.getElementById('belt-backed-up-msg');
-            const dropCountdown = document.getElementById('belt-drop-countdown');
-            const remaining = gameState.state.dropItemsRemaining ?? 0;
-            const daysUntilDrop = gameState.state.daysUntilNextDrop ?? TIMING.DAYS_BETWEEN_DROPS;
-
-            if (status === 'CLEAR') {
-                if (barTrack) barTrack.style.display = 'none';
-                if (backedUpMsg) backedUpMsg.style.display = 'none';
-                if (statusText) statusText.innerHTML = 'NEXT DROP: <span id="belt-drop-countdown">' + daysUntilDrop + '</span> days';
-            } else if (status === 'DELIVERING') {
-                if (barTrack) barTrack.style.display = '';
-                if (bar) {
-                    bar.style.setProperty('--belt-duration', (TIMING.BELT_DELIVERY_MS / 1000) + 's');
-                    bar.className = 'belt-bar-fill';
-                    setTimeout(() => bar.classList.add('belt-bar-active'), 0);
-                }
-                if (backedUpMsg) backedUpMsg.style.display = 'none';
-                if (statusText) statusText.textContent = 'ACTIVE — ' + remaining + ' items remaining';
-            } else if (status === 'BACKED_UP') {
-                if (barTrack) barTrack.style.display = '';
-                if (bar) {
-                    bar.className = 'belt-bar-fill belt-bar-backed-up';
-                }
-                if (backedUpMsg) backedUpMsg.style.display = '';
-                if (statusText) statusText.textContent = 'ACTIVE — ' + remaining + ' items remaining';
-            } else if (status === 'DROP_COMPLETE') {
-                if (barTrack) barTrack.style.display = 'none';
-                if (backedUpMsg) backedUpMsg.style.display = 'none';
-                if (statusText) statusText.textContent = 'DROP COMPLETE';
-                if (dropCountdown) dropCountdown.textContent = daysUntilDrop;
-            }
-        }
-
-        // --- Manifest Helpers ---
-
-        function toggleManifestPool() {
-            const panel = document.getElementById('manifest-pool-panel');
-            const btn = document.querySelector('#manifest-pool-toggle button');
-            if (!panel || !btn) return;
-            const open = panel.style.display !== 'none';
-            panel.style.display = open ? 'none' : '';
-            btn.textContent = open ? 'POOL ▾' : 'POOL ▴';
-            if (!open) renderManifestPool();
-        }
-
-        function renderManifestPool() {
-            const panel = document.getElementById('manifest-pool-panel');
-            if (!panel) return;
-            const tiers = ['Common', 'Uncommon', 'Rare', 'Anomalous'];
-            let html = '';
-            tiers.forEach(rarity => {
-                const items = MANIFEST_POOL.filter(i => i.rarity === rarity);
-                if (!items.length) return;
-                const rarityClass = { Common: 'tag-common', Uncommon: 'tag-uncommon', Rare: 'tag-rare', Anomalous: 'tag-anomalous' }[rarity];
-                html += `<div style="margin-bottom:0.3rem;"><span class="${rarityClass}" style="letter-spacing:0.08em;">${rarity.toUpperCase()}</span></div>`;
-                items.forEach(item => {
-                    const valStr = item.otisValue === 0 ? '— cr' : `${item.otisValue} cr`;
-                    html += `<div style="display:flex; justify-content:space-between; padding:0.1rem 0; border-bottom:1px solid var(--border); gap:0.5rem;">
-                <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(item.name)}</span>
-                <span style="color:var(--text-dim); flex-shrink:0;">${escapeHtml(item.category)}</span>
-                <span style="flex-shrink:0; text-align:right; min-width:50px;">${valStr}</span>
-            </div>`;
-                });
-            });
-            panel.innerHTML = html;
-        }
-
-        function generateManifestCount() {
-            const act = gameState.state.act;
-            if (act === 1) return TIMING.DROP_SIZE_ACT1;
-            if (act === 2) return TIMING.DROP_SIZE_ACT2_MIN +
-                Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT2_MAX - TIMING.DROP_SIZE_ACT2_MIN + 1));
-            return TIMING.DROP_SIZE_ACT3_MIN +
-                Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT3_MAX - TIMING.DROP_SIZE_ACT3_MIN + 1));
-        }
-
-        function weightedPickItem() {
-            const roll = Math.random();
-            let rarity;
-            if (roll < 0.60) rarity = 'Common';
-            else if (roll < 0.85) rarity = 'Uncommon';
-            else if (roll < 0.95) rarity = 'Rare';
-            else rarity = 'Anomalous';
-            const pool = MANIFEST_POOL.filter(i => i.rarity === rarity);
-            return { ...pool[Math.floor(Math.random() * pool.length)] };
-        }
-
-        function handleBeltScanLegacy() {
-            // Legacy path kept for internal compatibility
-            deliverNextBeltItem();
-        }
-
-        function handleBargeArrival() {
-            if (gameState.state.dropActive) return;
-            const bargeBtn = document.getElementById('btn-barge-drop');
-            if (bargeBtn && bargeBtn.disabled) return;
-
-            let manifest;
-            if (gameState.state.day === 1) {
-                // Day 1 scripted drop: 4 random Common items, all Used
-                const commonPool = MANIFEST_POOL.filter(i => i.rarity === 'Common');
-                for (let i = commonPool.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [commonPool[i], commonPool[j]] = [commonPool[j], commonPool[i]];
-                }
-                manifest = commonPool.slice(0, 4).map(i => ({ ...i, condition: 'Used' }));
-            } else {
-                const count = generateManifestCount();
-                manifest = [];
-                for (let i = 0; i < count; i++) {
-                    manifest.push(weightedPickItem());
-                }
-            }
-
-            gameState.state.manifestItems = [...manifest];
-            gameState.state.dropActive = true;
-            gameState.state.bargeActive = true;
-            gameState.state.dropItemsRemaining = manifest.length;
-            gameState._save();
-
-            const dropStatusEl = document.getElementById('drop-status-text');
-            if (dropStatusEl) dropStatusEl.textContent = 'WINDOW: ACTIVE';
-            if (bargeBtn) bargeBtn.disabled = true;
-
-            // Randomly light one bot dot amber
-            const botDots = ['bot-dot-1', 'bot-dot-2', 'bot-dot-3'];
-            const activeDot = document.getElementById(botDots[Math.floor(Math.random() * botDots.length)]);
-            if (activeDot) activeDot.className = 'comms-dot indicator-amber';
-
-            appendOTIS(buildManifestSummary(manifest), 'BARGE_IMMINENT');
-            startBeltDelivery();
-            deliverNextBeltItem();
-            const scanBtn = document.getElementById('btn-scan-belt');
-            if (scanBtn) scanBtn.disabled = false;
-        }
-
-        function triggerBargeArrival() {
-            handleBargeArrival();
-        }
-
-        function handleConsult(trigger) {
-            if (!currentItem) return;
-            const context = buildItemContext(currentItem);
-            if (trigger === 'CONSULT_WHATIS') currentItem.consultedExamine = true;
-            if (trigger === 'CONSULT_WORTH') {
-                currentItem.consultedWorth = true;
-                const btnReserve = document.getElementById('btn-reserve');
-                if (btnReserve) btnReserve.disabled = false;
-            }
-            if (trigger === 'CONSULT_GEORGE') currentItem.consultedGeorge = true;
-            renderItemQueue();
-            appendOTIS(context, trigger);
-        }
-
-        function handleDeclare(method) {
-            if (!currentItem) return;
-            const item = currentItem;
-            const itemContext = buildItemContext(item);
-            const effectiveValue = getEffectiveValue(item);
-
-            if (method === 'OTIS') {
-                gameState.state.credits += effectiveValue;
-                gameState._save();
-                gameState._updateUI();
-                gameState.state.recentEvents.unshift('Sold at OTIS price: ' + item.name);
-                clearItemQueue();
-                appendOTIS(`Selling at OTIS price: ${item.name}. +${effectiveValue} cr. ${itemContext}`, 'DECLARATION_OTIS');
-
-            } else if (method === 'RESERVE') {
-                let reservePrice;
-                if (item.rarity === 'Anomalous') {
-                    reservePrice = Math.floor(Math.random() * (TIMING.ANOMALOUS_RESERVE_MAX - TIMING.ANOMALOUS_RESERVE_MIN + 1)) + TIMING.ANOMALOUS_RESERVE_MIN;
-                } else {
-                    reservePrice = Math.floor(effectiveValue * (RESERVE_MULTIPLIERS[item.rarity] || 1.10));
-                }
-                const resolveAt = Date.now() + TIMING.RESERVE_RESOLVE_MIN_MS +
-                    Math.floor(Math.random() * (TIMING.RESERVE_RESOLVE_MAX_MS - TIMING.RESERVE_RESOLVE_MIN_MS));
-                if (!gameState.state.shippingQueue) gameState.state.shippingQueue = [];
-                gameState.state.shippingQueue.push({ name: item.name, price: reservePrice, resolveAt });
-                gameState._save();
-                renderShippingQueue();
-                updateSystemsStatus();
-                clearItemQueue();
-                appendOTIS(`Reserve listing: ${item.name}. Reserve: ${reservePrice} cr. Awaiting buyer. ${itemContext}`, 'DECLARATION_RESERVE');
-
-            } else if (method === 'NORESERVE') {
-                const earned = Math.floor(effectiveValue * 0.75);
-                gameState.state.credits += earned;
-                gameState._save();
-                gameState._updateUI();
-                clearItemQueue();
-                appendOTIS(`Selling below OTIS price (no reserve): ${item.name}. +${earned} cr.`, 'DECLARATION_NORESERVE');
-
-            } else if (method === 'KEEP') {
-                if (!gameState.state.keepLog) gameState.state.keepLog = [];
-                gameState.state.keepLog.push({ name: item.name, day: gameState.state.day, condition: item.condition, otisValue: item.otisValue });
-                gameState._save();
-                gameState._updateUI();
-                updateKeepLogEmpty();
-                clearItemQueue();
-                if (gameState.state.keepLog.length >= 12) {
-                    appendOTIS('Keep log at capacity. Storage risk noted.', 'DECLARE_KEEP');
-                } else {
-                    appendOTIS('Keeping: ' + item.name, 'DECLARE_KEEP');
-                }
-
-            } else if (method === 'SCRAP') {
-                gameState.state.scrapFill = Math.min(100, (gameState.state.scrapFill || 0) + 12);
-                gameState._save();
-                updateScrapBar();
-                updateSystemsStatus();
-                clearItemQueue();
-                appendOTIS('Scrapping: ' + item.name, 'DECLARE_SCRAP');
-            }
-
-            syncLedger();
-        }
-
-        function handleSellBack(index) {
-            const item = gameState.state.keepLog[index];
-            if (!item) return;
-            const condMult = CONDITION_MULTIPLIERS[item.condition] || 1.0;
-            const sellValue = Math.floor((item.otisValue || 0) * condMult);
-            gameState.state.credits += sellValue;
-            gameState.state.keepLog.splice(index, 1);
-            gameState._save();
-            gameState._updateUI();
-            appendOTIS('Selling from keep log: ' + item.name + '. +' + sellValue + ' cr.', 'SELL_FROM_LOG');
-            syncLedger();
-            updateKeepLogEmpty();
-        }
-
-        function updateScrapBar() {
-            const fill = gameState.state.scrapFill || 0;
-            const pct = document.getElementById('scrap-pct');
-            const bar = document.getElementById('scrap-bar-fill');
-            const mayReadout = document.getElementById('may-scrap-readout');
-            if (pct) pct.textContent = fill + '%';
-            if (mayReadout) mayReadout.textContent = 'SCRAP: ' + fill + '%';
-            if (bar) {
-                bar.style.width = fill + '%';
-                bar.className = 'scrap-bar-fill';
-                if (fill >= 90) bar.classList.add('scrap-bar-red');
-                else if (fill >= 75) bar.classList.add('scrap-bar-amber');
-            }
-            // Pulse MAY dot amber when scrap channel is high
-            const mayDot = document.getElementById('comms-dot-may');
-            if (mayDot) {
-                if (fill >= 75) mayDot.className = 'comms-dot indicator-amber';
-                else if (fill > 0) mayDot.className = 'comms-dot indicator-on';
-                else mayDot.className = 'comms-dot';
-            }
-        }
-
-        function handleDispatchMay() {
-            const scrapFill = gameState.state.scrapFill || 0;
-            if (scrapFill === 0) return;
-            const earned = Math.floor(scrapFill * (5 + Math.random() * 5));
-            gameState.state.credits += earned;
-            const prevFill = scrapFill;
-            gameState.state.scrapFill = 0;
-            gameState._save();
-            gameState._updateUI();
-            updateScrapBar();
-            updateSystemsStatus();
-
-            if (prevFill >= 75) {
-                const mayDot = document.getElementById('comms-dot-may');
-                if (mayDot) mayDot.className = 'comms-dot indicator-on';
-            }
-
-            appendOTIS(`Dispatching scrap to May Finster. Fill level: ${prevFill}%. +${earned} cr.`, 'SCRAP_DISPATCH');
-            syncLedger();
-        }
-
-        function handleMakePayment() {
-            if ((gameState.state.outstandingDebt || 0) > 0) {
-                appendOTIS('Cannot make loan payment while arrears outstanding. Clear arrears first.', 'PAYMENT_FAILED');
-                return;
-            }
-            const PAYMENT_AMOUNT = 650;
-            const credits = gameState.state.credits;
-            if (credits < PAYMENT_AMOUNT) {
-                appendOTIS(`Insufficient credits. Payment failed. Need 650, have ${credits}.`, 'PAYMENT_FAILED');
-                return;
-            }
-            gameState.state.credits -= PAYMENT_AMOUNT;
-            gameState.state.debt = Math.max(0, gameState.state.debt - PAYMENT_AMOUNT);
-            gameState.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
-            gameState._save();
-            gameState._updateUI();
-            appendOTIS(`Processing payment of 650 credits. Remaining balance: ${gameState.state.debt.toLocaleString()} cr.`, 'PAYMENT');
-            syncLedger();
-        }
-
-        function handleComms(channel) {
-            const msgs = {
-                BANK: ["Bank channel open. Payment status requested.", 'COMMS_BANK'],
-                SVEN: ["Sven's messenger bot. Interference report incoming.", 'COMMS_SVEN'],
-                IGNORE_SVEN: ["Sven signal dismissed.", 'COMMS_IGNORE_SVEN'],
-                COMPLAINT: ["Filing formal interference complaint with moon transit authority.", 'COMMS_COMPLAINT'],
-                MAY: ["May Finster channel. Scrap dispatch acknowledged.", 'COMMS_MAY'],
-            };
-            const [text, trigger] = msgs[channel] || ["Opening comms channel.", 'COMMS'];
-            appendOTIS(text, trigger);
-            if (channel === 'SVEN' || channel === 'IGNORE_SVEN') {
-                const svenDot = document.getElementById('comms-dot-sven');
-                if (svenDot) svenDot.className = 'comms-dot';
-                const sysSven = document.getElementById('sys-sven');
-                if (sysSven) sysSven.textContent = 'NOMINAL';
-            }
-            if (channel === 'MAY') {
-                const mayDot = document.getElementById('comms-dot-may');
-                if (mayDot) mayDot.className = 'comms-dot';
-            }
-        }
-
-        function handleLogoff() {
-            gameState._save();
-            appendOTIS('Logging off.', 'LOGOFF');
-            const footer = document.querySelector('#console-footer span');
-            if (footer) footer.textContent = 'OTIS v0.3 // SAVED';
-            setTimeout(() => { if (footer) footer.textContent = 'OTIS v0.3 // PHASE 0'; }, 2000);
-        }
-
-        function updateCommsIndicators() {
-            const dup = gameState.state.daysUntilPayment ?? TIMING.PAYMENT_CYCLE_DAYS;
-            const bankDot = document.getElementById('comms-dot-bank');
-            if (bankDot) {
-                if (dup <= 3) bankDot.className = 'comms-dot indicator-red';
-                else if (dup <= 7) bankDot.className = 'comms-dot indicator-amber';
-                else bankDot.className = 'comms-dot';
-            }
-        }
-
-        function updateSystemsStatus() {
-            // STORE
-            const sf = gameState.state.scrapFill || 0;
-            const sysStore = document.getElementById('sys-store');
-            if (sysStore) {
-                if (sf >= 90) { sysStore.textContent = 'CRITICAL'; sysStore.className = 'status-err'; }
-                else if (sf >= 75) { sysStore.textContent = 'ATTENTION'; sysStore.className = 'status-warn'; }
-                else { sysStore.textContent = 'NOMINAL'; sysStore.className = 'status-ok'; }
-            }
-            // SHIP
-            const sysShip = document.getElementById('sys-ship');
-            if (sysShip) {
-                const hasShipping = gameState.state.shippingQueue && gameState.state.shippingQueue.length > 0;
-                sysShip.textContent = hasShipping ? 'ACTIVE' : 'NOMINAL';
-                sysShip.className = hasShipping ? 'status-warn' : 'status-ok';
-            }
-            // POWER
-            const sysPower = document.getElementById('sys-power');
-            if (sysPower) {
-                const dup = gameState.state.daysUntilPayment ?? TIMING.PAYMENT_CYCLE_DAYS;
-                sysPower.textContent = dup <= 3 ? 'ALERT' : 'NOMINAL';
-                sysPower.className = dup <= 3 ? 'status-warn' : 'status-ok';
-            }
-        }
-
-        function syncLedger() {
-            gameState._updateUI();
-
-            // Payment countdown color
-            const dup = gameState.state.daysUntilPayment ?? TIMING.PAYMENT_CYCLE_DAYS;
-            const daysEl = document.getElementById('ledger-days-until');
-            if (daysEl) {
-                daysEl.textContent = dup;
-                if (dup <= 0) {
-                    daysEl.style.color = 'var(--text-danger)';
-                    daysEl.style.animation = '';
-                } else if (dup <= 3) {
-                    daysEl.style.color = 'var(--text-danger)';
-                    daysEl.style.animation = 'pulse-warn 0.8s infinite';
-                } else if (dup <= 7) {
-                    daysEl.style.color = 'var(--text-payment-warn)';
-                    daysEl.style.animation = '';
-                } else if (dup <= 14) {
-                    daysEl.style.color = 'var(--text-warn)';
-                    daysEl.style.animation = '';
-                } else {
-                    daysEl.style.color = '';
-                    daysEl.style.animation = '';
-                }
-            }
-
-            // Arrears
-            const arrears = gameState.state.outstandingDebt || 0;
-            const arrearsRow = document.getElementById('arrears-row');
-            const arrearsEl = document.getElementById('ledger-arrears');
-            if (arrearsRow) arrearsRow.style.display = arrears > 0 ? '' : 'none';
-            if (arrearsEl) arrearsEl.textContent = arrears.toLocaleString() + ' cr';
-
-            // Debt bar
-            const debtBarFill = document.getElementById('debt-bar-fill');
-            if (debtBarFill) {
-                const paidPct = Math.max(0, Math.min(100, ((25000 - gameState.state.debt) / 25000) * 100));
-                debtBarFill.style.width = paidPct + '%';
-                const debt = gameState.state.debt;
-                if (debt > 15000) debtBarFill.style.background = 'var(--text-ok)';
-                else if (debt >= 8000) debtBarFill.style.background = 'var(--ind-amber)';
-                else debtBarFill.style.background = 'var(--text-danger)';
-            }
-
-            // Barge countdown
-            const daysUntilDrop = gameState.state.daysUntilNextDrop ?? TIMING.DAYS_BETWEEN_DROPS;
-            const bargeDaysEl = document.getElementById('barge-days');
-            if (bargeDaysEl) {
-                if (gameState.state.bargeActive) {
-                    bargeDaysEl.textContent = 'ACTIVE';
-                    bargeDaysEl.style.color = 'var(--ind-on)';
-                } else {
-                    bargeDaysEl.textContent = daysUntilDrop;
-                    bargeDaysEl.style.color = daysUntilDrop <= 0 ? 'var(--ind-on)' : daysUntilDrop <= 2 ? 'var(--ind-amber)' : '';
-                }
-            }
-            const beltDropEl = document.getElementById('belt-drop-countdown');
-            if (beltDropEl) beltDropEl.textContent = daysUntilDrop;
-
-            updateCommsIndicators();
-            updateSystemsStatus();
-            updateScrapBar();
-        }
-
-        function updateAllDisplays() {
-            syncLedger();
-            updateBeltStatus(gameState.state.dropActive ? 'DELIVERING' : 'CLEAR');
-        }
-
-        function renderShippingQueue() {
-            const list = document.getElementById('shipping-queue-list');
-            const empty = document.getElementById('shipping-queue-empty');
-            const queue = gameState.state.shippingQueue || [];
-            if (list) {
-                list.innerHTML = queue.map(item =>
-                    `<div class="shipping-item">${escapeHtml(item.name)} — ${item.price} cr — PENDING</div>`
-                ).join('');
-            }
-            if (empty) empty.style.display = queue.length ? 'none' : '';
-        }
-
-        function checkShippingQueue() {
-            const queue = gameState.state.shippingQueue;
-            if (!queue || queue.length === 0) return;
-            const now = Date.now();
-            const resolved = [];
-            const remaining = [];
-            queue.forEach(item => {
-                if (now >= item.resolveAt) resolved.push(item);
-                else remaining.push(item);
-            });
-            resolved.forEach(item => {
-                if (Math.random() < RESERVE_SALE_SUCCESS_RATE) {
-                    gameState.state.credits += item.price;
-                    gameState._save();
-                    gameState._updateUI();
-                    appendOTIS('Reserve sale confirmed: ' + item.name + '. +' + item.price + ' cr.', 'RECOGNITION_BONUS');
-                    // Track reserve successes and advance naming tier every 3
-                    gameState.state.reserveSuccesses = (gameState.state.reserveSuccesses || 0) + 1;
-                    if (gameState.state.reserveSuccesses % 3 === 0 && gameState.state.namingTier < 3) {
-                        gameState.advanceNamingTier();
-                    }
-                } else {
-                    appendOTIS('Reserve listing expired: ' + item.name + '. No buyer.', 'RESERVE_EXPIRED');
-                }
-            });
-            if (resolved.length > 0) {
-                gameState.state.shippingQueue = remaining;
-                gameState._save();
-                renderShippingQueue();
-                updateSystemsStatus();
-                syncLedger();
-            }
-        }
-        setInterval(checkShippingQueue, 5000);
-
-        function updateKeepLogEmpty() {
-            const list = document.getElementById('keep-log-list');
-            const empty = document.getElementById('keep-log-empty');
-            if (list && empty) {
-                empty.style.display = list.children.length ? 'none' : '';
-            }
-        }
-
-        let _clearPending = false;
-        let _clearTimer = null;
-        const CLEAR_CONFIRM_TIMEOUT_MS = 3000;
-        function handleClearSave(btn) {
-            if (!_clearPending) {
-                _clearPending = true;
-                btn.textContent = 'CONFIRM?';
-                btn.classList.add('btn-confirm-pending');
-                _clearTimer = setTimeout(() => {
-                    _clearPending = false;
-                    btn.textContent = 'CLEAR SAVE';
-                    btn.classList.remove('btn-confirm-pending');
-                }, CLEAR_CONFIRM_TIMEOUT_MS);
-            } else {
-                clearTimeout(_clearTimer);
-                _clearPending = false;
-                btn.textContent = 'CLEAR SAVE';
-                btn.classList.remove('btn-confirm-pending');
-                stateManager.clearSave();
-                location.reload();
-            }
-        }
-
-        // --- Debug helpers ---
-
-        function toggleDebugPanel() {
-            const panel = document.getElementById('debug-panel');
-            if (panel) panel.style.display = panel.style.display === 'none' ? '' : 'none';
-        }
-
-        function debugAdvanceDay() { gameState.advanceDay(); syncLedger(); }
-        function debugAdvanceWeek() { for (let i = 0; i < 7; i++) gameState.advanceDay(); syncLedger(); }
-        function debugAddCredits() { gameState.state.credits += 500; gameState._save(); gameState._updateUI(); syncLedger(); }
-        function debugForcePaymentDue() { gameState.state.daysUntilPayment = 0; gameState._save(); syncLedger(); }
-        function debugToggleFastMode() {
-            TIMING.DEBUG_FAST_MODE = !TIMING.DEBUG_FAST_MODE;
-            // Restart day timer with new speed
-            gameState.stopDayTimer();
-            const newDayMs = TIMING.DEBUG_FAST_MODE
-                ? Math.floor(TIMING.MS_PER_INGAME_DAY / TIMING.DEBUG_SPEED_MULTIPLIER)
-                : TIMING.MS_PER_INGAME_DAY;
-            gameState._dayTimer = setInterval(() => gameState.advanceDay(), newDayMs);
-            // Restart belt timer if active
-            if (beltTimer) {
-                stopBeltDelivery();
-                const newBeltMs = TIMING.DEBUG_FAST_MODE
-                    ? Math.floor(TIMING.BELT_DELIVERY_MS / TIMING.DEBUG_SPEED_MULTIPLIER)
-                    : TIMING.BELT_DELIVERY_MS;
-                beltTimer = setInterval(() => deliverNextBeltItem(), newBeltMs);
-            }
-            appendOTIS('Fast mode: ' + (TIMING.DEBUG_FAST_MODE ? 'ON (10x)' : 'OFF'), 'ZONE_SYSTEMS');
-        }
-
-        // Boot sequence
-        gameState.initUI();
-        syncLedger();
-        updateKeepLogEmpty();
+    document.addEventListener('DOMContentLoaded', function() {
+        gameState.init();
+        gameState._updateUI();
         renderItemQueue();
         renderShippingQueue();
         updateScrapBar();
         updateSystemsStatus();
         updateCommsIndicators();
-        updateBeltStatus('CLEAR');
+        updateModuleLights();
+        updateBeltUI('CLEAR');
         gameState.startSessionTimer();
         gameState.startDayTimer();
+        var ttsBtn = document.getElementById('tts-btn');
+        if (ttsBtn && window.OtisTTS) { if (!window.OtisTTS.isSupported()) ttsBtn.style.display = 'none'; else ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON'; }
         appendOTIS('Operator logging in.', 'LOGIN');
-        // Auto-toast on login (guarded by toastFiredToday flag — fires once per day)
         autoToast();
-        // Start with items on belt for Day 1 fresh starts
         if (gameState.state.day === 1 && !gameState.state.dropActive && gameState.state.manifestItems.length === 0) {
             handleBargeArrival();
+        } else if (gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
+            var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
+            setBotDots(true); startBeltDelivery();
         }
+    });
     </script>
 </body>
 </html>

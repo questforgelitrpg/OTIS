@@ -1,52 +1,60 @@
-# Dead Signal
+# O.T.I.S. — Orbital Terminal Interface System
 
-A LitRPG browser-based prototype set aboard a derelict space salvage station. You interact with **OTIS** — the Operational Terminal Intelligence System — through a retro CRT console interface while managing station debt, scanning salvage, and surviving the slow grind of deep-space operations.
+A browser-based narrative game set aboard a junk-processing moon salvage station. You run the operation entirely from a single terminal console — no walking, no inventory screens. The console is the world.
+
+**OTIS** — Orbital Terminal Interface System — is your AI co-star, powered by the Claude Haiku API. His slow drift from cold bank machine toward something George built is the story.
 
 **Live demo:** https://deadsignal-seven.vercel.app
 
 ---
 
-## Phase 0 Feature Set
+## Phase 0.4 Feature Set
 
-- Dark CRT console UI with seven functional zones
+- Pure terminal aesthetic — phosphor green on near-black, CRT scanline overlay, flicker animation
+- OTIS ASCII arm sidebar with status glow states (nominal / warning / alert)
+- 4-module button grid with warning lights → full-screen modals
 - OTIS AI terminal powered by Claude Haiku via Anthropic API
-- Rolling conversation context (last 12 exchanges)
-- Game state: debt tracking, day counter, naming tier progression, session timer
-- State persistence via `localStorage`
-- Secure API proxy on Vercel (API key never exposed to the client)
+- Rolling conversation context (last 12 exchanges + seed history)
+- Item economy: 21-item manifest pool, 4 rarity tiers, condition multipliers
+- Declaration flow: EXAMINE / ASSESS VALUE / GEORGE ARCHIVE / SKIP → OTIS PRICE / RESERVE / NO RESERVE / KEEP / SCRAP
+- Reserve sale system with 70% success rate and rarity multipliers
+- Debt system: 25,000 cr loan, 28-day payment cycles, arrears with 5% daily compound
+- May Finster scrap dispatch channel
+- Naming tier progression (Mr. Serling → Vernon → Vern → Buddy → ...)
+- Toast fires once per game day — George’s toaster, 6 credits, dedicated modal
+- State persistence via `localStorage` (key: `otis_state_v1`)
+- Debug panel: FORCE DROP, +DAY, +WEEK, +500cr, FORCE PAY, FAST MODE (10×)
+- Mobile-first: 4-button grid, auto-opens belt modal on item arrival, arm hidden on mobile
 
 ---
 
-## Console Zones
+## Console Modules
 
-| Zone | Description |
-|------|-------------|
-| `BELT_MONITOR` | Belt scan triggers and signal status |
-| `COMMS` | Incoming channel management |
-| `SYSTEMS` | Life support / power / comms status readouts |
-| `LEDGER` | Debt and day counters with OTIS debt consult |
-| `ITEM_QUEUE` | Keep or scrap queued salvage items |
-| `OTIS_TERMINAL` | Live conversation with OTIS, last 10 exchanges |
-| `KEEP_LOG` | Running log of kept items |
+| Module | Contains | Light Logic |
+|--------|----------|-------------|
+| **BELT / ITEMS** | Drop status, bot dots, belt bar, item queue, manifest pool | Amber = item waiting; Green = drop active |
+| **COMMS** | Bank/debt/payment, Sven controls, May/scrap dispatch | Red = arrears or payment ≤3 days; Amber = ≤7 days or scrap ≥75% |
+| **STOREROOM** | Scrap channel, keep log, sell-back | Red = scrap ≥90%; Amber = ≥75% or keep ≥10 items |
+| **SYSTEMS / BOTS** | Full system status, bot dots, diagnose | Red = missed payments or arrears >2000 cr |
 
 ---
 
 ## Project Structure
 
 ```
-deadsignal/
+otis/
 ├── api/
 │   └── otis.js       # Vercel serverless function — Anthropic API proxy
-├── index.html        # Console UI — seven zones, OTIS terminal, status bar
-├── style.css         # Dark CRT theme
-├── game.js           # GameState class — state machine, triggers, session timer
+├── index.html        # Complete game shell — all CSS, GameState, and logic inline
 ├── otis.js           # OTIS system prompt, seed history, askOTIS() function
-├── state.js          # StateManager — localStorage save/load
+├── tts.js            # TTS toggle (browser speech synthesis)
 ├── audio.js          # AudioManager — optional CRT audio effects
 ├── vercel.json       # Vercel rewrite config
 ├── .env.example      # Environment variable template
 └── README.md
 ```
+
+> **Note:** `game.js`, `state.js`, and `style.css` from the prototype have been superseded. All logic is now inline in `index.html`.
 
 ---
 
@@ -54,8 +62,8 @@ deadsignal/
 
 1. **Clone the repo**
    ```bash
-   git clone https://github.com/questforgelitrpg/deadsignal.git
-   cd deadsignal
+   git clone https://github.com/questforgelitrpg/otis.git
+   cd otis
    ```
 
 2. **Set up environment**
@@ -73,7 +81,6 @@ deadsignal/
    ```bash
    vercel dev
    ```
-   This starts the local dev server with the `/api/otis` proxy wired up.
 
 ---
 
@@ -83,65 +90,31 @@ deadsignal/
 |----------|-------------|
 | `ANTHROPIC_API_KEY` | Your Anthropic API key — set in Vercel dashboard, never committed |
 
-See `.env.example` for the template. The API key is consumed exclusively by the `api/otis.js` serverless function and is never sent to the browser.
-
 ---
 
-## API Proxy (`api/otis.js`)
+## Timing Constants
 
-POST `/api/otis`
-
-**Request body:**
-```json
-{
-  "system": "<system prompt string>",
-  "messages": [{ "role": "user", "content": "..." }, ...]
-}
-```
-
-**Response:** Anthropic Messages API response object. The client reads `data.content[0].text`.
-
----
-
-## OTIS Character
-
-OTIS is sardonic, world-weary, and occasionally helpful. Responses are 1–3 sentences maximum. Tone adapts to session fatigue level (FRESH → TIRED → WORN → SPENT). The operator is addressed by naming tier:
-
-| Tier | Name | Condition |
-|------|------|-----------|
-| 0 | Mr. Serling | Default / formal |
-| 1 | Vern | Relationship building |
-| 2 | Buddy | High familiarity |
-
----
-
-## Game State
-
-Tracked fields:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `debt` | number | Station debt percentage (0–100) |
-| `day` | number | In-game day counter |
-| `sessionHours` | number | Real elapsed session hours |
-| `namingTier` | number | OTIS naming familiarity (0–2) |
-| `skipCount` | number | Consecutive skipped items |
-| `act` | number | Current story act |
-| `keepLog` | array | Items kept, with day stamp |
-| `recentEvents` | array | Last 5 trigger events (used in OTIS context) |
-
-State is saved to `localStorage` on every trigger fire and loaded automatically on page load.
-
----
-
-## Deployment
-
-The project deploys automatically to Vercel on push to `main`. The `vercel.json` rewrite routes `/` to `index.html`. The `ANTHROPIC_API_KEY` environment variable must be set in the Vercel project dashboard.
+| Constant | Value | Controls |
+|----------|-------|----------|
+| `MS_PER_INGAME_DAY` | 240,000ms (4 min) | Day clock, payment pressure, toast |
+| `BELT_DELIVERY_MS` | 12,000ms (12s) | Item arrival rate during drop |
+| `DAYS_BETWEEN_DROPS` | 7 days | ~28 real minutes between drops |
+| `PAYMENT_CYCLE_DAYS` | 28 days | ~112 real minutes per cycle |
+| `RESERVE_RESOLVE_MIN` | 60,000ms (1 min) | Min wait for reserve resolution |
+| `RESERVE_RESOLVE_MAX` | 240,000ms (4 min) | Max wait for reserve resolution |
+| `DEBUG_SPEED_MULTIPLIER` | 10× | Fast mode divides all _MS values |
 
 ---
 
 ## Roadmap
 
-- **Phase 1** — Debt mechanics, item queue population, belt scan results
-- **Phase 2** — Full GDD system wire-up (acts, McGuffin filter, stress escalation)
-- **Phase 3** — Audio integration, advanced OTIS reactions, full playthrough loop
+### Phase 0 Remaining
+- [ ] Sven interference events — pause belt, require dismissal
+- [ ] Maintenance events — bot offline, credit cost to restore
+- [ ] Breakage — condition degrades one tier based on bot status
+
+### Phase 1
+- [ ] OTIS arm CSS animation (raise/lower/point toward active module)
+- [ ] Manifest pool expansion — more items, more categories
+- [ ] Seasonal barge events — elevated rare/anomalous rates
+- [ ] George’s archive — static lore data, declaration bonus
