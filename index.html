@@ -39,11 +39,11 @@
 
         /* ARM sidebar -- desktop only */
         #arm-panel { width: 140px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding: 1.2rem 0.5rem 1rem; border-right: 1px solid var(--border); background: var(--bg-panel); overflow: hidden; }
-        #arm-art { font-size: 11px; line-height: 1.3; color: var(--text-dim); letter-spacing: 0; white-space: pre; text-align: center; }
+        #arm-art { width: 120px; height: auto; image-rendering: pixelated; display: block; margin: 0 auto; filter: drop-shadow(0 0 4px #33ff66); }
         #arm-status { margin-top: 0.8rem; font-size: 10px; letter-spacing: 0.15em; color: var(--ind-on); text-shadow: 0 0 6px var(--ind-on); }
-        #arm-panel.arm-warning #arm-art  { color: var(--ind-amber); }
+        #arm-panel.arm-warning #arm-art  { filter: drop-shadow(0 0 6px #ffb700); }
         #arm-panel.arm-warning #arm-status { color: var(--ind-amber); text-shadow: 0 0 6px var(--ind-amber); }
-        #arm-panel.arm-alert #arm-art  { color: var(--ind-red); }
+        #arm-panel.arm-alert #arm-art  { filter: drop-shadow(0 0 6px #ff4444); }
         #arm-panel.arm-alert #arm-status { color: var(--ind-red); text-shadow: 0 0 6px var(--ind-red); }
 
         /* Terminal */
@@ -166,6 +166,7 @@
 
         /* Toast modal */
         #modal-toast .modal-inner { max-width: 400px; margin-top: 20vh; }
+        #toaster-art { font-size: 9px; line-height: 1.1; color: var(--text-primary); white-space: pre; overflow-x: auto; text-align: center; margin-bottom: 0.6rem; }
         #toast-content { font-size: 13px; color: var(--text-primary); margin: 0.6rem 0 1rem; line-height: 1.5; }
 
         /* Debug */
@@ -193,19 +194,7 @@
     <div id="layout">
         <!-- OTIS ARM sidebar desktop only -->
         <aside id="arm-panel" aria-hidden="true">
-            <pre id="arm-art">  &#9556;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9559;
-  &#9553;O.T.I.S.&#9553;
-  &#9553; &#9689;    &#9689; &#9553;
-  &#9553;  \&#x2015;&#x2015;/  &#9553;
-  &#9562;&#9552;&#9552;&#9552;&#9566;&#9552;&#9552;&#9552;&#9552;&#9565;
-       &#9553;
-    &#9484;&#9472;&#9472;&#9580;&#9472;&#9472;&#9488;
-    &#9474;     &#9474;
-    &#9492;&#9472;&#9472;&#9578;&#9472;&#9472;&#9496;
-      /&#9553;\
-     / &#9553; \
-    /  &#9553;  \
-   &#9679;   &#9679;   &#9679;</pre>
+            <img id="arm-art" src="images/otis_sprite/idle.png" alt="OTIS">
             <div id="arm-status">NOMINAL</div>
         </aside>
 
@@ -394,6 +383,57 @@
     <div id="modal-toast" class="modal" role="dialog" aria-label="George's Toaster">
         <div class="modal-inner">
             <div class="modal-header"><span>GEORGE&#39;S TOASTER</span><button onclick="closeModal('toast')">&#x2715; CLOSE</button></div>
+            <pre id="toaster-art">                                                                                               
+                                                                                               
+                                                                                               
+                                                                                               
+                                     ,:.  ;=MW%M#*|i:;111:.                                    
+                                 +=!#W**#&gt;&lt;=#W#&gt;#$%M*&gt;&gt;MW%#&gt;*l                                 
+                               ilItIIll=&gt;~+++~=*M&gt;&gt;&gt;#WWM#*=M&lt;&lt;=                                
+                               iIlt||||ll++!!!+++&gt;&gt;&lt;&lt;W%&amp;M*M&lt;&gt;&gt;&gt;i                               
+                              ,!||llllll|++!|!!l~+!&lt;=&gt;@@$WM&gt;&gt;&gt;&lt;!                               
+                              ;!||II||lll|IIl|!|!+|=&lt;&lt;W█$WM&gt;*&gt;&gt;+.                              
+                              i!|l|||ll|!!l!!!~l|||&lt;=&lt;*▓$@#*W&gt;&gt;+                               
+                              i~&lt;l!!!l|!~!|lI|+&lt;!|!&lt;&lt;&lt;W██&amp;M#▓*&gt;+                               
+                            ,;l&gt;~!l+!+!!IIIl||!!!!~&gt;&gt;&gt;&amp;█$%MM▒##~                               
+                   ;=#M#&gt;+l!W█░#*~!+l+!+!|+!~!!+|!&gt;#&gt;&gt;&amp;▒▓$&amp;M▓WMW&gt;|i,.                          
+                :;::::::::;1I|&lt;&amp;%&amp;W*~~&lt;*&gt;===&gt;*=~++&gt;M*#@░▒█@&amp;░@$@%W=+~=*&amp;+i,                    
+              ,ttt1111111ii;:::;1tl!=&gt;#W&amp;WW#M#*&gt;=~&gt;&amp;WW█☺☺▒☻☺☻▓%+t11111111|&gt;|1:                 
+             ,tt111iiiiiiiii111t1i;::;1tIll|~&gt;M&amp;@%@▓▒▒▒▒▓$@&amp;#~t1111111I|=#&amp;█%&lt;t,               
+             tt1111iiiiiiiiiiiiiiiiii11iii;:;i1tIl|~*W#&gt;=!lttttI|=*W@$███████%Mli              
+            ,I11111iiiiiiiiiiiiiiiiiiiiiiiiii1i;::::::llII!&lt;W@█▓▓▒▓▓█$@%&amp;&amp;WMMMM#Ii             
+            it11111iiiiiiiiiiiiiiiii;;;;;;;;;;;;;;;::::;!@▓▒░░▓█@&amp;M*&gt;=~++++++~~&gt;&lt;l,            
+            1t11111iiiiiiiiiiiiiiiii;;;;;;;;;;;;;;;;;;;:iI#WM#*&gt;=~+!|W~lllll||!!&lt;II            
+            1tt111111iiiiiiiiiiiiii;;;;;;;;;;;;;;;;;;;;;;;1~~~+!!|lII!&amp;tIIIIll||=lI,           
+            1tt111111iiiiiiiiiiiiii;;;;;;;;;;;;;;;;;;;;;;::I+lllIItttt%|tttIIIll+!t,           
+            1tt1111111iiiiiiiiiiiii;;;;;;;;;;;;;;;;;;;i;;::;!ttt111111#&amp;1tttIIll!!t:           
+            1tt1111111iiiiiiiiiiiiii;;;;;;;;;;;;;;;;;;;;;:,,|Iiii1tIl*☻♦♦♦░+||ll!+t:           
+            1tt1111111iiiiiiiiiiiiii;;;;;;;;;;;;;;;;;;;;;:,,:Iii|&gt;W█♣☻♦♦♥☻░▓▓$#!!+t:           
+            1It1111111iiiiiiiiiiiiii;;;;;;;;;;;;;;;;::;;;,,,,|;i1l+=%*=!11,;!+~|!+t;           
+            tIt1111111iiiiiiiiiiiiii;;;;;;;;;;;;;;::::;;;,,,,|;iiiiii1|♥%+1ttIIl!+t;           
+            tIt1111111iiiiiiiiiiiiii;;;;;;;;;;;;;;:::::;;,,,,!iiiiiii1i☺I1tttIII|+t;           
+            tItt11111111iiiiiiiiiiii;;;;;;;;;;;;;;;;:::;;,,.,|;;iiiiiii░I11tttII|~1;           
+            tIttt1111111iiiiiiiiiiiii;;;;;;;;;;;;;:::::;;,,,,l;;;iiiiii▒l111ttII|~1i           
+            tIttt11111111iiiiiiiiiiii;;;;;;;;;;;;;:::::;;,,.,I;;;iiiii;▒l111ttII|=1i           
+           .IItttt11111111iiiiiiiiiiiii;;;;;;;;;;;:::::;;,,.,I;;;iiiiiitI111t&lt;@#|=1i           
+           t█&lt;Itttt1111111iiiiiiiiiiiii;;;;;;;;;;;;;:::;;:,.,t;;;iiiit█&gt;@▓@t+░@%l=1i           
+           i▓☻☻☺@&gt;Itt1111111iiiiiiiiiii;;;;;;;;;;;:::::;;:,.,1i;iiiiI▓#♦♣☺▒░IIIIl=1i           
+         ..;$☻☻☻☻☻☺☺▓&gt;|t111111iiiiiiiiii;;;;;;;;;;:::::;;:,.,1it%@&amp;=▓!♦♠♥♦♣♦█▒██+=11           
+          .,;~▓☻☻☻☺☺☺☺☺░▒$=t111iiiiiiiii;;;;;;;;;;;::::;;:,.,11I#Ml1%=☻M1l,:|**|l=1#,          
+          ...,:i!M@▓▓▒░░☺☺░☺☺▓W~tiiiiiiii;;;;;;;;;;::::;;:,.,tt;i!|i#=▒♥▒▓@ttt|&gt;%█▒▒           
+             ...,,:;1I!&lt;M%█▒░☺☺☺☺☻░#|tiii;;;;;;;;;;::::;;:,.,ttI▒M*!it#%W+|W▒▒▓▓▓▓▒$.          
+               ....,,::;it|~*&amp;$▓░☺☺☺☺☺░▓Wliii;;;;;;;:::;;;,.,1I;ttiii1&gt;█▓▓▓▓▓█▓▓▓▓▒&gt;,..        
+                   ....,,,:;i1l+&lt;M%█▒░░░☺░░░$*+1;;;;:::;;;,.,1I:i!*$██▓▓▓█$@%WM#&lt;|i:,..        
+                       ....,,,::;it|~&gt;W@▓░░░░░░▒▒▒@~1;;;ii,,:~&lt;█$$$███$&amp;*=!lt1i;:,,...         
+                           .....,,,::;iI!=#&amp;▓▒▒▒▒▒▒▓█@&amp;%$@&gt;&lt;#%@$$$%M&gt;~|I1i;::,,...             
+                                .....,,,::it!&amp;█▒▒▒▒▓█@%%█$*&lt;#%@$*+lti;::,,...                  
+                                      .....,,::;l&gt;@▓▓$%%█$*&lt;#%M|i;:,,...                       
+                                             ......,:iI+&gt;~lt;,,.....                           
+                                                                                               
+                                                                                               
+                                                                                               
+                                      
+</pre>
             <p id="toast-content">Energy draw logged. 6 credits.</p>
             <div class="modal-row" style="margin-top:0.8rem"><button onclick="closeModal('toast')">ACKNOWLEDGE</button></div>
         </div>
@@ -629,6 +669,12 @@
         out.scrollTop = out.scrollHeight;
     }
 
+    var OTIS_SPRITES = ['idle.png','lookdown.png','lookleft.png','lookright.png','panleft.png','panright.png','tiltleft.png','tiltright.png'];
+    function randomOtisSprite() {
+        var img = document.getElementById('arm-art');
+        if (img) img.src = 'images/otis_sprite/' + OTIS_SPRITES[Math.floor(Math.random() * OTIS_SPRITES.length)];
+    }
+
     async function appendOTIS(userText, trigger) {
         var statusEl = document.getElementById('sys-otis');
         if (statusEl) { statusEl.textContent = 'ACTIVE'; statusEl.className = 'status-warn'; }
@@ -639,6 +685,7 @@
             var reply = await askOTIS(userText || '', gameState, trigger || 'COMMS');
             otisLines.push({ role: 'otis', text: reply });
             renderOTIS();
+            randomOtisSprite();
             if (window.OtisTTS) window.OtisTTS.speak(reply);
             if (statusEl) { statusEl.textContent = 'NOMINAL'; statusEl.className = 'status-ok'; }
         } catch(e) {
@@ -1082,7 +1129,7 @@
     <script src="audio.js"></script>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
         gameState.init();
         gameState._updateUI();
         renderItemQueue();
@@ -1096,9 +1143,10 @@
         gameState.startDayTimer();
         var ttsBtn = document.getElementById('tts-btn');
         if (ttsBtn && window.OtisTTS) { if (!window.OtisTTS.isSupported()) ttsBtn.style.display = 'none'; else ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON'; }
-        appendOTIS('Operator logging in.', 'LOGIN');
-        autoToast();
-        if (gameState.state.day === 1 && !gameState.state.dropActive && gameState.state.manifestItems.length === 0) {
+        var isNewGame = gameState.state.day === 1 && !gameState.state.dropActive && gameState.state.manifestItems.length === 0 && !gameState.state.toastFiredToday;
+        await appendOTIS('Operator logging in.', 'LOGIN');
+        if (!isNewGame) { autoToast(); }
+        if (isNewGame) {
             handleBargeArrival();
         } else if (gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
             var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
