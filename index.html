@@ -166,7 +166,7 @@
 
         /* Toast modal */
         #modal-toast .modal-inner { max-width: 400px; margin-top: 20vh; }
-        #toaster-art { font-size: 9px; line-height: 1.1; color: var(--text-primary); white-space: pre; overflow-x: auto; text-align: center; margin-bottom: 0.6rem; }
+        #toaster-art { font-size: 4.5px; line-height: 1.1; color: var(--text-primary); white-space: pre; overflow-x: auto; text-align: center; margin-bottom: 0.6rem; }
         #toast-content { font-size: 13px; color: var(--text-primary); margin: 0.6rem 0 1rem; line-height: 1.5; }
 
         /* Debug */
@@ -529,7 +529,80 @@
         { name: 'Unidentified alloy fragment',                     category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
         { name: 'Pressurized canister \u2014 unknown contents',    category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
         { name: 'Ceramic figure \u2014 no catalogue match',        category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
+        // Civilian Debris — Common
+        { name: 'Personal hygiene kit \u2014 travel size',         category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 28 },
+        { name: 'Handheld audio player \u2014 cracked casing',     category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 22 },
+        { name: 'Family photo cube \u2014 multi-panel',            category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 35 },
+        { name: 'Worn clothing bundle \u2014 vacuum sealed remnants', category: 'Civilian', rarity: 'Common',   condition: 'Used', otisValue: 18 },
+        { name: 'Nutrient snack pack \u2014 expired',              category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 12 },
+        { name: 'Child\u2019s learning tablet \u2014 nonfunctional', category: 'Civilian', rarity: 'Common',    condition: 'Used', otisValue: 26 },
+        // Civilian Debris — Uncommon
+        { name: 'Compact holo-diary \u2014 intact',                category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 145 },
+        { name: 'Civilian comm device \u2014 clean condition',     category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 120 },
+        { name: 'Prescription lens visor \u2014 calibrated',       category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 110 },
+        { name: 'Portable heating unit \u2014 personal',           category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 95 },
+        // Industrial Salvage — Common
+        { name: 'Fractured pipe junction',                         category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 30 },
+        { name: 'Burned-out power coupler',                        category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 24 },
+        { name: 'Worn actuator joint',                             category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 27 },
+        { name: 'Damaged sensor housing',                          category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 21 },
+        // Industrial Salvage — Uncommon
+        { name: 'Precision cutting module',                        category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 160 },
+        { name: 'Reinforced servo motor \u2014 intact',            category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 185 },
+        { name: 'Thermal regulator unit \u2014 calibrated',        category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 170 },
+        // Decommissioned Vessel — Uncommon
+        { name: 'Ship comm relay node',                            category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 140 },
+        { name: 'Cockpit interface panel \u2014 stripped',         category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 115 },
+        { name: 'Thruster nozzle fragment',                        category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 130 },
+        { name: 'Navigation gyroscope ring',                       category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 155 },
+        // Decommissioned Vessel — Rare
+        { name: 'Micro jump-calculator core',                      category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 520 },
+        { name: 'Star chart projector \u2014 intact',              category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 480 },
+        { name: 'AI assistant module \u2014 dormant',              category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 610 },
+        // Abandoned Settlement — Common
+        { name: 'Settlement ration container \u2014 cracked',      category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 25 },
+        { name: 'Ceramic water jug \u2014 fractured',              category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 20 },
+        { name: 'Manual farming tool \u2014 rusted',               category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 18 },
+        { name: 'Communal utensil bundle \u2014 mismatched',       category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 22 },
+        // Abandoned Settlement — Uncommon
+        { name: 'Settlement ID registry slab',                     category: 'Settlement', rarity: 'Uncommon',  condition: 'Used', otisValue: 135 },
+        { name: 'Portable weather monitor',                        category: 'Settlement', rarity: 'Uncommon',  condition: 'Used', otisValue: 120 },
+        { name: 'Community message recorder \u2014 intact',        category: 'Settlement', rarity: 'Uncommon',  condition: 'Used', otisValue: 150 },
+        // Unknown Origin — Anomalous
+        { name: 'Non-reactive energy shard',                       category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
+        { name: 'Smooth black sphere \u2014 absorbs light',        category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
+        { name: 'Organic-metal growth cluster',                    category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
+        { name: 'Time-worn cube \u2014 shifting edges',            category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
+        { name: 'Whispering filament coil',                        category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
     ];
+
+    // EASTER EGG POOL (hidden from manifest viewer, 10% chance to append to drops)
+    const EASTER_EGG_POOL = [
+        { name: 'Bureaucratic approval stamp \u2014 block lettering',  category: 'Civilian',   rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 75 },
+        { name: 'Weighted companion cube \u2014 scorched',             category: 'Civilian',   rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 140 },
+        { name: 'Handheld portal device \u2014 incomplete frame',      category: 'Vessel',     rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 220 },
+        { name: 'Office desk placard \u2014 "Employee 427"',           category: 'Civilian',   rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 95 },
+        { name: 'Narration trigger box \u2014 inactive',               category: 'Unknown',    rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 0 },
+        { name: 'Vault jumpsuit fragment \u2014 numbered',             category: 'Civilian',   rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 130 },
+        { name: 'Bottle cap currency stack',                           category: 'Civilian',   rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 85 },
+        { name: 'Miniature power armor helmet \u2014 toy replica',     category: 'Civilian',   rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 110 },
+        { name: 'Cracked VR visor \u2014 obsolete model',              category: 'Vessel',     rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 150 },
+        { name: 'Challenge coin \u2014 "High Five" insignia',          category: 'Civilian',   rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 125 },
+        { name: 'Improvised exo-suit clamp \u2014 jury-rigged',        category: 'Industrial', rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 170 },
+        { name: 'Transparent storage vial \u2014 unknown organism trace', category: 'Unknown', rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 0 },
+        { name: 'Spiked collar \u2014 oversized',                      category: 'Civilian',   rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 160 },
+        { name: 'Dungeon crawler loot token \u2014 bronze tier',       category: 'Civilian',   rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 90 },
+        { name: 'Red pill capsule \u2014 sealed',                      category: 'Civilian',   rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 140 },
+        { name: 'Blue pill capsule \u2014 sealed',                     category: 'Civilian',   rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 140 },
+        { name: 'Neural interface jack \u2014 spinal mount',           category: 'Industrial', rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 210 },
+        { name: 'Spinner control grip \u2014 worn',                    category: 'Vessel',     rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 175 },
+        { name: 'Origami figure \u2014 folded precisely',              category: 'Civilian',   rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 100 },
+        { name: 'Handheld translation unit \u2014 "Babel" model',      category: 'Unknown',    rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 0 },
+        { name: 'Electronic guide slab \u2014 "Don\'t Panic" casing', category: 'Civilian',   rarity: 'EasterEgg', easterEgg: true, condition: 'Used', otisValue: 180 },
+    ];
+
+    // MCGUFFIN ITEM (Act 3 sequence only, never in normal drops)
+    const MCGUFFIN_ITEM = { name: 'McGuffin blur sphere', category: 'Unknown', rarity: 'McGuffin', mcguffin: true, condition: 'Used', otisValue: 0 };
 
     // GEORGE'S WAREHOUSE
     var GEORGE_WAREHOUSE = [
@@ -907,9 +980,12 @@
             manifest = [];
             for (var k = 0; k < count; k++) manifest.push(weightedPickItem());
         }
+        // 10% chance to append one easter egg item to the drop
+        if (Math.random() < 0.10) {
+            var eeItem = Object.assign({}, EASTER_EGG_POOL[Math.floor(Math.random() * EASTER_EGG_POOL.length)]);
+            manifest.push(eeItem);
+        }
         gameState.state.manifestItems = manifest.slice();
-        gameState.state.dropActive = true;
-        gameState.state.bargeActive = true;
         gameState.state.dropItemsRemaining = manifest.length;
         gameState._save();
         if (btn) btn.disabled = true;
@@ -1036,16 +1112,18 @@
         var item = currentItem;
         var ctx  = buildItemContext(item);
         var ev   = getEffectiveValue(item);
+        var eeMultiplier = item.easterEgg ? 4 : 1;
         if (method === 'OTIS') {
-            gameState.state.credits += ev;
+            gameState.state.credits += ev * eeMultiplier;
             gameState._save();
             trackOTISLearning('SELL', item);
             clearItemQueue();
-            appendOTIS('Selling at OTIS price: ' + item.name + '. +' + ev + ' cr. ' + ctx, 'DECLARATION_OTIS');
+            appendOTIS('Selling at OTIS price: ' + item.name + '. +' + (ev * eeMultiplier) + ' cr. ' + ctx, 'DECLARATION_OTIS');
         } else if (method === 'RESERVE') {
             var rp;
             if (item.rarity === 'Anomalous') rp = Math.floor(Math.random() * (TIMING.ANOMALOUS_RESERVE_MAX - TIMING.ANOMALOUS_RESERVE_MIN + 1)) + TIMING.ANOMALOUS_RESERVE_MIN;
             else rp = Math.floor(ev * (RESERVE_MULTIPLIERS[item.rarity] || 1.10));
+            rp = Math.floor(rp * eeMultiplier);
             var resolveAt = Date.now() + TIMING.RESERVE_RESOLVE_MIN + Math.floor(Math.random() * (TIMING.RESERVE_RESOLVE_MAX - TIMING.RESERVE_RESOLVE_MIN));
             if (!gameState.state.shippingQueue) gameState.state.shippingQueue = [];
             gameState.state.shippingQueue.push({ name: item.name, price: rp, resolveAt: resolveAt });
@@ -1055,7 +1133,7 @@
             clearItemQueue();
             appendOTIS('Reserve listing: ' + item.name + '. Reserve: ' + rp + ' cr. Awaiting buyer. ' + ctx, 'DECLARATION_RESERVE');
         } else if (method === 'NORESERVE') {
-            var earned = Math.floor(ev * 0.75);
+            var earned = Math.floor(ev * 0.75 * eeMultiplier);
             gameState.state.credits += earned;
             gameState._save();
             trackOTISLearning('SELL', item);
@@ -1342,6 +1420,8 @@
     function handleSearchWarehouse() {
         var s = gameState.state;
         s.georgeWarehouseRevealed = true;
+        // 10% chance to surface a random easter egg item as an unlisted find
+        s._warehouseEasterEgg = (Math.random() < 0.10) ? Object.assign({}, EASTER_EGG_POOL[Math.floor(Math.random() * EASTER_EGG_POOL.length)]) : null;
         gameState._save();
         renderGeorgeWarehouse();
         appendOTIS('Vernon is accessing George\'s personal warehouse archive.', 'CONSULT_GEORGE');
@@ -1355,21 +1435,38 @@
         list.style.display = '';
         var sold = s.georgeWarehouseSold || [];
         var available = GEORGE_WAREHOUSE.filter(function(item, i) { return sold.indexOf(i) === -1; });
-        if (!available.length) { list.innerHTML = '<p class="zone-hint">Warehouse cleared.</p>'; return; }
-        var rc = { Common:'tag-common', Uncommon:'tag-uncommon', Rare:'tag-rare', Anomalous:'tag-anomalous' };
-        list.innerHTML = available.map(function(item) {
-            var idx = GEORGE_WAREHOUSE.indexOf(item);
-            var isAnomaly = item.rarity === 'Anomalous';
-            var price = isAnomaly ? Math.floor(Math.random() * (TIMING.ANOMALOUS_RESERVE_MAX - TIMING.ANOMALOUS_RESERVE_MIN + 1)) + TIMING.ANOMALOUS_RESERVE_MIN : Math.floor(item.otisValue * (CONDITION_MULTIPLIERS['Used'] || 1.0));
-            return '<div style="padding:0.3rem 0;border-bottom:1px solid var(--border-dim)">' +
-                '<div class="item-name" style="font-size:12px">' + escapeHtml(item.name) + '</div>' +
-                '<div class="item-tags"><span class="tag tag-common">' + escapeHtml(item.category) + '</span> <span class="tag ' + (rc[item.rarity]||'tag-common') + '">' + escapeHtml(item.rarity) + '</span></div>' +
-                '<div class="george-note">' + escapeHtml(item.georgeNote) + '</div>' +
+        var rc = { Common:'tag-common', Uncommon:'tag-uncommon', Rare:'tag-rare', Anomalous:'tag-anomalous', EasterEgg:'tag-uncommon' };
+        var html = '';
+        if (!available.length) {
+            html += '<p class="zone-hint">Warehouse cleared.</p>';
+        } else {
+            html += available.map(function(item) {
+                var idx = GEORGE_WAREHOUSE.indexOf(item);
+                var isAnomaly = item.rarity === 'Anomalous';
+                var price = isAnomaly ? Math.floor(Math.random() * (TIMING.ANOMALOUS_RESERVE_MAX - TIMING.ANOMALOUS_RESERVE_MIN + 1)) + TIMING.ANOMALOUS_RESERVE_MIN : Math.floor(item.otisValue * (CONDITION_MULTIPLIERS['Used'] || 1.0));
+                return '<div style="padding:0.3rem 0;border-bottom:1px solid var(--border-dim)">' +
+                    '<div class="item-name" style="font-size:12px">' + escapeHtml(item.name) + '</div>' +
+                    '<div class="item-tags"><span class="tag tag-common">' + escapeHtml(item.category) + '</span> <span class="tag ' + (rc[item.rarity]||'tag-common') + '">' + escapeHtml(item.rarity) + '</span></div>' +
+                    '<div class="george-note">' + escapeHtml(item.georgeNote) + '</div>' +
+                    '<div class="modal-row">' +
+                    '<button onclick="handleWarehouseSell(' + idx + ',' + price + ')">SELL \u2014 OTIS PRICE (' + price + ' cr)</button>' +
+                    '<button onclick="handleWarehouseMoveToBelt(' + idx + ')">MOVE TO BELT</button>' +
+                    '</div></div>';
+            }).join('');
+        }
+        // Show unlisted easter egg find if surfaced
+        if (s._warehouseEasterEgg) {
+            var ee = s._warehouseEasterEgg;
+            var eePrice = Math.floor((ee.otisValue || 0) * 4 * (CONDITION_MULTIPLIERS['Used'] || 1.0));
+            html += '<div style="padding:0.3rem 0;border-top:1px dashed var(--border-dim);margin-top:0.4rem">' +
+                '<div class="item-name" style="font-size:12px"><span style="color:var(--text-warn)">[UNLISTED FIND]</span> ' + escapeHtml(ee.name) + '</div>' +
+                '<div class="item-tags"><span class="tag tag-common">' + escapeHtml(ee.category) + '</span> <span class="tag tag-uncommon">Unlisted</span></div>' +
                 '<div class="modal-row">' +
-                '<button onclick="handleWarehouseSell(' + idx + ',' + price + ')">SELL \u2014 OTIS PRICE (' + price + ' cr)</button>' +
-                '<button onclick="handleWarehouseMoveToBelt(' + idx + ')">MOVE TO BELT</button>' +
+                '<button onclick="handleWarehouseEasterEggSell(' + eePrice + ')">SELL \u2014 OTIS PRICE (' + eePrice + ' cr)</button>' +
+                '<button onclick="handleWarehouseEasterEggMoveToBelt()">MOVE TO BELT</button>' +
                 '</div></div>';
-        }).join('');
+        }
+        list.innerHTML = html;
     }
 
     function handleWarehouseSell(idx, price) {
@@ -1401,6 +1498,36 @@
         gameState._save(); gameState._updateUI();
         renderGeorgeWarehouse();
         appendOTIS('Moved to belt: ' + item.name + '.', 'ITEM_SCAN');
+    }
+
+    function handleWarehouseEasterEggSell(price) {
+        var s = gameState.state;
+        var ee = s._warehouseEasterEgg;
+        if (!ee) return;
+        s.credits += price;
+        s._warehouseEasterEgg = null;
+        gameState._save(); gameState._updateUI();
+        renderGeorgeWarehouse();
+        appendOTIS('Sold unlisted find: ' + ee.name + '. +' + price + ' cr.', 'DECLARATION_OTIS');
+    }
+
+    function handleWarehouseEasterEggMoveToBelt() {
+        var s = gameState.state;
+        var ee = s._warehouseEasterEgg;
+        if (!ee) return;
+        var item = Object.assign({}, ee, { condition: 'Used' });
+        s._warehouseEasterEgg = null;
+        if (!s.manifestItems) s.manifestItems = [];
+        s.manifestItems.push(item);
+        s.dropItemsRemaining = s.manifestItems.length;
+        if (!s.dropActive) {
+            s.dropActive = true; s.bargeActive = true;
+            setBotDots(true); updateBeltUI('DELIVERING');
+            startBeltDelivery();
+        }
+        gameState._save(); gameState._updateUI();
+        renderGeorgeWarehouse();
+        appendOTIS('Moved unlisted find to belt: ' + item.name + '.', 'ITEM_SCAN');
     }
 
     // TOASTER INCIDENT SEQUENCE
@@ -1449,6 +1576,7 @@
             if (out) out.classList.remove('mcguffin-blur');
             var ttsText = 'Object. Tracking. Inventory. That is not what I am.';
             if (window.OtisTTS) window.OtisTTS.speak(ttsText);
+            setItemInQueue(Object.assign({}, MCGUFFIN_ITEM));
             setTimeout(function() {
                 if (otisLines.length > 0) {
                     var last = otisLines[otisLines.length - 1];
@@ -1539,7 +1667,7 @@
         var muted = window.OtisTTS.toggleMute();
         var btn = document.getElementById('tts-btn'); if (btn) btn.textContent = muted ? 'TTS: OFF' : 'TTS: ON';
     }
-    function toggleDebug() { var p = document.getElementById('debug-panel'); if (p) p.style.display = p.style.display === 'none' ? '' : 'none'; }
+    function toggleDebug() { var p = document.getElementById('debug-panel'); if (p) p.style.display = p.style.display !== 'block' ? 'block' : 'none'; }
     function dbgDay()      { gameState.advanceDay(); }
     function dbgWeek()     { for (var i = 0; i < 7; i++) gameState.advanceDay(); }
     function dbgCredits()  { gameState.state.credits += 500; gameState._save(); gameState._updateUI(); }
