@@ -143,9 +143,15 @@ let _otisHistory = [...OTIS_SEED_HISTORY];
 
 function buildOTISContext(gs) {
     const s = gs.state;
-    // Derive fatigue from session hours
-    const h = s.sessionHours || 0;
-    const fatigue = h < 1 ? 'NONE' : h < 2 ? 'LOW' : h < 4 ? 'MODERATE' : h < 6 ? 'HIGH' : 'CRITICAL';
+    // Use getFatigueTier() from index.html if available, otherwise derive locally
+    const fatigue = (typeof getFatigueTier === 'function') ? getFatigueTier() : (function() {
+        const h = s.sessionHours || 0;
+        if (h < 30) return 'NONE';
+        if (h < 60) return 'LOW';
+        if (h < 120) return 'MODERATE';
+        if (h < 180) return 'HIGH';
+        return 'CRITICAL';
+    })();
     // Derive naming from namingTier index
     const NAMING_TIERS = ['Mr. Serling','Vernon','Vern','Buddy','Pal','Coworker','Boss','Mr. Serling','Oh. You.'];
     const naming = NAMING_TIERS[s.namingTier] || 'Mr. Serling';
