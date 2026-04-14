@@ -848,8 +848,9 @@
                 var raw = localStorage.getItem(STATE_KEY);
                 if (raw) {
                     var parsed = JSON.parse(raw);
-                    if (!parsed.stateVersion || parsed.stateVersion !== 2) {
-                        this.clear();
+                    if (!parsed.stateVersion || parsed.stateVersion < 2) {
+                        console.log('Old save detected. Clearing for v2 economy.');
+                        localStorage.removeItem(STATE_KEY);
                         return null;
                     }
                     return Object.assign({}, this._default(), parsed);
@@ -2198,30 +2199,31 @@
         renderItemQueue();
         renderShippingQueue();
         renderStoreroomBuffer();
+        if (gameState.state.georgeWarehouseRevealed) { renderGeorgeWarehouse(); }
         updateScrapBar();
         updateSystemsStatus();
         updateCommsIndicators();
         updateModuleLights();
         updateBeltUI('CLEAR');
+        updateFatigueVisuals();
         gameState.startSessionTimer();
         gameState.startDayTimer();
-        updateFatigueVisuals();
         var ttsBtn = document.getElementById('tts-btn');
         if (ttsBtn && window.OtisTTS) { if (!window.OtisTTS.isSupported()) ttsBtn.style.display = 'none'; else ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON'; }
         var isNewGame = gameState.state.day === 1 && !gameState.state.dropActive && gameState.state.manifestItems.length === 0 && !gameState.state.toastFiredToday;
-        await appendOTIS('Operator logging in.', 'LOGIN');
+        if (gameState.state.easterEggFired && !gameState.state.toasterIncidentFired) {
+            var auxBtn = document.getElementById('module-btn-auxiliary');
+            if (auxBtn) { auxBtn.style.display = ''; auxBtn.style.opacity = '1'; }
+            setLight('light-auxiliary', 'light-amber');
+        }
         checkScriptedComms();
+        await appendOTIS('Operator logging in.', 'LOGIN');
         if (!isNewGame) { autoToast(); }
         if (isNewGame) {
             handleBargeArrival();
         } else if (gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
             var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
             setBotDots(true); startBeltDelivery();
-        }
-        if (gameState.state.easterEggFired && !gameState.state.toasterIncidentFired) {
-            var auxBtn = document.getElementById('module-btn-auxiliary');
-            if (auxBtn) { auxBtn.style.display = ''; auxBtn.style.opacity = '1'; }
-            setLight('light-auxiliary', 'light-amber');
         }
     });
     </script>
