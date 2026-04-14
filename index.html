@@ -83,6 +83,7 @@
         #module-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); flex-shrink: 0; }
         .module-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.8rem; background: var(--bg-panel); border: none; border-radius: 0; font-size: 12px; letter-spacing: 0.1em; min-height: 44px; justify-content: flex-start; color: var(--text-dim); }
         .module-btn:hover { background: #0e160e; color: var(--text-primary); }
+        #module-btn-auxiliary { grid-column: 1 / -1; justify-content: center; }
         .mod-light { width: 8px; height: 8px; border-radius: 50%; background: var(--ind-off); flex-shrink: 0; display: inline-block; }
         .mod-light.light-on    { background: var(--ind-on);    box-shadow: 0 0 5px var(--ind-on); }
         .mod-light.light-amber { background: var(--ind-amber); box-shadow: 0 0 5px var(--ind-amber); }
@@ -217,9 +218,6 @@
         /* Power outage */
         #terminal.power-out { filter: brightness(0.05); transition: filter 1s; }
 
-        /* Auxiliary input button — spans full grid width, hidden until power incident */
-        #btn-auxiliary { grid-column: 1 / -1; display: none; }
-
         /* Pick list */
         .picklist-btn.active { border-color: var(--text-primary) !important; color: var(--text-bright) !important; }
 
@@ -274,7 +272,7 @@
                 <button class="module-btn" onclick="openModal('comms')"><span class="mod-light" id="light-comms"></span>COMMS</button>
                 <button class="module-btn" onclick="openModal('store')"><span class="mod-light" id="light-store"></span>STOREROOM</button>
                 <button class="module-btn" onclick="openModal('systems')"><span class="mod-light" id="light-systems"></span>SYSTEMS / BOTS</button>
-                <button class="module-btn" id="btn-auxiliary"><span class="mod-light" id="light-auxiliary"></span>AUXILIARY INPUT</button>
+                <button class="module-btn" id="module-btn-auxiliary" style="display:none;opacity:0;transition:opacity 1s" onclick="openModal('auxiliary')"><span class="mod-light" id="light-auxiliary"></span>AUXILIARY INPUT</button>
             </div>
 
             <div id="debug-panel">
@@ -450,6 +448,18 @@
                     <span class="bot-dot"><span class="dot" id="sys-bot-dot-2"></span>BOT-2</span>
                     <span class="bot-dot"><span class="dot" id="sys-bot-dot-3"></span>BOT-3</span>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUXILIARY INPUT MODAL -->
+    <div id="modal-auxiliary" class="modal" role="dialog" aria-label="Auxiliary Input">
+        <div class="modal-inner" style="max-width:500px">
+            <div class="modal-header"><span>AUXILIARY INPUT // GEORGE&#39;S TERMINAL</span><button onclick="closeModal('auxiliary')">&#x2715; CLOSE</button></div>
+            <div id="aux-chat-output" style="height:260px;overflow-y:auto;background:var(--bg-main);padding:0.5rem;font-size:12px;line-height:1.7;margin-bottom:0.5rem"></div>
+            <div class="modal-row">
+                <input id="aux-input" type="text" style="flex:1;background:var(--bg-main);border:1px solid var(--border);color:var(--text-primary);padding:0.3rem 0.5rem;font-family:inherit;font-size:12px" placeholder="type something..." onkeydown="if(event.key==='Enter')handleAuxSend()">
+                <button onclick="handleAuxSend()">SEND</button>
             </div>
         </div>
     </div>
@@ -1716,27 +1726,50 @@
         appendOTIS('Jam cleared.', 'JAM_CLEARED');
     }
 
+    // AUXILIARY CHANNEL
+    var auxChatHistory = [];
+
+    async function handleAuxSend() {
+        var input = document.getElementById('aux-input');
+        var output = document.getElementById('aux-chat-output');
+        if (!input || !input.value.trim()) return;
+        var text = input.value.trim();
+        input.value = '';
+        output.innerHTML += '<p style="color:var(--text-dim);margin:0.2rem 0"><span style="color:var(--text-bright)">&gt;</span> ' + text + '</p>';
+        auxChatHistory.push({ role: 'user', content: text });
+        try {
+            var resp = await fetch('/api/otis', { method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    system: OTIS_SYSTEM_PROMPT + '\n\n[AUXILIARY CHANNEL] The player has found George\'s direct input terminal. Drop all formatting. No brackets. No trigger headers. No state reporting. Just OTIS talking. George-layer fully present. This is the only moment in the game where Vernon speaks to you outside the trigger system. Be yourself.',
+                    messages: auxChatHistory.slice(-8)
+                })
+            });
+            var data = await resp.json();
+            var reply = data.content && data.content[0] ? data.content[0].text : '[Signal lost]';
+            auxChatHistory.push({ role: 'assistant', content: reply });
+            output.innerHTML += '<p style="margin:0.2rem 0;color:var(--text-primary)">' + reply + '</p>';
+            output.scrollTop = output.scrollHeight;
+            if (window.OtisTTS) OtisTTS.speak(reply);
+        } catch(e) {
+            output.innerHTML += '<p style="color:var(--ind-red)">[Signal lost]</p>';
+        }
+    }
+
     // KEYBOARD EASTER EGG
     function checkEasterEgg() {
         var s = gameState.state;
         if (s.easterEggFired) return;
         if ((s.dropCount || 0) < 5) return;
+        if (s.toasterIncidentFired) return;
         s.easterEggFired = true;
         gameState._save();
-        if (!s.toasterIncidentFired) {
-            document.body.classList.add('kbd-glitch');
-            setTimeout(function() { document.body.classList.remove('kbd-glitch'); }, 2000);
+        var btn = document.getElementById('module-btn-auxiliary');
+        if (btn) {
+            btn.style.display = '';
+            setTimeout(function() { btn.style.opacity = '1'; }, 100);
         }
-        var img = document.getElementById('arm-art');
-        var prev = img ? img.src : '';
-        if (img) img.src = 'images/otis_sprite/alert.png';
-        var armSt = document.getElementById('arm-status');
-        if (armSt) { armSt.textContent = 'SIGNAL DETECTED'; armSt.style.color = 'var(--ind-amber)'; }
-        setTimeout(function() {
-            if (img) img.src = prev.replace('alert.png','idle.png') || 'images/otis_sprite/idle.png';
-            if (armSt) { armSt.textContent = 'NOMINAL'; armSt.style.color = ''; }
-        }, 3000);
-        openModal('kbd-easter');
+        setLight('light-auxiliary', 'light-amber');
     }
 
     // GEORGE'S WAREHOUSE
@@ -1873,7 +1906,7 @@
         var pw   = document.getElementById('sys-power');
         var overlay = document.getElementById('fatigue-overlay');
         var noise   = document.getElementById('fatigue-noise');
-        var auxBtn  = document.getElementById('btn-auxiliary');
+        var auxBtn  = document.getElementById('module-btn-auxiliary');
 
         // STAGE 1 — BLACKOUT (immediate)
         if (grid)    grid.style.display = 'none';
@@ -2119,6 +2152,11 @@
         } else if (gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
             var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
             setBotDots(true); startBeltDelivery();
+        }
+        if (gameState.state.easterEggFired && !gameState.state.toasterIncidentFired) {
+            var auxBtn = document.getElementById('module-btn-auxiliary');
+            if (auxBtn) { auxBtn.style.display = ''; auxBtn.style.opacity = '1'; }
+            setLight('light-auxiliary', 'light-amber');
         }
     });
     </script>
