@@ -522,11 +522,11 @@
         BELT_DELIVERY_MS:      12000,
         DAYS_BETWEEN_DROPS:    7,
         DROP_VARIANCE_DAYS:    2,
-        DROP_SIZE_ACT1:        6,
-        DROP_SIZE_ACT2_MIN:    9,
-        DROP_SIZE_ACT2_MAX:    11,
-        DROP_SIZE_ACT3_MIN:    13,
-        DROP_SIZE_ACT3_MAX:    15,
+        DROP_SIZE_ACT1:        20,
+        DROP_SIZE_ACT2_MIN:    28,
+        DROP_SIZE_ACT2_MAX:    32,
+        DROP_SIZE_ACT3_MIN:    36,
+        DROP_SIZE_ACT3_MAX:    42,
         PAYMENT_CYCLE_DAYS:    28,
         RESERVE_RESOLVE_MIN:   120000,
         RESERVE_RESOLVE_MAX:   480000,
@@ -697,7 +697,7 @@
     }
 
     // STATE MANAGER
-    const STATE_KEY = 'otis_state_v1';
+    const STATE_KEY = 'otis_state_v2';
     const stateManager = {
         _default: function() {
             return {
@@ -723,6 +723,7 @@
                 easterEggFired: false,
                 toasterIncidentFired: false,
                 nextDropDay: null,
+                stateVersion: 2,
             };
         },
         save: function(state) {
@@ -732,7 +733,14 @@
         load: function() {
             try {
                 var raw = localStorage.getItem(STATE_KEY);
-                if (raw) return Object.assign({}, this._default(), JSON.parse(raw));
+                if (raw) {
+                    var parsed = JSON.parse(raw);
+                    if (!parsed.stateVersion || parsed.stateVersion !== 2) {
+                        this.clear();
+                        return null;
+                    }
+                    return Object.assign({}, this._default(), parsed);
+                }
             } catch(e) { console.warn('Load failed:', e); }
             return null;
         },
@@ -967,29 +975,36 @@
 
     function handleBeltScan() { deliverNextBeltItem(); }
 
+    var _dropShuffledPool = [];
+    var _dropShuffleIndex = 0;
+
+    function shuffleDropPool(pickChoice) {
+        var pool = MANIFEST_POOL.slice();
+        if (pickChoice && pickChoice.mode === 'DOUBLE_WEIGHT' && pickChoice.category) {
+            var extras = MANIFEST_POOL.filter(function(i) { return i.category === pickChoice.category; });
+            pool = pool.concat(extras);
+        }
+        if (pickChoice && pickChoice.mode === 'PRIORITIZE') {
+            var high = MANIFEST_POOL.filter(function(i) { return i.rarity === 'Rare' || i.rarity === 'Uncommon'; });
+            pool = pool.concat(high);
+        }
+        for (var i = pool.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+        }
+        if (pickChoice && pickChoice.mode === 'DROP' && pickChoice.category) {
+            pool = pool.filter(function(i) { return i.category !== pickChoice.category; });
+        }
+        _dropShuffledPool = pool;
+        _dropShuffleIndex = 0;
+    }
+
     function weightedPickItem() {
-        var s = gameState.state;
-        var choice = (s && s.pickListChoice) ? s.pickListChoice : { mode: 'DROP', category: null };
-        var r = Math.random();
-        var rarity;
-        if (choice.mode === 'PRIORITIZE') {
-            rarity = r < 0.30 ? 'Common' : r < 0.55 ? 'Uncommon' : r < 0.80 ? 'Rare' : 'Anomalous';
-        } else {
-            rarity = r < 0.60 ? 'Common' : r < 0.85 ? 'Uncommon' : r < 0.95 ? 'Rare' : 'Anomalous';
+        if (_dropShuffleIndex >= _dropShuffledPool.length) {
+            shuffleDropPool(gameState.state.pickListChoice);
         }
-        var pool;
-        if (choice.mode === 'DOUBLE_WEIGHT' && choice.category) {
-            var cat = choice.category;
-            var base = MANIFEST_POOL.filter(function(i) { return i.rarity === rarity; });
-            var extra = base.filter(function(i) { return i.category === cat; });
-            pool = base.concat(extra);
-            if (!pool.length) pool = base;
-            if (!pool.length) pool = MANIFEST_POOL;
-        } else {
-            pool = MANIFEST_POOL.filter(function(i) { return i.rarity === rarity; });
-            if (!pool.length) pool = MANIFEST_POOL;
-        }
-        return Object.assign({}, pool[Math.floor(Math.random() * pool.length)]);
+        var item = _dropShuffledPool[_dropShuffleIndex++];
+        return Object.assign({}, item);
     }
 
     function handleBargeArrival() {
@@ -1007,6 +1022,7 @@
             if (act === 1) count = TIMING.DROP_SIZE_ACT1;
             else if (act === 2) count = TIMING.DROP_SIZE_ACT2_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT2_MAX - TIMING.DROP_SIZE_ACT2_MIN + 1));
             else count = TIMING.DROP_SIZE_ACT3_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT3_MAX - TIMING.DROP_SIZE_ACT3_MIN + 1));
+            shuffleDropPool(gameState.state.pickListChoice);
             manifest = [];
             for (var k = 0; k < count; k++) manifest.push(weightedPickItem());
         }
