@@ -2449,7 +2449,9 @@
             s.daysUntilNextDrop = TIMING.DAYS_BETWEEN_DROPS + Math.floor(Math.random() * (TIMING.DROP_VARIANCE_DAYS * 2 + 1)) - TIMING.DROP_VARIANCE_DAYS;
             handleBargeArrival();
         }
-        // Fire toast once per day — use autoToast() directly to avoid setTimeout race conditions
+        // Fire toast once per day — autoToast() checks toastFiredToday internally and
+        // deducts credits synchronously, avoiding the race condition caused by the
+        // previous setTimeout(handleToasterIncident, 3000) approach.
         s.toastFiredToday = false;
         autoToast();
         appendOTIS('Day ' + s.day + '. Another one.', 'DAY_TICK');
