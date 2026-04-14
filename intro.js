@@ -3,6 +3,14 @@
     var _running = false;
     var _cb = null;
 
+    // Shared completion handler — closes the intro modal and fires the callback.
+    // Called by both skipIntro() (early exit) and the LOGIN button (normal exit).
+    function _doComplete() {
+        var modal = document.getElementById('modal-intro');
+        if (modal) modal.style.display = 'none';
+        if (_cb) { var cb = _cb; _cb = null; cb(true); }
+    }
+
     var INTRO_LINES = [
         { text: '&gt; TERMINAL BOOT SEQUENCE INITIATED...', delay: 600, tts: 'Terminal boot sequence initiated.' },
         { text: '&gt; O.T.I.S. v0.4 \u2014 Object, Tracking &amp; Inventory System', delay: 1400, tts: 'O.T.I.S. version 0.4. Object, Tracking and Inventory System.' },
@@ -25,19 +33,14 @@
         { text: '&gt; OPERATOR LOGIN REQUIRED', delay: 1200, tts: 'Operator login required.' },
     ];
 
-    function _close() {
-        var modal = document.getElementById('modal-intro');
-        if (modal) modal.style.display = 'none';
-    }
-
+    // skipIntro — early exit during playback.  Also called by the SKIP button onclick.
     window.skipIntro = function () {
         if (!_running) return;
         _running = false;
         _timers.forEach(function (t) { clearTimeout(t); });
         _timers = [];
         if (window.speechSynthesis) speechSynthesis.cancel();
-        _close();
-        if (_cb) { var cb = _cb; _cb = null; cb(true); } // true = intro intentionally skipped (counts as shown)
+        _doComplete(); // true = intro intentionally skipped (counts as shown)
     };
 
     window.runIntroSequence = function (callback) {
@@ -81,8 +84,16 @@
             if (!_running) return;
             _running = false;
             _timers = [];
-            _close();
-            if (_cb) { var cb = _cb; _cb = null; cb(true); } // true = intro displayed and completed
+            // Do NOT auto-close.  The operator must explicitly log in (or have already
+            // skipped) before Day 1 begins.  Change the SKIP button to a LOGIN button.
+            var skipBtn = document.getElementById('intro-skip-btn');
+            if (skipBtn) {
+                skipBtn.textContent = 'OPERATOR LOGIN \u25BA';
+                skipBtn.onclick = function () { _doComplete(); };
+            } else {
+                // Fallback if the button element is missing.
+                _doComplete();
+            }
         }, elapsed);
         _timers.push(endT);
     };

@@ -1063,6 +1063,13 @@
             gameState._save();
             var actNames = { 2: 'PRESSURE', 3: 'THE FIND' };
             appendOTIS('ACT ' + newAct + ': ' + (actNames[newAct] || ''), 'LOGIN');
+            // Act 3 start: schedule the one-time toaster incident (power-outage plot
+            // event).  Brief delay lets the act-transition OTIS message render first.
+            // This is the ONLY place fireToasterIncident() should be called from the
+            // normal game flow — never from autoToast() or any daily-toast path.
+            if (newAct === 3 && !s.toasterIncidentFired) {
+                setTimeout(fireToasterIncident, 4000);
+            }
         }
     }
 
@@ -1674,6 +1681,11 @@
         return _toastShuffled[_toastIndex++];
     }
 
+    // DAILY TOAST — fires once per in-game day.
+    // Deducts 6 credits for George's toaster, shows the toast modal, and adds an
+    // OTIS comment to the terminal.  This routine is intentionally self-contained and
+    // NEVER triggers the toaster incident (power-outage plot event).  The toaster
+    // incident is a separate Act-3 event; see fireToasterIncident() below.
     function autoToast() {
         if (gameState.state.toastFiredToday) return;
         var s = gameState.state;
@@ -1688,14 +1700,6 @@
         openModal('toast');
         otisLines.push({ role: 'otis', text: toastMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(toastMsg);
-        // On day 7+ trigger the one-time power-outage incident that follows the toast.
-        // This keeps the daily toast and the power-outage as two distinct events:
-        // the toast always fires; the outage fires exactly once, on the first day >= 7.
-        // toasterIncidentFired is initialised to false in stateManager._default() and
-        // never goes back to false, so this branch cannot trigger before day 7.
-        if (!s.toasterIncidentFired && (s.day || 1) >= 7) {
-            setTimeout(function() { closeModal('toast'); runPowerOutageSequence(); }, 2000);
-        }
     }
 
     // SCRIPTED DAY 1-3 COMMS
@@ -2202,8 +2206,13 @@
         }, 2500);
     }
 
-    function handleToasterIncident() {
-        // Deduct toast energy cost
+    // TOASTER INCIDENT — Act 3 plot event (DISTINCT from the daily autoToast routine).
+    // George's old toaster causes a cascade power outage exactly once, at the start
+    // of Act 3.  This function is called by checkActProgression() and by the debug
+    // button (handleToasterIncident).  It must NEVER be called from autoToast() or
+    // from any daily-toast code path — the two events are intentionally separate.
+    function fireToasterIncident() {
+        if (gameState.state.toasterIncidentFired) return;
         var s = gameState.state;
         if (s.credits >= 6) s.credits -= 6;
         else { s.outstandingDebt = (s.outstandingDebt || 0) + (6 - s.credits); s.credits = 0; }
@@ -2213,9 +2222,15 @@
         if (toastContent) toastContent.textContent = "George's toaster fired. Energy draw logged.";
         openModal('toast');
         appendOTIS("George's toaster fired. Energy draw logged.", 'TOAST');
-        if (!s.toasterIncidentFired && (s.day || 1) >= 7) {
-            setTimeout(function() { closeModal('toast'); runPowerOutageSequence(); }, 2000);
-        }
+        setTimeout(function() { closeModal('toast'); runPowerOutageSequence(); }, 2000);
+    }
+
+    // Debug: manually trigger the toaster incident (Act 3 power-outage plot event).
+    // Resets the fired-guard first so the button works even after the incident has
+    // already occurred in a normal game session.
+    function handleToasterIncident() {
+        gameState.state.toasterIncidentFired = false;
+        fireToasterIncident();
     }
 
     // MCGUFFIN SEQUENCE
@@ -2464,8 +2479,11 @@
     function dbgWeek()     { for (var i = 0; i < 7; i++) advanceDay(); }
     function dbgCredits()  { gameState.state.credits += 500; gameState._save(); gameState._updateUI(); }
     function dbgForcePay() { gameState.state.daysUntilPayment = 0; gameState._save(); gameState._updateUI(); }
-    // Force-fire the daily toast regardless of the toastFiredToday guard (debug only)
-    function dbgForceToast() { gameState.state.toastFiredToday = false; autoToast(); }
+    // Force-fire the DAILY TOAST (debug only). Bypasses the toastFiredToday guard.
+    // Note: this calls autoToast() which is the daily-toast routine only — it does
+    // NOT trigger the toaster incident (Act 3 power-outage).  Use the TOASTER INC
+    // debug button to test that separate plot event.
+    function dbgForceToast() { gameState.state.toastFiredToday = false; gameState._save(); autoToast(); }
     // Replay the opening intro on the next reload (debug only)
     function dbgReplayIntro() { gameState.state.introPlayed = false; gameState._save(); location.reload(); }
     function dbgFastMode() {
@@ -2486,8 +2504,9 @@
             _clearTimer = setTimeout(function() { _clearPending = false; btn.textContent = 'CLEAR SAVE'; btn.classList.remove('btn-confirm-pending'); }, 3000);
         } else {
             clearTimeout(_clearTimer); _clearPending = false; btn.classList.remove('btn-confirm-pending');
-            // Reset in-memory state to defaults immediately so any async save that fires
-            // in the brief window before the reload writes clean state, not old state.
+            // Replace in-memory state with the full default (day=1, introPlayed=false, etc.)
+            // so the reload presents the complete new-game experience — backstory intro,
+            // operator login gate, daily toast, then Day 1 gameplay — from the very start.
             gameState.state = stateManager._default();
             stateManager.clear(); location.reload();
         }
@@ -2877,9 +2896,19 @@
         if (shouldShowIntro && typeof runIntroSequence === 'function') {
             var loginBtn = document.getElementById('btn-login');
             if (loginBtn) loginBtn.classList.add('login-pulse');
-            // introShown is true when the intro actually displayed (completed or skipped),
-            // false when intro.js couldn't find the modal elements. Only mark introPlayed
-            // when it genuinely showed so a failed render retries on the next load.
+            // NEW GAME SEQUENCE (Day 1, intro not yet played):
+            //   1. Resources loaded above (gameState.init, UI render).
+            //   2. runIntroSequence — Script Back Story module plays.
+            //   3. Intro pauses at "OPERATOR LOGIN REQUIRED"; operator clicks LOGIN or
+            //      SKIP to continue (button is changed by intro.js on completion).
+            //   4. Callback fires → bootSequence():
+            //      a. appendOTIS LOGIN trigger → OTIS says "Good morning…"
+            //      b. autoToast() fires after 1500 ms — deducts 6 credits, shows the
+            //         Daily Toast module, OTIS adds a toast comment.
+            //   5. Day 1 gameplay begins.
+            //
+            // Only mark introPlayed when the intro genuinely displayed so a failed
+            // render retries on the next load.
             runIntroSequence(function(introShown) {
                 if (introShown !== false) {
                     gameState.state.introPlayed = true;
