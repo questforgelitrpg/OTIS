@@ -315,7 +315,7 @@
                 <div class="belt-bar-track" id="belt-bar-track" style="display:none"><div class="belt-bar-fill" id="belt-bar-fill"></div></div>
                 <p class="zone-hint" id="belt-status-text">NEXT DROP: <span id="belt-drop-countdown">7</span> days</p>
                 <p class="zone-hint" id="belt-backed-up" style="display:none;color:var(--text-warn)">&#9888; BELT BACKED UP &mdash; clear item queue</p>
-                <p class="zone-hint" id="storeroom-overflow-warning" style="display:none;color:var(--text-danger)">&#9888; OVERFLOW: <span id="overflow-count">0</span> items queued &mdash; <button onclick="handleRouteToStoreroom()">ROUTE TO STOREROOM</button></p>
+                <p class="zone-hint" id="storeroom-overflow-warning" style="display:none;color:var(--text-danger)">&#9888; OVERFLOW: <span id="overflow-count">0</span> items queued &mdash; <button aria-label="Route overflow items to storeroom buffer" onclick="handleRouteToStoreroom()">ROUTE TO STOREROOM</button></p>
                 <div class="modal-row">
                     <button id="btn-barge-drop" onclick="handleBargeArrival()">BARGE DROP</button>
                     <button id="btn-scan-belt" onclick="handleBeltScan()" disabled>SCAN BELT</button>
@@ -540,6 +540,8 @@
         ANOMALOUS_RESERVE_MAX: 800, // was 2000
         DEBUG_FAST_MODE:       false,
         DEBUG_SPEED_MULTIPLIER: 10,
+        OVERFLOW_THRESHOLD:    6,
+        BUFFER_ROUTE_COUNT:    6,
     };
 
     // MANIFEST POOL
@@ -977,7 +979,7 @@
             var backed = gameState.state.manifestItems.length;
             var overflowWarn = document.getElementById('storeroom-overflow-warning');
             var overflowCount = document.getElementById('overflow-count');
-            if (overflowWarn) overflowWarn.style.display = backed >= 6 ? '' : 'none';
+            if (overflowWarn) overflowWarn.style.display = backed >= TIMING.OVERFLOW_THRESHOLD ? '' : 'none';
             if (overflowCount) overflowCount.textContent = backed;
             return;
         }
@@ -1338,7 +1340,7 @@
 
     function handleRouteToStoreroom() {
         var s = gameState.state;
-        var toBuffer = s.manifestItems.splice(0, 6);
+        var toBuffer = s.manifestItems.splice(0, TIMING.BUFFER_ROUTE_COUNT);
         toBuffer.forEach(function(item) {
             item.condition = assignCondition();
             s.storeroomBuffer.push(item);
@@ -1349,7 +1351,7 @@
         renderStoreroomBuffer();
         var warn = document.getElementById('storeroom-overflow-warning');
         if (warn) warn.style.display = 'none';
-        appendOTIS('Routing 6 items to storeroom buffer. ' + s.storeroomBuffer.length + ' items waiting.', 'ZONE_SYSTEMS');
+        appendOTIS('Routing ' + TIMING.BUFFER_ROUTE_COUNT + ' items to storeroom buffer. ' + s.storeroomBuffer.length + ' items waiting.', 'ZONE_SYSTEMS');
     }
 
     function renderStoreroomBuffer() {
@@ -1364,7 +1366,7 @@
         list.innerHTML = buf.map(function(item, i) {
             return '<li class="keep-list-item"><span>' + escapeHtml(item.name) + '</span>' +
                 '<span class="keep-item-meta">' + escapeHtml(item.condition || '') + '</span>' +
-                '<button onclick="handlePullFromBuffer(' + i + ')">PULL</button></li>';
+                '<button aria-label="Pull ' + escapeHtml(item.name) + ' from buffer" onclick="handlePullFromBuffer(' + i + ')">PULL</button></li>';
         }).join('');
     }
 
