@@ -131,6 +131,14 @@
         .consult-card.consulted { border-color: var(--text-dim); color: var(--text-dim); }
         .item-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px solid var(--border-dim); }
 
+        /* Login pulse animation */
+        @keyframes login-pulse { 0%, 100% { border-color: var(--text-primary); color: var(--text-bright); text-shadow: 0 0 8px var(--text-primary); } 50% { border-color: var(--text-dim); color: var(--text-primary); text-shadow: none; } }
+        .login-pulse { animation: login-pulse 1.2s infinite; }
+
+        /* Intro cinematic */
+        .intro-line-fade { animation: intro-fade 0.5s ease-in; }
+        @keyframes intro-fade { from { opacity: 0; } to { opacity: 1; } }
+
         /* Keep log */
         .keep-list { list-style: none; }
         .keep-list-item { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.3rem; padding: 0.2rem 0; border-bottom: 1px solid var(--border-dim); font-size: 14px; }
@@ -260,7 +268,7 @@
             <div id="otis-output" role="log" aria-live="polite" aria-label="OTIS conversation log"></div>
 
             <div id="otis-actions">
-                <button onclick="appendOTIS('Operator logging in.','LOGIN')">LOGIN</button>
+                <button id="btn-login" onclick="appendOTIS('Operator logging in.','LOGIN')">LOGIN</button>
                 <button onclick="appendOTIS('What is the current status?','CONSULT_STATUS')">STATUS</button>
                 <button onclick="appendOTIS('How bad is the debt?','CONSULT_DEBT')">DEBT</button>
                 <button onclick="handleLogoff()">LOGOFF</button>
@@ -337,8 +345,7 @@
                     <div class="item-tags" id="item-tags"></div>
                     <p class="otis-estimate" id="otis-estimate" style="display:none"></p>
                     <div class="consult-cards">
-                        <button class="consult-card" id="cc-examine" onclick="handleConsult('CONSULT_WHATIS')">EXAMINE</button>
-                        <button class="consult-card" id="cc-value" onclick="handleConsult('CONSULT_WORTH')">ASSESS VALUE</button>
+                        <button class="consult-card" id="cc-examine" onclick="handleConsultMerged()">EXAMINE &amp; VALUE</button>
                         <button class="consult-card" id="cc-george" onclick="handleConsult('CONSULT_GEORGE')">GEORGE ARCHIVE</button>
                         <button class="consult-card btn-warn" onclick="handleSkip()">SKIP</button>
                     </div>
@@ -549,6 +556,16 @@
           <button onclick="handleEndingClose()">ACKNOWLEDGE AND LOG OFF</button>
         </div>
       </div>
+    </div>
+
+    <!-- INTRO CINEMATIC MODAL -->
+    <div id="modal-intro" class="modal" role="dialog" aria-label="Opening Cinematic" style="display:none">
+        <div class="modal-inner" style="max-width:560px;margin-top:10vh">
+            <div id="intro-text" style="font-size:14px;line-height:1.8;color:var(--text-primary);min-height:200px"></div>
+            <div class="modal-row" style="justify-content:flex-end;margin-top:1rem">
+                <button id="intro-skip-btn" onclick="skipIntro()">SKIP &#9658;</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -846,6 +863,7 @@
                 georgeWarehouseRevealed: false,
                 georgeWarehouseSold: [],
                 dropCount: 0,
+                dropsSinceLastJam: 0,
                 reserveSuccesses: 0,
                 easterEggFired: false,
                 toasterIncidentFired: false,
@@ -1371,15 +1389,15 @@
             }
             if (estEl) {
                 if (currentItem.consultedWorth) {
-                    var isUnk = currentItem.otisValue === 0 && (currentItem.rarity === 'Anomalous' || currentItem.category === 'Unknown');
-                    estEl.textContent = isUnk ? 'OTIS ESTIMATE: ERROR \u2014 NO COMPARABLE' : 'OTIS ESTIMATE: ' + currentItem.otisValue + ' cr';
+                    var isUnk = getEffectiveValue(currentItem) === 0 && (currentItem.rarity === 'Anomalous' || currentItem.category === 'Unknown');
+                    estEl.textContent = isUnk ? 'OTIS ESTIMATE: ERROR \u2014 NO COMPARABLE' : 'OTIS ESTIMATE: ' + getEffectiveValue(currentItem) + ' cr';
                     estEl.style.display = '';
                 } else estEl.style.display = 'none';
             }
             var any = currentItem.consultedExamine || currentItem.consultedWorth || currentItem.consultedGeorge;
             if (declEl) declEl.style.display = any ? 'flex' : 'none';
             if (btnRes) btnRes.disabled = !currentItem.consultedWorth;
-            var cc = { 'cc-examine': 'consultedExamine', 'cc-value': 'consultedWorth', 'cc-george': 'consultedGeorge' };
+            var cc = { 'cc-examine': 'consultedExamine', 'cc-george': 'consultedGeorge' };
             Object.keys(cc).forEach(function(id) { var b = document.getElementById(id); if (b) b.classList.toggle('consulted', !!currentItem[cc[id]]); });
         } else {
             if (emptyEl) emptyEl.style.display = '';
@@ -1391,8 +1409,9 @@
 
     function buildItemContext(item) {
         if (!item) return '';
-        var est = (item.otisValue === 0 && (item.rarity === 'Anomalous' || item.category === 'Unknown'))
-            ? 'OTIS estimate: ERROR \u2014 NO COMPARABLE.' : 'OTIS estimate: ' + item.otisValue + ' cr.';
+        var ev = getEffectiveValue(item);
+        var est = (ev === 0 && (item.rarity === 'Anomalous' || item.category === 'Unknown'))
+            ? 'OTIS estimate: ERROR \u2014 NO COMPARABLE.' : 'OTIS estimate: ' + ev + ' cr (condition: ' + (item.condition || 'Used') + ').';
         return 'Item: ' + item.name + '. Category: ' + item.category + '. Rarity: ' + item.rarity + '. Condition: ' + item.condition + '. ' + est;
     }
 
@@ -1433,6 +1452,16 @@
         if (trigger === 'CONSULT_GEORGE') currentItem.consultedGeorge = true;
         renderItemQueue();
         appendOTIS(ctx, trigger);
+    }
+
+    function handleConsultMerged() {
+        if (!currentItem) return;
+        var ctx = buildItemContext(currentItem);
+        currentItem.consultedExamine = true;
+        currentItem.consultedWorth = true;
+        var b = document.getElementById('btn-reserve'); if (b) b.disabled = false;
+        renderItemQueue();
+        appendOTIS(ctx, 'CONSULT_EXAMINE');
     }
 
     var SCRAP_SHORTS = ['Canned.','Logged.','Processed.','To May.','Binned.','Filed as scrap.'];
@@ -1852,7 +1881,10 @@
 
     // CONVEYOR JAM
     function rollConveyorJam() {
+        gameState.state.dropsSinceLastJam = gameState.state.dropsSinceLastJam + 1;
+        if (gameState.state.dropsSinceLastJam < 3) return;
         if (Math.random() >= 0.15) return;
+        gameState.state.dropsSinceLastJam = 0;
         gameState.state.conveyorJammed = true;
         gameState.state.daysUntilNextDrop = (gameState.state.daysUntilNextDrop || TIMING.DAYS_BETWEEN_DROPS) + 1;
         gameState._save();
@@ -1986,7 +2018,6 @@
                 '<div class="item-name" style="font-size:12px"><span style="color:var(--text-warn)">[UNLISTED FIND]</span> ' + escapeHtml(ee.name) + '</div>' +
                 '<div class="item-tags"><span class="tag tag-common">' + escapeHtml(ee.category) + '</span> <span class="tag tag-uncommon">Unlisted</span></div>' +
                 '<div class="modal-row">' +
-                '<button onclick="handleWarehouseEasterEggSell(' + eePrice + ')">SELL \u2014 OTIS PRICE (' + eePrice + ' cr)</button>' +
                 '<button onclick="handleWarehouseEasterEggMoveToBelt()">MOVE TO BELT</button>' +
                 '</div></div>';
         }
@@ -2697,6 +2728,7 @@
     <script src="otis.js"></script>
     <script src="tts.js"></script>
     <script src="audio.js"></script>
+    <script src="intro.js"></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', async function() {
@@ -2736,23 +2768,36 @@
             if (auxBtn) { auxBtn.style.display = ''; auxBtn.style.opacity = '1'; }
             setLight('light-auxiliary', 'light-amber');
         }
-        checkScriptedComms();
-        await appendOTIS('Operator logging in.', 'LOGIN');
-        if (!gameState.state.toastFiredToday) {
-            setTimeout(function() {
-                handleToasterIncident();
-                gameState.state.toastFiredToday = true;
-                gameState._save();
-                if (isNewGame) {
-                    setTimeout(function() { handleBargeArrival(); }, 500);
-                }
-            }, 1500);
-        } else if (isNewGame) {
-            handleBargeArrival();
+
+        async function bootSequence() {
+            var loginBtn = document.getElementById('btn-login');
+            if (loginBtn) loginBtn.classList.remove('login-pulse');
+            checkScriptedComms();
+            await appendOTIS('Operator logging in.', 'LOGIN');
+            if (!gameState.state.toastFiredToday) {
+                setTimeout(function() {
+                    handleToasterIncident();
+                    gameState.state.toastFiredToday = true;
+                    gameState._save();
+                    if (isNewGame) {
+                        setTimeout(function() { handleBargeArrival(); }, 500);
+                    }
+                }, 1500);
+            } else if (isNewGame) {
+                handleBargeArrival();
+            }
+            if (!isNewGame && gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
+                var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
+                setBotDots(true); startBeltDelivery();
+            }
         }
-        if (!isNewGame && gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
-            var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
-            setBotDots(true); startBeltDelivery();
+
+        if (isNewGame && typeof runIntroSequence === 'function') {
+            var loginBtn = document.getElementById('btn-login');
+            if (loginBtn) loginBtn.classList.add('login-pulse');
+            runIntroSequence(function() { bootSequence(); });
+        } else {
+            bootSequence();
         }
     });
     </script>
