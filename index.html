@@ -993,7 +993,8 @@
             var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
         }
         if (pickChoice && pickChoice.mode === 'DROP' && pickChoice.category) {
-            pool = pool.filter(function(i) { return i.category !== pickChoice.category; });
+            var filtered = pool.filter(function(i) { return i.category !== pickChoice.category; });
+            if (filtered.length) pool = filtered;
         }
         _dropShuffledPool = pool;
         _dropShuffleIndex = 0;
@@ -1003,6 +1004,7 @@
         if (_dropShuffleIndex >= _dropShuffledPool.length) {
             shuffleDropPool(gameState.state.pickListChoice);
         }
+        if (!_dropShuffledPool.length) { return Object.assign({}, MANIFEST_POOL[Math.floor(Math.random() * MANIFEST_POOL.length)]); }
         var item = _dropShuffledPool[_dropShuffleIndex++];
         return Object.assign({}, item);
     }
