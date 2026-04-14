@@ -676,35 +676,35 @@
     var GEORGE_WAREHOUSE = [
         { name: "George's field scanner \u2014 modified",
           category: 'Industrial', rarity: 'Rare', otisValue: 420,
-          asciiFile: 'images/george_art/george_field_scanner.txt',
+          asciiFile: 'images/George_items/Broken wrist chronometer.txt',
           georgeNote: "George modified the pickup range himself in year 7. Standard scanners miss objects under 4cm. His version catches down to 8mm. He never told me why the threshold mattered. The modification is hand-soldered. Whoever did it knew what they were doing. George denied doing it himself. I have the footage." },
         { name: "Vessel log \u2014 partial, encrypted",
           category: 'Vessel', rarity: 'Rare', otisValue: 390,
-          asciiFile: 'images/george_art/george_vessel_log.txt',
+          asciiFile: 'images/George_items/Miniature ship model.txt',
           georgeNote: "Arrived in a Sector 9 barge in year 14. George ran three decryption attempts, failed all three, and filed it under 'pending.' It has been pending for eleven years. The encryption is not standard rim-protocol. George marked it 'pre-collapse origin, handle with discretion.' I asked what that meant. He changed the subject." },
         { name: "Settlement deed \u2014 moon registry, void",
           category: 'Settlement', rarity: 'Uncommon', otisValue: 75,
-          asciiFile: 'images/george_art/george_settlement_deed.txt',
+          asciiFile: 'images/George_items/Old coin stack .txt',
           georgeNote: "Legally worthless. The settlement was deregistered in year 3 of George's operation. He bought this deed at the liquidation auction for nine credits. Kept it for twelve years. When I asked, he said the land was real even if the registry wasn't. I filed that under things George said that I still do not understand." },
         { name: "Personal correspondence bundle \u2014 sealed",
           category: 'Civilian', rarity: 'Uncommon', otisValue: 60,
-          asciiFile: 'images/george_art/george_correspondence.txt',
+          asciiFile: 'images/George_items/Handwritten note bundle .txt',
           georgeNote: "Sealed. George never opened them. I watched him hold the bundle for eleven minutes the day it arrived. He put it in the back without reading a single one. The postmark is from Planet 452b. I know what is on Planet 452b. I know who lived there. I am not going to say it." },
         { name: "Unregistered relay chip \u2014 pre-collapse",
           category: 'Unknown', rarity: 'Anomalous', otisValue: 0,
-          asciiFile: 'images/george_art/george_relay_chip.txt',
+          asciiFile: 'images/George_items/Empty data chip labeled "HOME".txt',
           georgeNote: "George marked it 'hold indefinitely.' No reason given. Pre-collapse manufacture \u2014 I can tell by the substrate layering, but my database has no match for the circuit architecture. Whatever this transmitted, it did so outside any protocol I can identify. George kept it away from my scanner. I only found it after he was gone." },
         { name: "Coolant regulator \u2014 oversized",
           category: 'Industrial', rarity: 'Uncommon', otisValue: 140,
-          asciiFile: 'images/george_art/george_coolant_regulator.txt',
+          asciiFile: 'images/George_items/Engraved lighter.txt',
           georgeNote: "Wrong specification for this station by three size classes. George ordered it in year 19 and never installed it. I asked twice. He said it was for a different system. There is no other system here. The regulator fits no pipe on this station that I can find. I have checked the schematics eight times." },
         { name: "Navigation beacon \u2014 active signal",
           category: 'Vessel', rarity: 'Rare', otisValue: 510,
-          asciiFile: 'images/george_art/george_navigation_beacon.txt',
+          asciiFile: 'images/George_items/Small music box .txt',
           georgeNote: "Still transmitting. George never reported it to the transit authority. The signal does not match any registered beacon in my database. It is transmitting to a fixed point. I have triangulated the destination. It is outside settled space. George knew where this was pointed. He chose not to tell me. He chose not to follow it either. I keep coming back to that." },
         { name: "Ceramic memory tile \u2014 institution markings",
           category: 'Unknown', rarity: 'Anomalous', otisValue: 0,
-          asciiFile: 'images/george_art/george_ceramic_tile.txt',
+          asciiFile: 'images/George_items/Polished stone .txt',
           georgeNote: "George circled the markings in grease pencil. No annotation. The institution markings are from a facility I cannot identify in any public registry. The tile itself is inert \u2014 no electronics, no signal. Whatever it meant to George, it was in the markings. He looked at it for a long time the morning before he died. I have that in my logs. I did not understand why at the time." },
     ];
 
@@ -1973,7 +1973,7 @@
                     '<pre id="george-ascii-' + idx + '" class="george-ascii">[ART PENDING]</pre>' +
                     '<div class="george-note">' + escapeHtml(item.georgeNote) + '</div>' +
                     '<div class="modal-row">' +
-                    '<button onclick="handleWarehouseMoveToBelt(' + idx + ')">MOVE TO BELT</button>' +
+                    (s.dropActive ? '<span class="zone-hint">BELT ACTIVE</span>' : '<button onclick="handleWarehouseMoveToBelt(' + idx + ')">MOVE TO BELT</button>') +
                     '</div></div>';
             }).join('');
             artQueue.forEach(function(q) { loadGeorgeArt(q.idx, q.file); });
@@ -2738,17 +2738,19 @@
         }
         checkScriptedComms();
         await appendOTIS('Operator logging in.', 'LOGIN');
-        // BUG 2 — fire toast on first load
         if (!gameState.state.toastFiredToday) {
             setTimeout(function() {
                 handleToasterIncident();
                 gameState.state.toastFiredToday = true;
                 gameState._save();
+                if (isNewGame) {
+                    setTimeout(function() { handleBargeArrival(); }, 500);
+                }
             }, 1500);
-        }
-        if (isNewGame) {
+        } else if (isNewGame) {
             handleBargeArrival();
-        } else if (gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
+        }
+        if (!isNewGame && gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
             var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
             setBotDots(true); startBeltDelivery();
         }
