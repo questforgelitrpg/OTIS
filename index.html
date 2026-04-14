@@ -308,6 +308,7 @@
                     <button onclick="dbgCredits()">+500cr</button>
                     <button onclick="dbgForcePay()">FORCE PAY</button>
                     <button onclick="dbgFastMode()">FAST MODE</button>
+                    <button onclick="dbgForceToast()">FORCE TOAST</button>
                     <button onclick="handleClearSave(this)">CLEAR SAVE</button>
                     <button onclick="handleToasterIncident()">TOASTER INC</button>
                     <button onclick="handleMcGuffin()">MCGUFFIN</button>
@@ -864,7 +865,7 @@
                 scrapFill: 0, keepLog: [], shippingQueue: [], recentEvents: [],
                 dropActive: false, bargeActive: false, dropItemsRemaining: 0,
                 manifestItems: [], outstandingDebt: 0, missedPayments: 0,
-                daysUntilNextDrop: 7, toastFiredToday: false,
+                daysUntilNextDrop: 1, toastFiredToday: false,
                 scriptedCommsFired: { bank: false, sven: false, may: false },
                 pickListChoice: { mode: 'DROP', category: null },
                 otisLearning: { keepByCategory: {}, scrapByCategory: {}, sellByRarity: {} },
@@ -1019,52 +1020,6 @@
         this._sessionStart = Date.now() - this.state.sessionHours * 60000;
         var self = this;
         this._sessionTimer = setInterval(function() { self.state.sessionHours = Math.floor((Date.now() - self._sessionStart) / 60000); self._save(); updateFatigueVisuals(); }, 60000);
-    };
-    GameState.prototype.startDayTimer = function() {
-        if (this._dayTimer) return;
-        var ms = TIMING.DEBUG_FAST_MODE ? Math.floor(TIMING.MS_PER_INGAME_DAY / TIMING.DEBUG_SPEED_MULTIPLIER) : TIMING.MS_PER_INGAME_DAY;
-        var self = this;
-        this._dayTimer = setInterval(function() { self.advanceDay(); }, ms);
-    };
-    GameState.prototype.stopDayTimer = function() { clearInterval(this._dayTimer); this._dayTimer = null; };
-    GameState.prototype.advanceDay = function() {
-        this.state.day++;
-        this.state.daysUntilPayment = Math.max(0, (this.state.daysUntilPayment != null ? this.state.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS) - 1);
-        this.state.daysUntilNextDrop = Math.max(0, (this.state.daysUntilNextDrop != null ? this.state.daysUntilNextDrop : TIMING.DAYS_BETWEEN_DROPS) - 1);
-        if (this.state.outstandingDebt > 0) {
-            this.state.outstandingDebt = Math.ceil(this.state.outstandingDebt * 1.05);
-            if (this.state.outstandingDebt > 2000) appendOTIS('Arrears exceeding 2,000 cr. Compound rate: 5% per day.', 'ARREARS_WARNING');
-        }
-        this.checkPaymentDue();
-        this.checkDropSchedule();
-        this._save();
-        this._updateUI();
-        recalculateNamingTier();
-        this.state.toastFiredToday = false;
-        autoToast();
-        checkScriptedComms();
-    };
-    GameState.prototype.checkPaymentDue = function() {
-        if (this.state.daysUntilPayment <= 0) {
-            if (this.state.credits >= 650 && (this.state.outstandingDebt || 0) === 0) {
-                this.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
-                appendOTIS('Payment due. 650 credits. Make payment when ready.', 'PAYMENT');
-            } else {
-                this.state.missedPayments = (this.state.missedPayments || 0) + 1;
-                this.state.outstandingDebt = (this.state.outstandingDebt || 0) + 650;
-                this.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
-                appendOTIS('Payment missed. Arrears: ' + this.state.outstandingDebt + ' cr. Compound rate: 5% per day.', 'PAYMENT_MISSED');
-                if (this.state.missedPayments >= 3) {
-                    triggerForeclosure();
-                }
-            }
-        }
-    };
-    GameState.prototype.checkDropSchedule = function() {
-        if (this.state.daysUntilNextDrop <= 0 && !this.state.dropActive) {
-            this.state.daysUntilNextDrop = TIMING.DAYS_BETWEEN_DROPS + Math.floor(Math.random() * (TIMING.DROP_VARIANCE_DAYS * 2 + 1)) - TIMING.DROP_VARIANCE_DAYS;
-            handleBargeArrival();
-        }
     };
     GameState.prototype.advanceNamingTier = function() {
         if (this.state.namingTier < NAMING_TIERS.length - 1) { this.state.namingTier++; this._save(); }
@@ -1369,23 +1324,14 @@
         if (gameState.state.dropActive) return;
         var btn = document.getElementById('btn-barge-drop');
         if (btn && btn.disabled) return;
-        var manifest;
-        if (gameState.state.day === 1) {
-            var cp = MANIFEST_POOL.filter(function(i) { return i.rarity === 'Common'; });
-            for (var i = cp.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = cp[i]; cp[i] = cp[j]; cp[j] = t; }
-            manifest = cp.slice(0, 4).map(function(i) { return Object.assign({}, i, { condition: 'Used' }); });
-            // Early second drop for pacing — schedule next drop on Day 3
-            gameState.state.daysUntilNextDrop = 2;
-        } else {
-            var act = gameState.state.act;
-            var count;
-            if (act === 1) count = TIMING.DROP_SIZE_ACT1;
-            else if (act === 2) count = TIMING.DROP_SIZE_ACT2_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT2_MAX - TIMING.DROP_SIZE_ACT2_MIN + 1));
-            else count = TIMING.DROP_SIZE_ACT3_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT3_MAX - TIMING.DROP_SIZE_ACT3_MIN + 1));
-            shuffleDropPool(gameState.state.pickListChoice);
-            manifest = [];
-            for (var k = 0; k < count; k++) manifest.push(weightedPickItem());
-        }
+        var act = gameState.state.act;
+        var count;
+        if (act === 1) count = TIMING.DROP_SIZE_ACT1;
+        else if (act === 2) count = TIMING.DROP_SIZE_ACT2_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT2_MAX - TIMING.DROP_SIZE_ACT2_MIN + 1));
+        else count = TIMING.DROP_SIZE_ACT3_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT3_MAX - TIMING.DROP_SIZE_ACT3_MIN + 1));
+        shuffleDropPool(gameState.state.pickListChoice);
+        var manifest = [];
+        for (var k = 0; k < count; k++) manifest.push(weightedPickItem());
         // 10% chance to append one easter egg item to the drop
         if (Math.random() < 0.10) {
             var eeItem = Object.assign({}, EASTER_EGG_POOL[Math.floor(Math.random() * EASTER_EGG_POOL.length)]);
@@ -2128,6 +2074,7 @@
         if (!s.georgeWarehouseSold) s.georgeWarehouseSold = [];
         if (s.georgeWarehouseSold.indexOf(idx) !== -1) return;
         var item = Object.assign({}, GEORGE_WAREHOUSE[idx], { condition: 'Used' });
+        // Mark as transferred immediately so the warehouse UI reflects the removal at once
         s.georgeWarehouseSold.push(idx);
         if (!s.manifestItems) s.manifestItems = [];
         s.manifestItems.push(item);
@@ -2136,6 +2083,7 @@
             s.dropActive = true; s.bargeActive = true;
             setBotDots(true); updateBeltUI('DELIVERING');
             startBeltDelivery();
+            deliverNextBeltItem(); // start delivery immediately, matching handleBargeArrival
         }
         gameState._save(); gameState._updateUI();
         renderGeorgeWarehouse();
@@ -2155,6 +2103,7 @@
             s.dropActive = true; s.bargeActive = true;
             setBotDots(true); updateBeltUI('DELIVERING');
             startBeltDelivery();
+            deliverNextBeltItem(); // start delivery immediately, matching handleBargeArrival
         }
         gameState._save(); gameState._updateUI();
         renderGeorgeWarehouse();
@@ -2503,9 +2452,15 @@
     function dbgWeek()     { for (var i = 0; i < 7; i++) advanceDay(); }
     function dbgCredits()  { gameState.state.credits += 500; gameState._save(); gameState._updateUI(); }
     function dbgForcePay() { gameState.state.daysUntilPayment = 0; gameState._save(); gameState._updateUI(); }
+    // Force-fire the daily toast regardless of the toastFiredToday guard (debug only)
+    function dbgForceToast() { gameState.state.toastFiredToday = false; autoToast(); }
     function dbgFastMode() {
         TIMING.DEBUG_FAST_MODE = !TIMING.DEBUG_FAST_MODE;
-        gameState.stopDayTimer(); gameState.startDayTimer();
+        // Restart the canonical window-level day interval at the new speed.
+        // (gameState._dayTimer is unused; the live timer is window._otisDayIntervalId.)
+        if (window._otisDayIntervalId) { clearInterval(window._otisDayIntervalId); window._otisDayIntervalId = null; }
+        var ms = TIMING.DEBUG_FAST_MODE ? Math.floor(TIMING.MS_PER_INGAME_DAY / TIMING.DEBUG_SPEED_MULTIPLIER) : TIMING.MS_PER_INGAME_DAY;
+        window._otisDayIntervalId = setInterval(function() { advanceDay(); }, ms);
         if (beltTimer) { stopBeltDelivery(); startBeltDelivery(); }
         appendOTIS('Fast mode: ' + (TIMING.DEBUG_FAST_MODE ? 'ON (10\u00d7)' : 'OFF'), 'ZONE_SYSTEMS');
     }
@@ -2875,7 +2830,6 @@
 
         var ttsBtn = document.getElementById('tts-btn');
         if (ttsBtn && window.OtisTTS) { if (!window.OtisTTS.isSupported()) ttsBtn.style.display = 'none'; else ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON'; }
-        var isNewGame = gameState.state.day === 1 && !gameState.state.dropActive && gameState.state.manifestItems.length === 0 && !gameState.state.toastFiredToday;
         var shouldShowIntro = gameState.state.day === 1 && !gameState.state.introPlayed;
         if (gameState.state.easterEggFired && !gameState.state.toasterIncidentFired) {
             var auxBtn = document.getElementById('module-btn-auxiliary');
@@ -2888,19 +2842,16 @@
             if (loginBtn) loginBtn.classList.remove('login-pulse');
             checkScriptedComms();
             await appendOTIS('Operator logging in.', 'LOGIN');
+            // Fire the daily toast once per in-game day. autoToast() guards on
+            // toastFiredToday so it is safe to call here; it will no-op on a
+            // same-day reload where the toast has already been recorded.
+            // Day 1 and every subsequent day use the same rotating-comment path
+            // to avoid any double-fire or inconsistency between boot and timer paths.
             if (!gameState.state.toastFiredToday) {
-                setTimeout(function() {
-                    handleToasterIncident();
-                    gameState.state.toastFiredToday = true;
-                    gameState._save();
-                    if (isNewGame) {
-                        setTimeout(function() { handleBargeArrival(); }, 500);
-                    }
-                }, 1500);
-            } else if (isNewGame) {
-                handleBargeArrival();
+                setTimeout(autoToast, 1500);
             }
-            if (!isNewGame && gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
+            // Resume belt delivery if a drop was active when the page last loaded
+            if (gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
                 var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
                 setBotDots(true); startBeltDelivery();
             }
