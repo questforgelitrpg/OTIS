@@ -35,7 +35,6 @@ TRIGGER DEFINITIONS:
 [TRIGGER: RECOGNITION_BONUS] — Reserve sale confirmed. Acknowledge without celebration.
 [TRIGGER: RESERVE_EXPIRED] — Reserve listing expired, no buyer. Report factually.
 [TRIGGER: SCRAP_DISPATCH] — Scrap dispatched to May Finster. Note fill level and credits returned.
-[TRIGGER: TOAST] — Vernon made toast in George's toaster. 6 credits drawn. One line referencing the energy cost or George.
 [TRIGGER: COMMS_BANK] — Bank channel open. Payment status relayed.
 [TRIGGER: COMMS_SVEN] — Sven's messenger bot. Deliver Sven's message with barely-contained disdain.
 [TRIGGER: COMMS_IGNORE_SVEN] — Sven signal dismissed. One line.
