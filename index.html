@@ -1763,8 +1763,10 @@
         if (!available.length) {
             html += '<p class="zone-hint">Warehouse cleared.</p>';
         } else {
+            var artQueue = [];
             html += available.map(function(item) {
                 var idx = GEORGE_WAREHOUSE.indexOf(item);
+                artQueue.push({ idx: idx, file: item.asciiFile });
                 return '<div style="padding:0.3rem 0;border-bottom:1px solid var(--border-dim)">' +
                     '<div class="item-name" style="font-size:12px">' + escapeHtml(item.name) + '</div>' +
                     '<div class="item-tags"><span class="tag tag-common">' + escapeHtml(item.category) + '</span> <span class="tag ' + (rc[item.rarity]||'tag-common') + '">' + escapeHtml(item.rarity) + '</span></div>' +
@@ -1774,10 +1776,7 @@
                     '<button onclick="handleWarehouseMoveToBelt(' + idx + ')">MOVE TO BELT</button>' +
                     '</div></div>';
             }).join('');
-            available.forEach(function(item) {
-                var idx = GEORGE_WAREHOUSE.indexOf(item);
-                loadGeorgeArt(idx, item.asciiFile);
-            });
+            artQueue.forEach(function(q) { loadGeorgeArt(q.idx, q.file); });
         }
         // Show unlisted easter egg find if surfaced
         if (s.warehouseEasterEggFind) {
@@ -1795,11 +1794,12 @@
     }
 
     function loadGeorgeArt(idx, file) {
+        var id = 'george-ascii-' + idx;
         fetch(file).then(function(r){return r.text();}).then(function(txt){
-            var pre = document.getElementById('george-ascii-' + idx);
+            var pre = document.getElementById(id);
             if (pre) pre.textContent = txt;
         }).catch(function(){
-            var pre = document.getElementById('george-ascii-' + idx);
+            var pre = document.getElementById(id);
             if (pre) pre.textContent = '[ART PENDING]';
         });
     }
