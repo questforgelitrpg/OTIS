@@ -177,7 +177,8 @@
 
         /* Misc */
         .zone-hint { font-size: 11px; color: var(--text-dim); margin: 0.2rem 0; }
-        #manifest-pool-panel { margin-top: 0.4rem; max-height: 180px; overflow-y: auto; font-size: 11px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+        .manifest-cat-bar-track { height: 6px; background: var(--border); border-radius: 2px; margin-top: 2px; }
+        .manifest-cat-bar-fill { height: 6px; background: var(--ind-on); border-radius: 2px; }
 
         /* Fatigue overlay */
         #fatigue-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 9997;
@@ -349,17 +350,17 @@
                 <div class="modal-label">PICK LIST</div>
                 <p class="zone-hint" id="pick-list-hint" style="color:var(--text-dim)">Active for next drop.</p>
                 <div class="modal-row">
-                    <button id="pl-drop" class="picklist-btn active" onclick="setPickList('DROP', null)">DROP</button>
-                    <button id="pl-prioritize" class="picklist-btn" onclick="setPickList('PRIORITIZE', null)">PRIORITIZE</button>
-                    <button id="pl-dw" class="picklist-btn" onclick="cycleDoubleWeight()">DOUBLE-WEIGHT: <span id="pl-dw-cat">CIVILIAN</span></button>
+                    <button id="pl-mode-drop" class="picklist-btn active" onclick="setPickMode('DROP')">DROP</button>
+                    <button id="pl-mode-prioritize" class="picklist-btn" onclick="setPickMode('PRIORITIZE')">PRIORITIZE</button>
+                    <button id="pl-mode-dw" class="picklist-btn" onclick="setPickMode('DOUBLE_WEIGHT')">DOUBLE-WEIGHT</button>
                 </div>
+                <div id="pick-category-btns" class="modal-row" style="flex-wrap:wrap;gap:0.3rem;margin-top:0.3rem"></div>
+                <p class="zone-hint" id="pick-list-otis-note" style="color:var(--text-dim);margin-top:0.3rem"></p>
             </div>
-            <div class="modal-section">
-                <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
-                    <span>MANIFEST POOL</span>
-                    <button style="font-size:10px;padding:0.1rem 0.4rem;min-height:20px" onclick="toggleManifestPool()">POOL &#9662;</button>
-                </div>
-                <div id="manifest-pool-panel" style="display:none"></div>
+            <div class="modal-section" id="manifest-summary-section">
+                <div class="modal-label">MANIFEST SUMMARY</div>
+                <p class="zone-hint" id="manifest-summary-empty" style="color:var(--text-dim)">No active drop.</p>
+                <div id="manifest-category-bars"></div>
             </div>
         </div>
     </div>
@@ -655,45 +656,57 @@
     ];
 
     // PICK LIST
-    var DW_CATEGORIES = ['Civilian', 'Industrial', 'Settlement', 'Vessel', 'Unknown'];
-    var _dwCatIndex = 0;
+    var PICK_CATEGORIES = ['Civilian','Industrial','Settlement','Vessel','Unknown'];
+    var PICK_MODE_IDS = { DROP: 'pl-mode-drop', PRIORITIZE: 'pl-mode-prioritize', DOUBLE_WEIGHT: 'pl-mode-dw' };
+    var MANIFEST_BAR_MAX_PX = 120;
 
-    function setPickList(mode, category) {
+    function setPickMode(mode) {
         var s = gameState.state;
         if (!s.pickListChoice) s.pickListChoice = { mode: 'DROP', category: null };
         s.pickListChoice.mode = mode;
-        s.pickListChoice.category = category;
-        if (mode === 'DOUBLE_WEIGHT') s.pickListChoice.category = DW_CATEGORIES[_dwCatIndex];
         gameState._save();
         renderPickList();
     }
 
-    function cycleDoubleWeight() {
-        _dwCatIndex = (_dwCatIndex + 1) % DW_CATEGORIES.length;
-        setPickList('DOUBLE_WEIGHT', DW_CATEGORIES[_dwCatIndex]);
+    function setPickCategory(cat) {
+        var s = gameState.state;
+        if (!s.pickListChoice) s.pickListChoice = { mode: 'DROP', category: null };
+        s.pickListChoice.category = (s.pickListChoice.category === cat) ? null : cat;
+        gameState._save();
+        renderPickList();
+    }
+
+    function renderPickCategoryButtons() {
+        var s = gameState.state;
+        var choice = s.pickListChoice || { mode: 'DROP', category: null };
+        var container = document.getElementById('pick-category-btns');
+        if (!container) return;
+        container.innerHTML = PICK_CATEGORIES.map(function(cat) {
+            var active = choice.category === cat;
+            return '<button class="picklist-btn' + (active ? ' active' : '') + '" onclick="setPickCategory(\'' + cat + '\')">' + cat.toUpperCase() + '</button>';
+        }).join('');
     }
 
     function renderPickList() {
         var s = gameState.state;
         var choice = (s.pickListChoice) ? s.pickListChoice : { mode: 'DROP', category: null };
-        ['DROP','PRIORITIZE','DOUBLE_WEIGHT'].forEach(function(mode) {
-            var id = mode === 'DROP' ? 'pl-drop' : mode === 'PRIORITIZE' ? 'pl-prioritize' : 'pl-dw';
-            var btn = document.getElementById(id);
-            if (btn) btn.classList.toggle('active', choice.mode === mode);
+        ['DROP','PRIORITIZE','DOUBLE_WEIGHT'].forEach(function(m) {
+            var btn = document.getElementById(PICK_MODE_IDS[m]);
+            if (btn) btn.classList.toggle('active', choice.mode === m);
         });
-        var catSpan = document.getElementById('pl-dw-cat');
-        if (catSpan) catSpan.textContent = (choice.mode === 'DOUBLE_WEIGHT' && choice.category) ? choice.category.toUpperCase() : DW_CATEGORIES[_dwCatIndex].toUpperCase();
-        var priBtn = document.getElementById('pl-prioritize');
-        if (priBtn) {
-            var dc = s.dropCount || 0;
-            var label = 'PRIORITIZE';
-            if (dc >= 3) {
-                var learn = s.otisLearning || {};
-                var kbc = learn.keepByCategory || {};
-                var topKeepCat = Object.keys(kbc).sort(function(a, b) { return (kbc[b] || 0) - (kbc[a] || 0); })[0];
-                if (topKeepCat) label = 'PRIORITIZE (OTIS: ' + topKeepCat.toUpperCase() + ' TREND)';
+        renderPickCategoryButtons();
+        var note = document.getElementById('pick-list-otis-note');
+        if (note) {
+            var learn = s.otisLearning || {};
+            var kbc = learn.keepByCategory || {};
+            var topCat = Object.keys(kbc).sort(function(a,b){ return (kbc[b]||0)-(kbc[a]||0); })[0];
+            if (topCat && (s.dropCount || 0) >= 3) {
+                note.textContent = 'OTIS TREND: You keep ' + topCat.toUpperCase() + ' items most. Consider PRIORITIZE + ' + topCat.toUpperCase() + '.';
+            } else if ((s.dropCount || 0) < 3) {
+                note.textContent = 'OTIS is learning your patterns. Check back after 3 drops.';
+            } else {
+                note.textContent = '';
             }
-            priBtn.textContent = label;
         }
     }
 
@@ -702,6 +715,34 @@
         const cats = [...new Set(manifest.map(i => i.category))];
         const top = manifest.reduce((b, i) => i.otisValue > b.otisValue ? i : b, manifest[0]);
         return 'Barge inbound. Manifest: ' + n + ' items. Categories: ' + cats.join(', ') + '. Notable: ' + top.name + '.';
+    }
+
+    function renderManifestSummary(manifest) {
+        var panel = document.getElementById('manifest-category-bars');
+        var empty = document.getElementById('manifest-summary-empty');
+        if (!panel) return;
+        if (!manifest || !manifest.length) {
+            panel.innerHTML = '';
+            if (empty) empty.style.display = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        var cats = {};
+        manifest.forEach(function(i) { cats[i.category] = (cats[i.category] || 0) + 1; });
+        var total = manifest.length;
+        panel.innerHTML = PICK_CATEGORIES.filter(function(c) { return cats[c]; }).map(function(cat) {
+            var n = cats[cat];
+            var pct = Math.round((n / total) * 100);
+            var barWidth = Math.max(4, Math.round((n / total) * MANIFEST_BAR_MAX_PX));
+            return '<div style="margin-bottom:0.35rem">' +
+                '<div style="display:flex;justify-content:space-between;font-size:11px">' +
+                '<span>' + cat.toUpperCase() + '</span>' +
+                '<span style="color:var(--text-dim)">' + n + ' (' + pct + '%)</span>' +
+                '</div>' +
+                '<div class="manifest-cat-bar-track">' +
+                '<div class="manifest-cat-bar-fill" style="width:' + barWidth + 'px"></div>' +
+                '</div></div>';
+        }).join('');
     }
 
     // STATE MANAGER
@@ -968,6 +1009,7 @@
             updateBeltUI('DROP_COMPLETE');
             setBotDots(false);
             renderPickList();
+            renderManifestSummary([]);
             appendOTIS('Belt clear. All items processed. Bots returning.', 'DROP_COMPLETE');
             onDropCompleteBotDegradation();
             rollConveyorJam();
@@ -1064,6 +1106,7 @@
         setBotDots(true);
         updateBeltUI('DELIVERING');
         appendOTIS(buildManifestSummary(manifest), 'BARGE_IMMINENT');
+        renderManifestSummary(manifest);
         startBeltDelivery();
         deliverNextBeltItem();
     }
@@ -1803,26 +1846,6 @@
         var bar = document.getElementById('scrap-bar-fill');
         if (bar) { bar.style.width = fill + '%'; bar.className = 'scrap-bar-fill' + (fill >= 90 ? ' scrap-red' : fill >= 75 ? ' scrap-amber' : ''); }
         setEl('may-scrap-readout', 'SCRAP: ' + fill + '%');
-    }
-
-    // MANIFEST POOL UI
-    function toggleManifestPool() { var p = document.getElementById('manifest-pool-panel'); if (!p) return; var open = p.style.display !== 'none'; p.style.display = open ? 'none' : ''; if (!open) renderManifestPool(); }
-    function renderManifestPool() {
-        var p = document.getElementById('manifest-pool-panel'); if (!p) return;
-        var html = '';
-        ['Common','Uncommon','Rare','Anomalous'].forEach(function(rarity) {
-            var items = MANIFEST_POOL.filter(function(i) { return i.rarity === rarity; }); if (!items.length) return;
-            var cls = { Common:'tag-common', Uncommon:'tag-uncommon', Rare:'tag-rare', Anomalous:'tag-anomalous' }[rarity];
-            html += '<div style="margin-bottom:0.2rem"><span class="tag ' + cls + '">' + rarity.toUpperCase() + '</span></div>';
-            items.forEach(function(item) {
-                var val = item.otisValue === 0 ? '\u2014 cr' : item.otisValue + ' cr';
-                html += '<div style="display:flex;justify-content:space-between;padding:0.1rem 0;border-bottom:1px solid var(--border-dim);gap:0.4rem;font-size:11px">' +
-                    '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(item.name) + '</span>' +
-                    '<span style="color:var(--text-dim);flex-shrink:0">' + escapeHtml(item.category) + '</span>' +
-                    '<span style="flex-shrink:0;text-align:right;min-width:44px">' + val + '</span></div>';
-            });
-        });
-        p.innerHTML = html;
     }
 
     // FATIGUE VISUALS
