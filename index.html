@@ -2286,7 +2286,7 @@
         var debt = s.outstandingDebt || 0;
         var dup  = s.daysUntilPayment || 28;
         var msg;
-        if ((s.arrears || debt) > 500) {
+        if (debt > 500) {
             msg = '[BANK] Account ' + (s.accountId||'VRN-001') + '. Arrears exceed threshold. Escalation notice filed. Respond within 3 business cycles or asset review commences.';
         } else if (dup <= 0) {
             msg = '[BANK] Payment past due. Interest accruing at standard rate. Settle balance within next cycle or penalty surcharge applies.';
