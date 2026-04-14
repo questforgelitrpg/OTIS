@@ -1691,6 +1691,8 @@
         // On day 7+ trigger the one-time power-outage incident that follows the toast.
         // This keeps the daily toast and the power-outage as two distinct events:
         // the toast always fires; the outage fires exactly once, on the first day >= 7.
+        // toasterIncidentFired is initialised to false in stateManager._default() and
+        // never goes back to false, so this branch cannot trigger before day 7.
         if (!s.toasterIncidentFired && (s.day || 1) >= 7) {
             setTimeout(function() { closeModal('toast'); runPowerOutageSequence(); }, 2000);
         }
