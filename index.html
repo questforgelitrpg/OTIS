@@ -2713,16 +2713,20 @@
         updateBeltUI('CLEAR');
         updateFatigueVisuals();
 
-        // BUG 3 — two correct intervals
-        setInterval(function() {
-            gameState.state.sessionHours = (gameState.state.sessionHours || 0) + 1;
-            updateFatigueVisuals();
-            checkBeltJam();
-        }, 60000);
+        // BUG 3 — two correct intervals (store IDs to prevent duplicates on hot reload)
+        if (!window._otisSessionIntervalId) {
+            window._otisSessionIntervalId = setInterval(function() {
+                gameState.state.sessionHours = (gameState.state.sessionHours || 0) + 1;
+                updateFatigueVisuals();
+                checkBeltJam();
+            }, 60000);
+        }
 
-        setInterval(function() {
-            advanceDay();
-        }, 600000);
+        if (!window._otisDayIntervalId) {
+            window._otisDayIntervalId = setInterval(function() {
+                advanceDay();
+            }, 600000);
+        }
 
         var ttsBtn = document.getElementById('tts-btn');
         if (ttsBtn && window.OtisTTS) { if (!window.OtisTTS.isSupported()) ttsBtn.style.display = 'none'; else ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON'; }
