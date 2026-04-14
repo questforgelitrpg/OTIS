@@ -722,14 +722,18 @@
         }).join('');
     }
 
+    function getTopCategory(categoryMap) {
+        return Object.keys(categoryMap).sort(function(a,b){ return (categoryMap[b]||0)-(categoryMap[a]||0); })[0];
+    }
+
     function getOTISPickRecommendation() {
         var s = gameState.state;
         if ((s.dropCount || 0) < 3) return null;
         var learn = s.otisLearning || {};
         var kbc = learn.keepByCategory || {};
         var sbc = learn.scrapByCategory || {};
-        var topKeep = Object.keys(kbc).sort(function(a,b){ return (kbc[b]||0)-(kbc[a]||0); })[0];
-        var topScrap = Object.keys(sbc).sort(function(a,b){ return (sbc[b]||0)-(sbc[a]||0); })[0];
+        var topKeep = getTopCategory(kbc);
+        var topScrap = getTopCategory(sbc);
         if (!topKeep) return null;
         var keepCount = kbc[topKeep] || 0;
         return { category: topKeep, keepCount: keepCount, scrapCategory: topScrap };
