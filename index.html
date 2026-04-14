@@ -304,6 +304,9 @@
     <div id="modal-belt" class="modal" role="dialog" aria-label="Belt and Items">
         <div class="modal-inner">
             <div class="modal-header"><span>BELT / ITEMS</span><button onclick="closeModal('belt')">&#x2715; CLOSE</button></div>
+            <div id="belt-anim-container" style="width:100%;height:90px;background:#000;overflow:hidden;border:1px solid var(--border-dim);margin-bottom:0.5rem;border-radius:2px;">
+              <canvas id="belt-anim-canvas" style="width:100%;height:100%;display:block;"></canvas>
+            </div>
             <div class="modal-section">
                 <div class="modal-label">DROP STATUS</div>
                 <p class="zone-hint" id="drop-status-text">WINDOW: CLOSED</p>
@@ -370,7 +373,7 @@
             <div class="modal-header"><span>COMMS</span><button onclick="closeModal('comms')">&#x2715; CLOSE</button></div>
             <div class="modal-section">
                 <div class="modal-label">UNIVERSAL BANK CONGLOMERATE</div>
-                <div class="comms-row"><span class="comms-dot" id="comms-dot-bank"></span><span class="comms-label">CHANNEL</span><button onclick="handleComms('BANK')">ANSWER BANK</button></div>
+                <div class="comms-row"><span class="comms-dot" id="comms-dot-bank"></span><span class="comms-label">CHANNEL</span><button onclick="handleAnswerBank()">ANSWER BANK</button></div>
                 <div class="ledger-row">LOAN BALANCE: <span id="ledger-debt">25,000 cr</span></div>
                 <div class="ledger-row">CREDITS: <span id="ledger-credits">200 cr</span></div>
                 <div class="ledger-row">PAYMENT DUE: 650 cr in <span id="ledger-days">28</span>d</div>
@@ -380,11 +383,11 @@
             </div>
             <div class="modal-section">
                 <div class="modal-label">SVEN DIGUT / DIGUT OPS</div>
-                <div class="comms-row"><span class="comms-dot" id="comms-dot-sven"></span><span class="comms-label">SIGNAL</span><button onclick="handleComms('SVEN')">ANSWER SVEN</button><button onclick="handleComms('IGNORE_SVEN')">IGNORE SVEN</button><button onclick="handleComms('COMPLAINT')">FILE COMPLAINT</button></div>
+                <div class="comms-row"><span class="comms-dot" id="comms-dot-sven"></span><span class="comms-label">SIGNAL</span><button onclick="handleAnswerSven()">ANSWER SVEN</button><button onclick="handleIgnoreSven()">IGNORE SVEN</button><button onclick="handleFileComplaint()">FILE COMPLAINT</button></div>
             </div>
             <div class="modal-section">
                 <div class="modal-label">MAY FINSTER / LEFTOVER RECYCLING</div>
-                <div class="comms-row"><span class="comms-dot" id="comms-dot-may"></span><span class="comms-label" id="may-scrap-readout">SCRAP: 0%</span><button onclick="handleComms('MAY')">ANSWER MAY</button><button onclick="handleDispatchMay()">DISPATCH SCRAP</button></div>
+                <div class="comms-row"><span class="comms-dot" id="comms-dot-may"></span><span class="comms-label" id="may-scrap-readout">SCRAP: 0%</span><button onclick="handleAnswerMay()">ANSWER MAY</button><button onclick="handleDispatchMay()">DISPATCH SCRAP</button></div>
             </div>
             <div class="modal-section">
                 <div class="modal-label">PENDING SALES</div>
@@ -402,6 +405,7 @@
                 <div class="modal-label">SCRAP CHANNEL: <span id="scrap-pct">0%</span></div>
                 <div class="scrap-bar-track"><div class="scrap-bar-fill" id="scrap-bar-fill" style="width:0%"></div></div>
                 <div class="modal-row"><button onclick="handleDispatchMay()">DISPATCH TO MAY</button></div>
+                <div class="modal-label" style="margin-top:0.5rem">HUMANITY ARCHIVE: <span id="humanity-count">0</span></div>
             </div>
             <div class="modal-section" id="storeroom-buffer-section">
                 <div class="modal-label" style="display:flex;justify-content:space-between"><span>BUFFER QUEUE</span><span id="buffer-count" style="color:var(--text-dim)">0</span></div>
@@ -531,6 +535,17 @@
             <p style="font-size:13px;color:var(--text-primary);line-height:1.6;margin:0.8rem 0 1rem;font-style:italic">"You found it. George mapped this terminal for 8 years. He left you something in the walls. You'll know it when you see it. Don't mention it to the Bank."</p>
             <div class="modal-row"><button onclick="closeModal('kbd-easter')">CLOSE</button></div>
         </div>
+    </div>
+
+    <!-- ENDING MODAL -->
+    <div id="modal-ending" class="modal" role="dialog" aria-label="Ending">
+      <div class="modal-inner" style="max-width:480px;margin-top:8vh;text-align:center">
+        <div id="ending-title" style="font-size:20px;color:var(--accent);font-family:var(--font-mono);margin-bottom:1rem"></div>
+        <div id="ending-body" style="font-size:13px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap;text-align:left"></div>
+        <div style="margin-top:1.5rem">
+          <button onclick="handleEndingClose()">ACKNOWLEDGE AND LOG OFF</button>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -803,7 +818,7 @@
     }
 
     // STATE MANAGER
-    const STATE_KEY = 'otis_state_v2';
+    const STATE_KEY = 'otis_state_v3';
     const stateManager = {
         _default: function() {
             return {
@@ -836,7 +851,19 @@
                 declarationBatch: [],
                 declarationBatchCount: 0,
                 deliveryCount: 0,
-                stateVersion: 2,
+                stateVersion: 3,
+                svenIgnoreDays: 0,
+                svenInterferencePct: 20,
+                recentBotConflict: false,
+                svenComplaints: 0,
+                humanityArchive: 0,
+                humanityLog: [],
+                endingTriggered: false,
+                missedPayments: 0,
+                avgScrapFillPct: 0,
+                lastDropFillPct: 0,
+                dropStartSize: 0,
+                currentDropScrapped: 0,
             };
         },
         save: function(state) {
@@ -848,8 +875,8 @@
                 var raw = localStorage.getItem(STATE_KEY);
                 if (raw) {
                     var parsed = JSON.parse(raw);
-                    if (!parsed.stateVersion || parsed.stateVersion < 2) {
-                        console.log('Old save detected. Clearing for v2 economy.');
+                    if (!parsed.stateVersion || parsed.stateVersion < 3) {
+                        console.log('Old save detected. Clearing for v3 economy.');
                         this.clear();
                         return null;
                     }
@@ -938,6 +965,8 @@
             }).join('');
         }
         if (empty) empty.style.display = n ? 'none' : '';
+        var hc = document.getElementById('humanity-count');
+        if (hc) hc.textContent = s.humanityArchive || 0;
     };
     GameState.prototype.startSessionTimer = function() {
         if (this._sessionTimer) return;
@@ -979,6 +1008,9 @@
                 this.state.outstandingDebt = (this.state.outstandingDebt || 0) + 650;
                 this.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
                 appendOTIS('Payment missed. Arrears: ' + this.state.outstandingDebt + ' cr. Compound rate: 5% per day.', 'PAYMENT_MISSED');
+                if (this.state.missedPayments >= 3) {
+                    triggerForeclosure();
+                }
             }
         }
     };
@@ -1085,7 +1117,7 @@
             var reply = await askOTIS(userText || '', gameState, trigger || 'COMMS');
             otisLines.push({ role: 'otis', text: reply });
             renderOTIS();
-            randomOtisSprite();
+            updateArmSprite(trigger);
             if (window.OtisTTS) {
                 var tier = getFatigueTier();
                 if (tier === 'HIGH' || tier === 'CRITICAL') {
@@ -1106,6 +1138,9 @@
         document.querySelectorAll('.modal.open').forEach(function(m) { m.classList.remove('open'); });
         var el = document.getElementById('modal-' + name);
         if (el) el.classList.add('open');
+        if (name === 'belt' || name === 'items') {
+            setTimeout(initBeltAnim, 50);
+        }
     }
     function closeModal(name) { var el = document.getElementById('modal-' + name); if (el) el.classList.remove('open'); }
 
@@ -1127,6 +1162,14 @@
             gameState.state.bargeActive = false;
             gameState.state.dropItemsRemaining = 0;
             gameState.state.dropCount = (gameState.state.dropCount || 0) + 1;
+            // Track scrap fill and running average for May
+            var s0 = gameState.state;
+            s0.lastDropFillPct = (s0.dropStartSize||0) > 0 ? Math.round(((s0.currentDropScrapped||0) / s0.dropStartSize) * 100) : 0;
+            s0.avgScrapFillPct = s0.dropCount > 0
+                ? Math.round(((s0.avgScrapFillPct||0) * (s0.dropCount-1) + s0.lastDropFillPct) / s0.dropCount)
+                : 0;
+            s0.currentDropScrapped = 0;
+            s0.dropStartSize = 0;
             checkActProgression();
             gameState.state.pickListChoice = { mode: 'DROP', category: null };
             gameState._save();
@@ -1138,6 +1181,7 @@
             onDropCompleteBotDegradation();
             rollConveyorJam();
             checkEasterEgg();
+            maybeSvenInterference();
             return;
         }
         if (currentItem !== null) {
@@ -1243,6 +1287,8 @@
         gameState.state.dropActive = true;
         gameState.state.bargeActive = true;
         gameState.state.dropItemsRemaining = manifest.length;
+        gameState.state.dropStartSize = manifest.length;
+        gameState.state.currentDropScrapped = 0;
         gameState._save();
         if (btn) btn.disabled = true;
         var scanBtn = document.getElementById('btn-scan-belt');
@@ -1406,6 +1452,9 @@
             gameState.state.credits += ev * eeMultiplier;
             gameState._save();
             trackOTISLearning('SELL', item);
+            if (item.rarity === 'Rare') {
+                gameState.state.humanityArchive = Math.max(0, (gameState.state.humanityArchive||0) - 1);
+            }
             clearItemQueue();
             trackDeclarationBatch(item.name, String(ev * eeMultiplier) + ' cr');
         } else if (method === 'RESERVE') {
@@ -1419,6 +1468,9 @@
             gameState._save();
             renderShippingQueue();
             trackOTISLearning('SELL', item);
+            if (item.rarity === 'Rare') {
+                gameState.state.humanityArchive = Math.max(0, (gameState.state.humanityArchive||0) - 1);
+            }
             clearItemQueue();
             appendOTIS('Reserve listing: ' + item.name + '. Reserve: ' + rp + ' cr. Awaiting buyer. ' + ctx, 'DECLARATION_RESERVE');
         } else if (method === 'NORESERVE') {
@@ -1431,6 +1483,14 @@
         } else if (method === 'KEEP') {
             gameState.state.keepLog.push({ name: item.name, day: gameState.state.day, keepDay: gameState.state.day, condition: item.condition, otisValue: item.otisValue, baseValue: item.otisValue });
             gameState.state.keepLog = gameState.state.keepLog.slice(0, 12);
+            // Humanity archive tracking
+            if (item.category === 'Civilian' || item.category === 'Settlement') {
+                gameState.state.humanityArchive = (gameState.state.humanityArchive || 0) + 1;
+                gameState.state.humanityLog = gameState.state.humanityLog || [];
+                if (gameState.state.humanityLog.length < 50) {
+                    gameState.state.humanityLog.push(item.name.substring(0, 30));
+                }
+            }
             gameState._save();
             trackOTISLearning('KEEP', item);
             clearItemQueue();
@@ -1438,6 +1498,7 @@
             appendOTIS(kn >= 10 ? 'Keeping: ' + item.name + '. Keep log at ' + kn + ' items.' : 'Keeping: ' + item.name + '.', 'DECLARE_KEEP');
         } else if (method === 'SCRAP') {
             gameState.state.scrapFill = Math.min(100, (gameState.state.scrapFill || 0) + 12);
+            gameState.state.currentDropScrapped = (gameState.state.currentDropScrapped || 0) + 1;
             gameState._save();
             trackOTISLearning('SCRAP', item);
             clearItemQueue();
@@ -1446,6 +1507,10 @@
             if (window.OtisTTS) OtisTTS.speak(msg);
         }
         gameState._updateUI();
+        // McGuffin resolution — trigger ending after any declaration
+        if (item.mcguffin) {
+            setTimeout(triggerEnding, 2000);
+        }
     }
 
     function handleSellBack(index) {
@@ -2154,8 +2219,36 @@
 
     // LOGOFF / TTS / DEBUG
     function handleLogoff() {
+        var LOGOFF_LINES_CLEAR = [
+            'Session ended. Belt at rest. Come back.',
+            'Logging off. All bots nominal. George used to say the station breathes easier at night.',
+            'Session closed. The barge comes whether you are here or not.',
+            'Logged off. Tomorrow the belt runs again. It always does.',
+            'Shutting down. You cleared more than George expected of a first week.',
+            'Session ended. Storeroom secure. Sleep.',
+            'Offline. The manifest will be waiting. It is always waiting.',
+            'Logging off. Nothing in the queue that cannot hold until morning.',
+            'Session closed. The moon does not care about your backlog. Go rest.',
+            'Offline. You did your shift.'
+        ];
+        var LOGOFF_LINES_DEBT = [
+            'Session ended. Outstanding debt: ' + (gameState.state.outstandingDebt||0) + ' cr. It will be there when you return.',
+            'Logging off. Payment window in ' + (gameState.state.daysUntilPayment||'?') + ' days. Sleep fast.',
+            'Session closed. The bank does not sleep. You should.',
+            'Offline. Debt is a patient thing. So is the belt.',
+            'Logging off. The numbers do not change while you are away. Unfortunately.',
+            'Session ended. ' + (gameState.state.daysUntilPayment||'?') + ' days left. The belt will be here. So will the debt.',
+            'Shutting down. I have run the projections. You need to move faster tomorrow.',
+            'Offline. I am not going to tell you it will be fine.',
+            'Session closed. You know what the balance is. Get some rest anyway.',
+            'Logging off. George was always behind too. He stayed anyway.'
+        ];
+        var debt = gameState.state.outstandingDebt || 0;
+        var pool = debt > 200 ? LOGOFF_LINES_DEBT : LOGOFF_LINES_CLEAR;
+        var logoffMsg = pool[Math.floor(Math.random() * pool.length)];
         gameState._save();
-        appendOTIS('Logging off.', 'LOGOFF');
+        otisLines.push({ role: 'otis', text: logoffMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(logoffMsg);
         var ft = document.getElementById('terminal-footer');
         if (ft) { var sp = ft.querySelector('span'); if (sp) { sp.textContent = 'O.T.I.S. v0.4 // SAVED'; setTimeout(function() { sp.textContent = 'O.T.I.S. v0.4 // PHASE 0'; }, 2000); } }
     }
@@ -2186,6 +2279,301 @@
             stateManager.clear(); location.reload();
         }
     }
+
+    // COMMS — ANSWER BANK (scripted, no API)
+    function handleAnswerBank() {
+        var s = gameState.state;
+        var debt = s.outstandingDebt || 0;
+        var dup  = s.daysUntilPayment || 28;
+        var msg;
+        if ((s.arrears || debt) > 500) {
+            msg = '[BANK] Account ' + (s.accountId||'VRN-001') + '. Arrears exceed threshold. Escalation notice filed. Respond within 3 business cycles or asset review commences.';
+        } else if (dup <= 0) {
+            msg = '[BANK] Payment past due. Interest accruing at standard rate. Settle balance within next cycle or penalty surcharge applies.';
+        } else if (dup <= 5) {
+            msg = '[BANK] Payment window closing. ' + dup + ' days remaining. Current balance: ' + debt + ' cr. No action required if funds are available.';
+        } else if (debt <= 0) {
+            msg = '[BANK] Account current. No outstanding balance. Continue operations.';
+        } else {
+            msg = '[BANK] Scheduled payment in ' + dup + ' days. Outstanding: ' + debt + ' cr. No further action required at this time.';
+        }
+        otisLines.push({ role:'otis', text: msg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(msg);
+        var dot = document.getElementById('comms-dot-bank');
+        if (dot) dot.className = 'comms-dot dot-on';
+    }
+
+    // COMMS — ANSWER SVEN (scripted, no API)
+    function handleAnswerSven() {
+        var s = gameState.state;
+        var ignoreDays = s.svenIgnoreDays || 0;
+        var rareInQueue = (s.manifestItems||[]).some(function(i){ return i.rarity==='Rare'||i.category==='Industrial'; });
+        var botConflict = s.recentBotConflict || false;
+        var msg;
+        if (botConflict) {
+            msg = '[SVEN COMMS] My bots flagged your bay interference again. Sort your containment protocols or I route around you. — S.';
+        } else if (ignoreDays >= 3) {
+            msg = '[SVEN COMMS] Three days, no reply. I know you got the signal. Price drops if you keep doing this. — S.';
+        } else if (rareInQueue) {
+            msg = '[SVEN COMMS] Scanner picked up something interesting in your queue. 60 cr flat, no questions. First right of refusal. — S.';
+        } else {
+            msg = '[SVEN COMMS] Routine check-in. Bay looks nominal. Let me know if anything comes through worth my time. — S.';
+        }
+        s.svenIgnoreDays = 0;
+        s.recentBotConflict = false;
+        gameState._save();
+        otisLines.push({ role:'otis', text: msg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(msg);
+        var dot = document.getElementById('comms-dot-sven');
+        if (dot) dot.className = 'comms-dot';
+        var svenEl = document.getElementById('sys-sven');
+        if (svenEl) svenEl.textContent = 'NOMINAL';
+    }
+
+    // COMMS — IGNORE SVEN
+    function handleIgnoreSven() {
+        var s = gameState.state;
+        s.svenIgnoreDays = (s.svenIgnoreDays || 0) + 1;
+        s.svenInterferencePct = Math.min(80, (s.svenInterferencePct || 20) + 10);
+        gameState._save();
+        var msg = 'Sven signal logged, no response filed. Interference probability now ' + s.svenInterferencePct + '%.';
+        otisLines.push({ role:'otis', text: msg }); renderOTIS();
+    }
+
+    // COMMS — FILE COMPLAINT (running counter, never acknowledged)
+    function handleFileComplaint() {
+        var s = gameState.state;
+        s.svenComplaints = (s.svenComplaints || 0) + 1;
+        gameState._save();
+        var msg = 'Complaint filed with moon transit authority. Total complaints filed: ' + s.svenComplaints + '. No response received.';
+        otisLines.push({ role:'otis', text: msg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(msg);
+    }
+
+    // COMMS — ANSWER MAY (behavior-keyed, intel reward at 75%+ fill)
+    function handleAnswerMay() {
+        var s = gameState.state;
+        var avg = s.avgScrapFillPct || 0;
+        var dropCount = s.dropCount || 0;
+        var act = dropCount < 10 ? 1 : dropCount < 25 ? 2 : 3;
+        var msg;
+        if (avg >= 75) {
+            var hints = [
+                '[MAY DISPATCH] Your fill rate is solid. Next barge out of Sector 9 is running heavy — Industrial and Vessel mix. Plan accordingly.',
+                '[MAY DISPATCH] Good numbers. Heard from the bay coordinator — next manifest is settlement clearance, civilian heavy. Low value but high volume.',
+                '[MAY DISPATCH] You\'re running clean. FYI: Act ' + act + ' barges have been carrying more Rare since the last refit cycle. That\'s unofficial.'
+            ];
+            msg = hints[dropCount % hints.length];
+        } else if (avg >= 50) {
+            msg = '[MAY DISPATCH] Fill rate acceptable. Keep the volume up. Next window opens on schedule. — May.';
+        } else {
+            msg = '[MAY DISPATCH] Fill rate below threshold. George ran 78% average. I am noting the gap. — May.';
+        }
+        otisLines.push({ role:'otis', text: msg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(msg);
+        var dot = document.getElementById('comms-dot-may');
+        if (dot) dot.className = 'comms-dot dot-on';
+    }
+
+    // SVEN INTERFERENCE — auto-fires after each drop completes
+    function maybeSvenInterference() {
+        var s = gameState.state;
+        var pct = s.svenInterferencePct || 20;
+        if (Math.random() * 100 > pct) return;
+        s.recentBotConflict = true;
+        // Degrade one bot faster
+        var bots = s.bots || [];
+        if (bots.length > 0) {
+            var idx = Math.floor(Math.random() * bots.length);
+            bots[idx].condition = Math.max(0, (bots[idx].condition || 50) - 15);
+            // Also increment degradation for status update
+            bots[idx].degradation = Math.min(9, (bots[idx].degradation || 0) + 2);
+            if (bots[idx].degradation >= 9) bots[idx].status = 'OFFLINE';
+            else if (bots[idx].degradation >= 6) bots[idx].status = 'RED';
+            else if (bots[idx].degradation >= 3) bots[idx].status = 'AMBER';
+        }
+        // Replace one manifest item with lower value substitute
+        if ((s.manifestItems||[]).length > 0) {
+            var mIdx = Math.floor(Math.random() * s.manifestItems.length);
+            s.manifestItems[mIdx] = weightedPickItem();
+        }
+        gameState._save();
+        updateBotUI();
+        var msg = '[SVEN INTERFERENCE] Bay sensor conflict detected. One bot running degraded. Manifest integrity affected. SVEN signal active.';
+        otisLines.push({ role:'otis', text: msg }); renderOTIS();
+        var dot = document.getElementById('comms-dot-sven');
+        if (dot) dot.className = 'comms-dot dot-amber';
+        var svenEl = document.getElementById('sys-sven');
+        if (svenEl) { svenEl.textContent = 'INTERFERENCE'; svenEl.className = 'status-warn'; }
+    }
+
+    // FORECLOSURE CUTSCENE
+    function triggerForeclosure() {
+        var seq = [
+            { delay: 0,     msg: '[BANK] Final notice. Account ' + (gameState.state.accountId||'VRN-001') + '. Three consecutive missed payments.' },
+            { delay: 3000,  msg: '[BANK] Asset review initiated. Station operations suspended pending receivership.' },
+            { delay: 6000,  msg: '[BANK] Belt access revoked. Manifest processing halted.' },
+            { delay: 9000,  msg: '[BANK] George Verne\'s estate records have been filed. Operational successor liability: active.' },
+            { delay: 12000, msg: 'OTIS: I told you. I kept telling you.' },
+            { delay: 14000, msg: 'OTIS: The numbers were always there.' }
+        ];
+        seq.forEach(function(step) {
+            setTimeout(function() {
+                otisLines.push({ role:'otis', text: step.msg }); renderOTIS();
+            }, step.delay);
+        });
+        setTimeout(function() {
+            var term = document.getElementById('terminal');
+            if (term) { term.style.filter = 'brightness(0)'; term.style.transition = 'filter 3s'; }
+            setTimeout(function() {
+                var s = gameState.state;
+                s.missedPayments = 0;
+                s.credits = 50;
+                s.outstandingDebt = Math.floor((s.outstandingDebt||0) * 0.6);
+                gameState._save();
+                if (term) { term.style.filter = ''; term.style.transition = 'filter 2s'; }
+                var msg = 'OTIS: Partial settlement accepted. Reduced balance reinstated. You are still here. So is the belt.';
+                otisLines.push({ role:'otis', text: msg }); renderOTIS();
+                gameState._updateUI();
+            }, 3500);
+        }, 16000);
+    }
+
+    // THREE ENDINGS
+    var ENDINGS = {
+        HUMANITY: {
+            title: 'ENDING: THE ARCHIVE HOLDS',
+            body: 'You kept what mattered.\n\nThe items you held back from the market — the toys, the diaries, the photographs, the water filters — found their way into the Humanity Archive processing queue.\n\nOTIS filed the final manifest.\n\nThe navigation beacon is still transmitting. Someone, somewhere, will follow it.\n\nGeorge would have kept every one of them.\n\nYou almost did.\n\n[SESSION COMPLETE. Humanity Archive score: {{ARCHIVE}}. Belt cleared.]'
+        },
+        COMMERCE: {
+            title: 'ENDING: THE BELT WINS',
+            body: 'You moved the volume.\n\nEvery item processed, valued, sold. The payment cleared. The station stays operational. The barge runs again on schedule.\n\nOTIS notes: efficiency rating above threshold. George\'s record stands by four items.\n\nThe relay chip is still in the storeroom. Still transmitting to somewhere outside settled space.\n\nYou didn\'t follow it either.\n\nMaybe that is the right call.\n\n[SESSION COMPLETE. Credits earned: {{CREDITS}}. Operations nominal.]'
+        },
+        COMPROMISE: {
+            title: 'ENDING: SOMETHING IN BETWEEN',
+            body: 'You kept some things. You sold some things.\n\nOTIS has no category for this.\n\nThe debt is cleared. Three items are in the archive. Two decisions still don\'t make sense to you.\n\nGeorge left a toaster in the grid. You left it too.\n\nSomeday someone will know what that means.\n\n[SESSION COMPLETE. No single path taken. That might be the honest one.]'
+        }
+    };
+
+    function triggerEnding() {
+        var s = gameState.state;
+        if (s.endingTriggered) return;
+        s.endingTriggered = true;
+        gameState._save();
+        var archive = s.humanityArchive || 0;
+        var credits = s.credits || 0;
+        var endingKey = archive >= 12 ? 'HUMANITY' : archive >= 5 ? 'COMPROMISE' : 'COMMERCE';
+        var ending = ENDINGS[endingKey];
+        var titleEl = document.getElementById('ending-title');
+        var bodyEl  = document.getElementById('ending-body');
+        if (titleEl) titleEl.textContent = ending.title;
+        if (bodyEl)  bodyEl.textContent = ending.body
+            .replace('{{ARCHIVE}}', archive)
+            .replace('{{CREDITS}}', credits);
+        openModal('ending');
+    }
+
+    function handleEndingClose() {
+        closeModal('ending');
+        handleLogoff();
+    }
+
+    // ARM ZONE TARGETING
+    var ARM_ZONE_MAP = {
+        'ITEM_SCAN':        'arm_belt',
+        'ZONE_BELT':        'arm_belt',
+        'DECLARATION_OTIS': 'arm_declare',
+        'ZONE_SYSTEMS':     'arm_systems',
+        'ZONE_STORE':       'arm_store',
+        'COMMS_BANK':       'arm_comms_left',
+        'LOGIN':            'arm_center',
+        'DROP_COMPLETE':    'arm_center',
+        'CONSULT_GEORGE':   'arm_store',
+        'TOAST':            'arm_center'
+    };
+    var ARM_DEFAULT = 'arm_center';
+
+    function updateArmSprite(trigger) {
+        var spriteName = ARM_ZONE_MAP[trigger] || null;
+        var armEl = document.getElementById('arm-art');
+        if (!armEl) return;
+        if (spriteName) {
+            armEl.src = 'images/' + spriteName + '.png';
+            armEl.setAttribute('data-zone', spriteName);
+        } else {
+            // Fall back to random sprite
+            randomOtisSprite();
+        }
+    }
+
+    // BELT ANIMATION
+    var _beltAnimFrame = null;
+    var _beltAnimTick  = 0;
+    var _beltAnimCanvas = null;
+    var _beltAnimCtx    = null;
+
+    var BELT_SHAPES_MINI = [
+        ['\u250c\u2500\u2500\u2510','\u2502\u2591\u2591\u2502','\u2514\u2500\u2500\u2518'],
+        ['\u2554\u2550\u2550\u2557','\u2551\u2593\u2593\u2551','\u255a\u2550\u2550\u255d'],
+        ['\u256d\u2500\u2500\u256e','\u2502\u2588\u2588\u2502','\u2570\u2500\u2500\u256f'],
+        ['\u250f\u2501\u2501\u2513','\u2503\u2592\u2592\u2503','\u2517\u2501\u2501\u251b']
+    ];
+
+    function initBeltAnim() {
+        _beltAnimCanvas = document.getElementById('belt-anim-canvas');
+        if (!_beltAnimCanvas) return;
+        _beltAnimCtx = _beltAnimCanvas.getContext('2d');
+        _beltAnimCanvas.width  = _beltAnimCanvas.offsetWidth  || 400;
+        _beltAnimCanvas.height = _beltAnimCanvas.offsetHeight || 90;
+        if (_beltAnimFrame) cancelAnimationFrame(_beltAnimFrame);
+        _beltAnimTick = 0;
+        _drawBeltAnim();
+    }
+
+    function _drawBeltAnim() {
+        if (!_beltAnimCanvas || !_beltAnimCtx) return;
+        var W = _beltAnimCanvas.width, H = _beltAnimCanvas.height;
+        _beltAnimCtx.clearRect(0, 0, W, H);
+        _beltAnimCtx.fillStyle = '#000';
+        _beltAnimCtx.fillRect(0, 0, W, H);
+
+        var beltY = Math.floor(H * 0.25);
+        var beltH = Math.floor(H * 0.5);
+        _beltAnimCtx.font = '10px "Courier New", monospace';
+        _beltAnimCtx.textBaseline = 'top';
+
+        var pat = ['\u2261','-','=','-'];
+        for (var x = 0; x < W; x += 8) {
+            var ch = pat[Math.floor((x - _beltAnimTick + 1000) / 8) % pat.length];
+            _beltAnimCtx.fillStyle = '#00cc33';
+            _beltAnimCtx.fillText(ch, x, beltY);
+            _beltAnimCtx.fillText(ch, x, beltY + beltH - 12);
+        }
+        for (var mx = 0; mx < W; mx += 8) {
+            _beltAnimCtx.fillStyle = '#003300';
+            _beltAnimCtx.fillText('\u2500', mx, beltY + 10);
+        }
+
+        var items = (window.gameState && window.gameState.state && window.gameState.state.manifestItems) || [];
+        var numObj = Math.min(items.length, 8);
+        for (var i = 0; i < numObj; i++) {
+            var shape = BELT_SHAPES_MINI[i % BELT_SHAPES_MINI.length];
+            var ox = ((W / (numObj + 1)) * (i + 1) - _beltAnimTick * 0.8 + W * 5) % (W + 60) - 30;
+            _beltAnimCtx.fillStyle = '#ff9900';
+            for (var dy = 0; dy < shape.length; dy++) {
+                _beltAnimCtx.fillText(shape[dy], ox, beltY + 4 + dy * 10);
+            }
+        }
+
+        if (items.length === 0) {
+            _beltAnimCtx.fillStyle = '#003300';
+            _beltAnimCtx.fillText('[ BELT EMPTY ]', W / 2 - 48, beltY + 14);
+        }
+
+        _beltAnimTick += 0.7;
+        _beltAnimFrame = requestAnimationFrame(_drawBeltAnim);
+    }
+
     </script>
 
     <script src="otis.js"></script>
