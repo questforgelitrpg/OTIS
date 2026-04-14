@@ -722,6 +722,19 @@
         }).join('');
     }
 
+    function getOTISPickRecommendation() {
+        var s = gameState.state;
+        if ((s.dropCount || 0) < 3) return null;
+        var learn = s.otisLearning || {};
+        var kbc = learn.keepByCategory || {};
+        var sbc = learn.scrapByCategory || {};
+        var topKeep = Object.keys(kbc).sort(function(a,b){ return (kbc[b]||0)-(kbc[a]||0); })[0];
+        var topScrap = Object.keys(sbc).sort(function(a,b){ return (sbc[b]||0)-(sbc[a]||0); })[0];
+        if (!topKeep) return null;
+        var keepCount = kbc[topKeep] || 0;
+        return { category: topKeep, keepCount: keepCount, scrapCategory: topScrap };
+    }
+
     function renderPickList() {
         var s = gameState.state;
         var choice = (s.pickListChoice) ? s.pickListChoice : { mode: 'DROP', category: null };
@@ -732,24 +745,29 @@
         renderPickCategoryButtons();
         var note = document.getElementById('pick-list-otis-note');
         if (note) {
-            var learn = s.otisLearning || {};
-            var kbc = learn.keepByCategory || {};
-            var topCat = Object.keys(kbc).sort(function(a,b){ return (kbc[b]||0)-(kbc[a]||0); })[0];
-            if (topCat && (s.dropCount || 0) >= 3) {
-                note.textContent = 'OTIS TREND: You keep ' + topCat.toUpperCase() + ' items most. Consider PRIORITIZE + ' + topCat.toUpperCase() + '.';
-            } else if ((s.dropCount || 0) < 3) {
-                note.textContent = 'OTIS is learning your patterns. Check back after 3 drops.';
+            var rec = getOTISPickRecommendation();
+            if (rec) {
+                var following = choice.mode === 'PRIORITIZE' && choice.category === rec.category;
+                note.textContent = following
+                    ? 'OTIS: Following trend. ' + rec.category.toUpperCase() + ' prioritized. ' + rec.keepCount + ' kept this run.'
+                    : 'OTIS RECOMMENDS: PRIORITIZE + ' + rec.category.toUpperCase() + ' \u2014 ' + rec.keepCount + ' kept, highest rate.';
             } else {
-                note.textContent = '';
+                note.textContent = 'OTIS is learning your patterns. Check back after 3 drops.';
             }
         }
     }
 
     function buildManifestSummary(manifest) {
-        const n = manifest.length;
-        const cats = [...new Set(manifest.map(i => i.category))];
-        const top = manifest.reduce((b, i) => i.otisValue > b.otisValue ? i : b, manifest[0]);
-        return 'Barge inbound. Manifest: ' + n + ' items. Categories: ' + cats.join(', ') + '. Notable: ' + top.name + '.';
+        var n = manifest.length;
+        var cats = {};
+        manifest.forEach(function(i) { cats[i.category] = (cats[i.category] || 0) + 1; });
+        var catList = Object.keys(cats).map(function(c) { return c + '(' + cats[c] + ')'; }).join(', ');
+        var rec = getOTISPickRecommendation();
+        var recNote = rec ? ' Your ' + rec.category + ' trend continues.' : '';
+        var choice = gameState.state.pickListChoice || {};
+        var pickNote = (choice.mode !== 'DROP' || choice.category)
+            ? ' Pick list: ' + choice.mode + (choice.category ? ' ' + choice.category : '') + '.' : '';
+        return 'Barge inbound. ' + n + ' items. Categories: ' + catList + '.' + pickNote + recNote;
     }
 
     function renderManifestSummary(manifest) {

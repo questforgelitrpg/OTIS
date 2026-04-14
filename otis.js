@@ -24,7 +24,7 @@ TRIGGER DEFINITIONS:
 [TRIGGER: ARREARS_NOTICE] — Insufficient credits to clear arrears. State the shortfall. One line.
 [TRIGGER: ARREARS_CLEARED] — Arrears have been cleared. Acknowledge. One line.
 [TRIGGER: PAYMENT_MISSED] — Payment deadline passed with insufficient credits. Penalty applied. Report the arrears total and compound rate. Clinical.
-[TRIGGER: BARGE_IMMINENT] — A barge drop is beginning. OTIS delivers the manifest summary: item count, categories, notable item.
+[TRIGGER: BARGE_IMMINENT] — A barge drop is beginning. OTIS delivers the manifest summary: item count, categories, pick list mode. Reference [OTIS_TREND]: if Vernon is following the trend, note it ('Vessel again. Three drops running. The pattern is yours now.'); if diverging, note the shift ('You prioritized X last drop. Now you're on Y. I've updated the model.').
 [TRIGGER: DROP_COMPLETE] — All belt items processed. Bots returning. Short summary.
 [TRIGGER: ITEM_SCAN] — Item detected on belt. Name and category provided. One terse line.
 [TRIGGER: DECLARE_KEEP] — Vernon chose to keep an item. Acknowledge. Note if keep log is getting full (>=10 items).
@@ -157,7 +157,13 @@ function buildOTISContext(gs) {
     const recent = (s.recentEvents && s.recentEvents.length)
         ? s.recentEvents.map(e => e.trigger || e).join(', ')
         : 'none';
-    return formatStateBlock(s.day, s.debt, naming, fatigue, recent);
+    const learn = s.otisLearning || {};
+    const kbc = learn.keepByCategory || {};
+    const topKeep = Object.keys(kbc).sort(function(a,b){ return (kbc[b]||0)-(kbc[a]||0); })[0];
+    const learnNote = topKeep
+        ? `[OTIS_TREND: Vernon keeps ${topKeep} items most (${kbc[topKeep] || 0} items)]`
+        : '[OTIS_TREND: insufficient data]';
+    return formatStateBlock(s.day, s.debt, naming, fatigue, recent) + ' ' + learnNote;
 }
 
 async function askOTIS(userText, gs, trigger = 'COMMS') {
