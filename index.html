@@ -309,6 +309,7 @@
                     <button onclick="dbgForcePay()">FORCE PAY</button>
                     <button onclick="dbgFastMode()">FAST MODE</button>
                     <button onclick="dbgForceToast()">FORCE TOAST</button>
+                    <button onclick="dbgReplayIntro()">REPLAY INTRO</button>
                     <button onclick="handleClearSave(this)">CLEAR SAVE</button>
                     <button onclick="handleToasterIncident()">TOASTER INC</button>
                     <button onclick="handleMcGuffin()">MCGUFFIN</button>
@@ -865,7 +866,7 @@
                 scrapFill: 0, keepLog: [], shippingQueue: [], recentEvents: [],
                 dropActive: false, bargeActive: false, dropItemsRemaining: 0,
                 manifestItems: [], outstandingDebt: 0, missedPayments: 0,
-                daysUntilNextDrop: 1, toastFiredToday: false,
+                daysUntilNextDrop: 1, toastFiredToday: false, // 1 ensures first automatic drop fires on Day 2 via advanceDay→checkDropSchedule
                 scriptedCommsFired: { bank: false, sven: false, may: false },
                 pickListChoice: { mode: 'DROP', category: null },
                 otisLearning: { keepByCategory: {}, scrapByCategory: {}, sellByRarity: {} },
@@ -939,7 +940,8 @@
         this.state = stateManager._default();
         this._sessionStart = null;
         this._sessionTimer = null;
-        this._dayTimer = null;
+        // Note: _dayTimer is intentionally absent; the canonical day interval is
+        // window._otisDayIntervalId (set in DOMContentLoaded), not a prototype timer.
     }
     GameState.prototype.init = function() {
         var loaded = stateManager.load();
@@ -1674,9 +1676,10 @@
 
     function autoToast() {
         if (gameState.state.toastFiredToday) return;
-        if (gameState.state.credits >= 6) gameState.state.credits -= 6;
-        else { gameState.state.outstandingDebt = (gameState.state.outstandingDebt || 0) + (6 - gameState.state.credits); gameState.state.credits = 0; }
-        gameState.state.toastFiredToday = true;
+        var s = gameState.state;
+        if (s.credits >= 6) s.credits -= 6;
+        else { s.outstandingDebt = (s.outstandingDebt || 0) + (6 - s.credits); s.credits = 0; }
+        s.toastFiredToday = true;
         gameState._save();
         gameState._updateUI();
         var toastMsg = getNextToastComment();
@@ -1685,6 +1688,12 @@
         openModal('toast');
         otisLines.push({ role: 'otis', text: toastMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(toastMsg);
+        // On day 7+ trigger the one-time power-outage incident that follows the toast.
+        // This keeps the daily toast and the power-outage as two distinct events:
+        // the toast always fires; the outage fires exactly once, on the first day >= 7.
+        if (!s.toasterIncidentFired && (s.day || 1) >= 7) {
+            setTimeout(function() { closeModal('toast'); runPowerOutageSequence(); }, 2000);
+        }
     }
 
     // SCRIPTED DAY 1-3 COMMS
@@ -2074,7 +2083,8 @@
         if (!s.georgeWarehouseSold) s.georgeWarehouseSold = [];
         if (s.georgeWarehouseSold.indexOf(idx) !== -1) return;
         var item = Object.assign({}, GEORGE_WAREHOUSE[idx], { condition: 'Used' });
-        // Mark as transferred immediately so the warehouse UI reflects the removal at once
+        // Push to georgeWarehouseSold before any UI update so the warehouse list
+        // reflects the removal immediately (renderGeorgeWarehouse filters by this array).
         s.georgeWarehouseSold.push(idx);
         if (!s.manifestItems) s.manifestItems = [];
         s.manifestItems.push(item);
@@ -2083,7 +2093,7 @@
             s.dropActive = true; s.bargeActive = true;
             setBotDots(true); updateBeltUI('DELIVERING');
             startBeltDelivery();
-            deliverNextBeltItem(); // start delivery immediately, matching handleBargeArrival
+            deliverNextBeltItem(); // deliver first item immediately, matching handleBargeArrival
         }
         gameState._save(); gameState._updateUI();
         renderGeorgeWarehouse();
@@ -2454,6 +2464,8 @@
     function dbgForcePay() { gameState.state.daysUntilPayment = 0; gameState._save(); gameState._updateUI(); }
     // Force-fire the daily toast regardless of the toastFiredToday guard (debug only)
     function dbgForceToast() { gameState.state.toastFiredToday = false; autoToast(); }
+    // Replay the opening intro on the next reload (debug only)
+    function dbgReplayIntro() { gameState.state.introPlayed = false; gameState._save(); location.reload(); }
     function dbgFastMode() {
         TIMING.DEBUG_FAST_MODE = !TIMING.DEBUG_FAST_MODE;
         // Restart the canonical window-level day interval at the new speed.
@@ -2472,6 +2484,9 @@
             _clearTimer = setTimeout(function() { _clearPending = false; btn.textContent = 'CLEAR SAVE'; btn.classList.remove('btn-confirm-pending'); }, 3000);
         } else {
             clearTimeout(_clearTimer); _clearPending = false; btn.classList.remove('btn-confirm-pending');
+            // Reset in-memory state to defaults immediately so any async save that fires
+            // in the brief window before the reload writes clean state, not old state.
+            gameState.state = stateManager._default();
             stateManager.clear(); location.reload();
         }
     }
@@ -2837,20 +2852,20 @@
             setLight('light-auxiliary', 'light-amber');
         }
 
-        async function bootSequence() {
+        function bootSequence() {
             var loginBtn = document.getElementById('btn-login');
             if (loginBtn) loginBtn.classList.remove('login-pulse');
             checkScriptedComms();
-            await appendOTIS('Operator logging in.', 'LOGIN');
-            // Fire the daily toast once per in-game day. autoToast() guards on
-            // toastFiredToday so it is safe to call here; it will no-op on a
-            // same-day reload where the toast has already been recorded.
-            // Day 1 and every subsequent day use the same rotating-comment path
-            // to avoid any double-fire or inconsistency between boot and timer paths.
+            // Fire login message without awaiting the API response so the toast timer
+            // is always scheduled regardless of OTIS API latency or availability.
+            appendOTIS('Operator logging in.', 'LOGIN');
+            // Schedule the daily toast independently of the OTIS API call.
+            // autoToast() is self-guarded by toastFiredToday so a same-day reload
+            // that has already recorded the toast is safe to call here (no-op).
             if (!gameState.state.toastFiredToday) {
                 setTimeout(autoToast, 1500);
             }
-            // Resume belt delivery if a drop was active when the page last loaded
+            // Resume belt delivery if a drop was active when the page last loaded.
             if (gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
                 var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
                 setBotDots(true); startBeltDelivery();
@@ -2860,9 +2875,14 @@
         if (shouldShowIntro && typeof runIntroSequence === 'function') {
             var loginBtn = document.getElementById('btn-login');
             if (loginBtn) loginBtn.classList.add('login-pulse');
-            runIntroSequence(function() {
-                gameState.state.introPlayed = true;
-                gameState._save();
+            // introShown is true when the intro actually displayed (completed or skipped),
+            // false when intro.js couldn't find the modal elements. Only mark introPlayed
+            // when it genuinely showed so a failed render retries on the next load.
+            runIntroSequence(function(introShown) {
+                if (introShown !== false) {
+                    gameState.state.introPlayed = true;
+                    gameState._save();
+                }
                 bootSequence();
             });
         } else {
