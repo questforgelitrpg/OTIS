@@ -315,6 +315,7 @@
                 <div class="belt-bar-track" id="belt-bar-track" style="display:none"><div class="belt-bar-fill" id="belt-bar-fill"></div></div>
                 <p class="zone-hint" id="belt-status-text">NEXT DROP: <span id="belt-drop-countdown">7</span> days</p>
                 <p class="zone-hint" id="belt-backed-up" style="display:none;color:var(--text-warn)">&#9888; BELT BACKED UP &mdash; clear item queue</p>
+                <p class="zone-hint" id="storeroom-overflow-warning" style="display:none;color:var(--text-danger)">&#9888; OVERFLOW: <span id="overflow-count">0</span> items queued &mdash; <button onclick="handleRouteToStoreroom()">ROUTE TO STOREROOM</button></p>
                 <div class="modal-row">
                     <button id="btn-barge-drop" onclick="handleBargeArrival()">BARGE DROP</button>
                     <button id="btn-scan-belt" onclick="handleBeltScan()" disabled>SCAN BELT</button>
@@ -401,6 +402,11 @@
                 <div class="modal-label">SCRAP CHANNEL: <span id="scrap-pct">0%</span></div>
                 <div class="scrap-bar-track"><div class="scrap-bar-fill" id="scrap-bar-fill" style="width:0%"></div></div>
                 <div class="modal-row"><button onclick="handleDispatchMay()">DISPATCH TO MAY</button></div>
+            </div>
+            <div class="modal-section" id="storeroom-buffer-section">
+                <div class="modal-label" style="display:flex;justify-content:space-between"><span>BUFFER QUEUE</span><span id="buffer-count" style="color:var(--text-dim)">0</span></div>
+                <p class="zone-hint" id="buffer-empty">Buffer empty.</p>
+                <ul id="storeroom-buffer-list" class="keep-list"></ul>
             </div>
             <div class="modal-section">
                 <div class="modal-label" style="display:flex;justify-content:space-between"><span>KEEP LOG</span><span id="keep-log-count" style="color:var(--text-dim)">0 / 12</span></div>
@@ -723,6 +729,9 @@
                 easterEggFired: false,
                 toasterIncidentFired: false,
                 nextDropDay: null,
+                storeroomBuffer: [],
+                storeroomBufferActive: false,
+                storeroomBufferTarget: 0,
                 stateVersion: 2,
             };
         },
@@ -802,6 +811,7 @@
         if (typeof updateBotUI === 'function') updateBotUI();
         if (typeof renderPickList === 'function') renderPickList();
         if (typeof renderGeorgeWarehouse === 'function' && this.state.georgeWarehouseRevealed) renderGeorgeWarehouse();
+        if (typeof renderStoreroomBuffer === 'function') renderStoreroomBuffer();
     };
     GameState.prototype._renderKeepLog = function() {
         var list  = document.getElementById('keep-log-list');
@@ -962,7 +972,15 @@
             checkEasterEgg();
             return;
         }
-        if (currentItem !== null) { updateBeltUI('BACKED_UP'); return; }
+        if (currentItem !== null) {
+            updateBeltUI('BACKED_UP');
+            var backed = gameState.state.manifestItems.length;
+            var overflowWarn = document.getElementById('storeroom-overflow-warning');
+            var overflowCount = document.getElementById('overflow-count');
+            if (overflowWarn) overflowWarn.style.display = backed >= 6 ? '' : 'none';
+            if (overflowCount) overflowCount.textContent = backed;
+            return;
+        }
         var item = gameState.state.manifestItems.shift();
         item.condition = assignCondition();
         gameState.state.dropItemsRemaining = gameState.state.manifestItems.length;
@@ -1314,7 +1332,55 @@
         var earned = Math.floor(fill * (5 + Math.random() * 5));
         gameState.state.credits += earned; gameState.state.scrapFill = 0;
         gameState._save(); gameState._updateUI();
+        renderStoreroomBuffer();
         appendOTIS('Dispatching scrap to May Finster. Fill: ' + fill + '%. +' + earned + ' cr returned.', 'SCRAP_DISPATCH');
+    }
+
+    function handleRouteToStoreroom() {
+        var s = gameState.state;
+        var toBuffer = s.manifestItems.splice(0, 6);
+        toBuffer.forEach(function(item) {
+            item.condition = assignCondition();
+            s.storeroomBuffer.push(item);
+        });
+        s.dropItemsRemaining = s.manifestItems.length;
+        gameState._save();
+        gameState._updateUI();
+        renderStoreroomBuffer();
+        var warn = document.getElementById('storeroom-overflow-warning');
+        if (warn) warn.style.display = 'none';
+        appendOTIS('Routing 6 items to storeroom buffer. ' + s.storeroomBuffer.length + ' items waiting.', 'ZONE_SYSTEMS');
+    }
+
+    function renderStoreroomBuffer() {
+        var s = gameState.state;
+        var buf = s.storeroomBuffer || [];
+        var list = document.getElementById('storeroom-buffer-list');
+        var empty = document.getElementById('buffer-empty');
+        var cnt = document.getElementById('buffer-count');
+        if (cnt) cnt.textContent = buf.length;
+        if (empty) empty.style.display = buf.length ? 'none' : '';
+        if (!list) return;
+        list.innerHTML = buf.map(function(item, i) {
+            return '<li class="keep-list-item"><span>' + escapeHtml(item.name) + '</span>' +
+                '<span class="keep-item-meta">' + escapeHtml(item.condition || '') + '</span>' +
+                '<button onclick="handlePullFromBuffer(' + i + ')">PULL</button></li>';
+        }).join('');
+    }
+
+    function handlePullFromBuffer(index) {
+        var s = gameState.state;
+        if (!s.storeroomBuffer || !s.storeroomBuffer[index]) return;
+        var item = s.storeroomBuffer.splice(index, 1)[0];
+        if (currentItem === null) {
+            setItemInQueue(item);
+        } else {
+            s.manifestItems.unshift(item);
+            s.dropItemsRemaining = s.manifestItems.length;
+        }
+        gameState._save();
+        renderStoreroomBuffer();
+        gameState._updateUI();
     }
 
     // SHIPPING QUEUE
@@ -1698,7 +1764,8 @@
         var keep = s.keepLog.length;
         setLight('light-belt',    s.dropActive ? 'light-on' : currentItem ? 'light-amber' : '');
         setLight('light-comms',   (arrears > 0 || dup <= 3) ? 'light-red' : (dup <= 7 || scrap >= 75) ? 'light-amber' : '');
-        setLight('light-store',   scrap >= 90 ? 'light-red' : (scrap >= 75 || keep >= 10) ? 'light-amber' : '');
+        var bufLen = (s.storeroomBuffer || []).length;
+        setLight('light-store',   scrap >= 90 || bufLen >= 4 ? 'light-red' : (scrap >= 75 || bufLen > 0 || keep >= 10) ? 'light-amber' : '');
         setLight('light-systems', (s.missedPayments > 0 || arrears > 2000) ? 'light-red' : '');
         var arm = document.getElementById('arm-panel');
         var armSt = document.getElementById('arm-status');
@@ -1845,6 +1912,7 @@
         gameState._updateUI();
         renderItemQueue();
         renderShippingQueue();
+        renderStoreroomBuffer();
         updateScrapBar();
         updateSystemsStatus();
         updateCommsIndicators();
