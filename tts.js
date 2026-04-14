@@ -111,5 +111,12 @@
         }
     }
 
-    window.OtisTTS = { speak, isSupported, isMuted, toggleMute, setMuted };
+    function interrupt(text) {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        _queue.length = 0;
+        _speaking = false;
+        speak(text);
+    }
+
+    window.OtisTTS = { speak, interrupt, isSupported, isMuted, toggleMute, setMuted };
 })();

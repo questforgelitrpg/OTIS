@@ -775,6 +775,9 @@
                 storeroomBuffer: [],
                 storeroomBufferActive: false,
                 storeroomBufferTarget: 0,
+                declarationBatch: [],
+                declarationBatchCount: 0,
+                deliveryCount: 0,
                 stateVersion: 2,
             };
         },
@@ -970,7 +973,14 @@
             otisLines.push({ role: 'otis', text: reply });
             renderOTIS();
             randomOtisSprite();
-            if (window.OtisTTS) window.OtisTTS.speak(reply);
+            if (window.OtisTTS) {
+                var tier = getFatigueTier();
+                if (tier === 'HIGH' || tier === 'CRITICAL') {
+                    OtisTTS.interrupt(reply);
+                } else {
+                    OtisTTS.speak(reply);
+                }
+            }
             if (statusEl) { statusEl.textContent = 'NOMINAL'; statusEl.className = 'status-ok'; }
         } catch(e) {
             if (statusEl) { statusEl.textContent = 'FAULT'; statusEl.className = 'status-err'; }
@@ -1031,11 +1041,31 @@
         gameState._save();
         setItemInQueue(item);
         updateBeltUI('DELIVERING');
-        appendOTIS('Item on belt: ' + item.name + '.', 'ITEM_SCAN');
+        var s = gameState.state;
+        var deliveryCount = s.deliveryCount = (s.deliveryCount || 0) + 1;
+        if (deliveryCount % 7 === 0) fireOtisSideComment();
         if (window.innerWidth <= 600) openModal('belt');
     }
 
     function handleBeltScan() { deliverNextBeltItem(); }
+
+    function fireOtisSideComment() {
+        var s = gameState.state;
+        var dup = s.daysUntilPayment || 28;
+        var tier = s.namingTier || 0;
+        var msg;
+        if (dup <= 5) msg = 'Payment in ' + dup + ' days. Belt is not moving fast enough.';
+        else if (tier >= 2) msg = 'George would have cleared that last item faster. Then again, so would you.';
+        else if (s.skipCount > 5) msg = 'Still not asking. Still noting it.';
+        else if ((s.keepLog || []).length >= 8) msg = 'Keep log is getting heavy. George only kept seven.';
+        else {
+            var GENERIC = ['Belt running.','Inventory accumulates.','The moon does not care about your backlog.',
+                'George would have had an opinion about that one.','Running nominal. Barely.'];
+            msg = GENERIC[Math.floor(Math.random() * GENERIC.length)];
+        }
+        otisLines.push({ role: 'otis', text: msg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(msg);
+    }
 
     var _dropShuffledPool = [];
     var _dropShuffleIndex = 0;
@@ -1199,6 +1229,13 @@
         return 'Item: ' + item.name + '. Category: ' + item.category + '. Rarity: ' + item.rarity + '. Condition: ' + item.condition + '. ' + est;
     }
 
+    var SKIP_SHORTS = ['Noted.','Next.','Fine.','Filed.','Moving on.','Skipped.','Alright.','Canned.'];
+    var SKIP_TIER_MSGS = {
+        3: 'I have intake data that does not surface unless you ask.',
+        5: 'George consulted on everything. Just noting that.',
+        7: 'You stopped asking. I stopped offering.',
+    };
+
     function handleSkip() {
         if (!currentItem) return;
         gameState.state.skipCount = (gameState.state.skipCount || 0) + 1;
@@ -1206,8 +1243,17 @@
         var declEl = document.getElementById('item-declaration'); if (declEl) declEl.style.display = 'flex';
         var btnRes = document.getElementById('btn-reserve');      if (btnRes) btnRes.disabled = true;
         var n = gameState.state.skipCount;
-        var msg = n >= 7 ? 'Skipped again.' : n >= 5 ? 'George consulted on everything. Just noting that.' : n >= 3 ? 'I have intake data that does not surface unless you ask. Raising it as a resource.' : n >= 1 ? 'Consulting before declaration increases recognition bonus eligibility. That benefits the ledger.' : 'Item skipped.';
-        appendOTIS(msg, 'ITEM_SCAN');
+        var tierMsg = null;
+        if (n === 7) tierMsg = SKIP_TIER_MSGS[7];
+        else if (n === 5) tierMsg = SKIP_TIER_MSGS[5];
+        else if (n === 3) tierMsg = SKIP_TIER_MSGS[3];
+        var msg = tierMsg || SKIP_SHORTS[Math.floor(Math.random() * SKIP_SHORTS.length)];
+        if (tierMsg) {
+            appendOTIS(msg, 'ITEM_SCAN');
+        } else {
+            otisLines.push({ role: 'otis', text: msg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(msg);
+        }
     }
 
     function handleConsult(trigger) {
@@ -1220,6 +1266,8 @@
         appendOTIS(ctx, trigger);
     }
 
+    var SCRAP_SHORTS = ['Canned.','Logged.','Processed.','To May.','Binned.','Filed as scrap.'];
+
     function handleDeclare(method) {
         if (!currentItem) return;
         var item = currentItem;
@@ -1231,7 +1279,17 @@
             gameState._save();
             trackOTISLearning('SELL', item);
             clearItemQueue();
-            appendOTIS('Selling at OTIS price: ' + item.name + '. +' + (ev * eeMultiplier) + ' cr. ' + ctx, 'DECLARATION_OTIS');
+            var s = gameState.state;
+            s.declarationBatch = s.declarationBatch || [];
+            var salePrice = String(ev * eeMultiplier) + ' cr';
+            s.declarationBatch.push(item.name.substring(0,20) + ' — ' + salePrice);
+            s.declarationBatchCount = (s.declarationBatchCount || 0) + 1;
+            if (s.declarationBatchCount >= 3) {
+                var batchMsg = 'Last 3: ' + s.declarationBatch.join(', ') + '.';
+                s.declarationBatch = [];
+                s.declarationBatchCount = 0;
+                appendOTIS(batchMsg, 'DECLARATION_OTIS');
+            }
         } else if (method === 'RESERVE') {
             var rp;
             if (item.rarity === 'Anomalous') rp = Math.floor(Math.random() * (TIMING.ANOMALOUS_RESERVE_MAX - TIMING.ANOMALOUS_RESERVE_MIN + 1)) + TIMING.ANOMALOUS_RESERVE_MIN;
@@ -1251,7 +1309,17 @@
             gameState._save();
             trackOTISLearning('SELL', item);
             clearItemQueue();
-            appendOTIS('Selling no-reserve: ' + item.name + '. +' + earned + ' cr.', 'DECLARATION_NORESERVE');
+            var s = gameState.state;
+            s.declarationBatch = s.declarationBatch || [];
+            var salePrice = String(earned) + ' cr';
+            s.declarationBatch.push(item.name.substring(0,20) + ' — ' + salePrice);
+            s.declarationBatchCount = (s.declarationBatchCount || 0) + 1;
+            if (s.declarationBatchCount >= 3) {
+                var batchMsg = 'Last 3: ' + s.declarationBatch.join(', ') + '.';
+                s.declarationBatch = [];
+                s.declarationBatchCount = 0;
+                appendOTIS(batchMsg, 'DECLARATION_OTIS');
+            }
         } else if (method === 'KEEP') {
             gameState.state.keepLog.push({ name: item.name, day: gameState.state.day, condition: item.condition, otisValue: item.otisValue });
             gameState.state.keepLog = gameState.state.keepLog.slice(0, 12);
@@ -1265,7 +1333,9 @@
             gameState._save();
             trackOTISLearning('SCRAP', item);
             clearItemQueue();
-            appendOTIS('Scrapping: ' + item.name + '.', 'DECLARE_SCRAP');
+            var msg = SCRAP_SHORTS[Math.floor(Math.random() * SCRAP_SHORTS.length)];
+            otisLines.push({ role: 'otis', text: msg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(msg);
         }
         gameState._updateUI();
     }
