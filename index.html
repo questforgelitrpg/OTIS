@@ -213,6 +213,12 @@
         /* McGuffin blur */
         #otis-output.mcguffin-blur { filter: blur(3px); transition: filter 0.5s; }
 
+        /* Power outage */
+        #terminal.power-out { filter: brightness(0.05); transition: filter 1s; }
+
+        /* Auxiliary input button — spans full grid width, hidden until power incident */
+        #btn-auxiliary { grid-column: 1 / -1; display: none; }
+
         /* Pick list */
         .picklist-btn.active { border-color: var(--text-primary) !important; color: var(--text-bright) !important; }
 
@@ -266,6 +272,7 @@
                 <button class="module-btn" onclick="openModal('comms')"><span class="mod-light" id="light-comms"></span>COMMS</button>
                 <button class="module-btn" onclick="openModal('store')"><span class="mod-light" id="light-store"></span>STOREROOM</button>
                 <button class="module-btn" onclick="openModal('systems')"><span class="mod-light" id="light-systems"></span>SYSTEMS / BOTS</button>
+                <button class="module-btn" id="btn-auxiliary"><span class="mod-light" id="light-auxiliary"></span>AUXILIARY INPUT</button>
             </div>
 
             <div id="debug-panel">
@@ -1555,33 +1562,84 @@
         appendOTIS('Moved unlisted find to belt: ' + item.name + '.', 'ITEM_SCAN');
     }
 
+    // MODULE BUTTON DISABLE HELPER
+    function setModuleButtonsEnabled(belt, comms, store, systems) {
+        var btns = document.querySelectorAll('.module-btn');
+        // order in HTML: belt, comms, store, systems (skip auxiliary at index 4+)
+        var enabled = [belt, comms, store, systems];
+        btns.forEach(function(btn, i) {
+            if (i >= 4) return;
+            btn.disabled = !enabled[i];
+            btn.style.opacity = enabled[i] ? '1' : '0.2';
+        });
+    }
+
     // TOASTER INCIDENT SEQUENCE
     function handleToasterIncident() {
-        var pw = document.getElementById('sys-power');
+        var term = document.getElementById('terminal');
+        var grid = document.getElementById('module-grid');
+        var arm  = document.getElementById('arm-panel');
+        var pw   = document.getElementById('sys-power');
+        var overlay = document.getElementById('fatigue-overlay');
+        var noise   = document.getElementById('fatigue-noise');
+        var auxBtn  = document.getElementById('btn-auxiliary');
+
+        // STAGE 1 — BLACKOUT (immediate)
+        if (grid)    grid.style.display = 'none';
+        document.querySelectorAll('#hdr .hdr-stat').forEach(function(el) { el.style.display = 'none'; });
+        if (arm)     arm.style.display = 'none';
+        if (term)    term.classList.add('power-out');
+        if (overlay) overlay.style.opacity = '1';
+        if (noise)   noise.style.opacity = '0.6';
+        if (auxBtn)  { auxBtn.style.display = ''; auxBtn.style.opacity = '1'; }
+        appendHardcodedComm('[POWER GRID] Cascade event detected. Drawing from backup reserves.');
         if (pw) { pw.textContent = 'CRITICAL'; pw.className = 'status-err'; }
-        var arm = document.getElementById('arm-panel');
-        if (arm) arm.classList.add('arm-alert');
-        appendHardcodedComm('[POWER] Cascade event. Drawing from reserves. Duration unknown.');
+        setModuleButtonsEnabled(false, false, false, false);
+
+        // STAGE 2 — BANK OTIS ONLY (delay 2500ms)
         setTimeout(function() {
-            var c = document.getElementById('toast-content');
-            if (c) c.textContent = 'Power cascade. The toaster pulled from the main grid. George would have known not to do that. You didn\'t.';
-            openModal('toast');
-            if (gameState.state.credits >= 6) gameState.state.credits -= 6;
-            else gameState.state.outstandingDebt = (gameState.state.outstandingDebt || 0) + (6 - gameState.state.credits);
-            gameState._save(); gameState._updateUI();
+            var out = document.getElementById('otis-output');
+            if (out) out.style.display = '';
+            if (term) term.style.filter = 'brightness(0.15)';
+            appendOTIS('Bank protocol engaged. Running power restoration sequence.', 'COMMS_BANK');
+            appendHardcodedComm('[BANK-OTIS] Step 1: isolate main breaker. Step 2: reroute to secondary bus.');
+            gameState.state.toasterIncidentFired = true;
+            gameState._save();
+
+            // STAGE 3 — SYSTEMS RESTORE (delay 6000ms from stage 2)
             setTimeout(function() {
-                appendOTIS('Bank channel opened automatically during power cascade. OTIS reporting incident.', 'COMMS_BANK');
+                if (grid) grid.style.display = '';
+                if (term) term.style.filter = 'brightness(0.4)';
+                appendHardcodedComm('[BANK-OTIS] Systems online. Diagnostics nominal.');
+                if (pw) { pw.textContent = 'NOMINAL'; pw.className = 'status-ok'; }
+                setModuleButtonsEnabled(false, false, false, true);
+
+                // STAGE 4 — COMMS RESTORE (delay 4000ms from stage 3)
                 setTimeout(function() {
-                    appendHardcodedComm('[GEORGE_LAYER] He built that toaster into the grid himself. Every morning for 25 years. I watched him do it.');
+                    if (term) term.style.filter = 'brightness(0.7)';
+                    appendHardcodedComm('[BANK-OTIS] Communications restored.');
+                    setModuleButtonsEnabled(false, true, false, true);
+
+                    // STAGE 5 — FULL RESTORE + GEORGE RETURNS (delay 4000ms from stage 4)
                     setTimeout(function() {
-                        if (pw) { pw.textContent = 'NOMINAL'; pw.className = 'status-ok'; }
-                        if (arm) { arm.classList.remove('arm-alert'); }
-                        gameState.state.toasterIncidentFired = true;
-                        gameState._save();
-                    }, 2000);
-                }, 3000);
-            }, 4000);
-        }, 2000);
+                        if (term) { term.classList.remove('power-out'); term.style.filter = ''; }
+                        document.querySelectorAll('#hdr .hdr-stat').forEach(function(el) { el.style.display = ''; });
+                        if (arm) arm.style.display = '';
+                        updateFatigueVisuals();
+                        appendOTIS('Power restored. All systems nominal.', 'LOGIN');
+                        appendHardcodedComm('[GEORGE_LAYER] He built that toaster into the grid himself. Every morning for 25 years.');
+                        setModuleButtonsEnabled(true, true, true, true);
+                        // Deactivate AUXILIARY INPUT button
+                        if (auxBtn) {
+                            auxBtn.style.transition = 'opacity 2s';
+                            auxBtn.style.opacity = '0';
+                            setTimeout(function() { auxBtn.style.display = 'none'; }, 2000);
+                        }
+                        setLight('light-auxiliary', '');
+                    }, 4000);
+                }, 4000);
+            }, 6000);
+        }, 2500);
     }
 
     // MCGUFFIN SEQUENCE
