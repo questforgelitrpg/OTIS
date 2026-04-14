@@ -37,7 +37,7 @@
         _timers = [];
         if (window.speechSynthesis) speechSynthesis.cancel();
         _close();
-        if (_cb) { var cb = _cb; _cb = null; cb(); }
+        if (_cb) { var cb = _cb; _cb = null; cb(true); } // true = intro intentionally skipped (counts as shown)
     };
 
     window.runIntroSequence = function (callback) {
@@ -46,8 +46,9 @@
         var modal = document.getElementById('modal-intro');
         var textEl = document.getElementById('intro-text');
         if (!modal || !textEl) {
+            // Elements missing — do NOT mark introPlayed so the intro retries next load.
             _running = false;
-            if (callback) callback();
+            if (callback) callback(false);
             return;
         }
         textEl.innerHTML = '';
@@ -81,7 +82,7 @@
             _running = false;
             _timers = [];
             _close();
-            if (_cb) { var cb = _cb; _cb = null; cb(); }
+            if (_cb) { var cb = _cb; _cb = null; cb(true); } // true = intro displayed and completed
         }, elapsed);
         _timers.push(endT);
     };
