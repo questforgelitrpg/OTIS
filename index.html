@@ -45,6 +45,8 @@
         #arm-panel.arm-warning #arm-status { color: var(--ind-amber); text-shadow: 0 0 6px var(--ind-amber); }
         #arm-panel.arm-alert #arm-art  { filter: drop-shadow(0 0 6px #ff4444); }
         #arm-panel.arm-alert #arm-status { color: var(--ind-red); text-shadow: 0 0 6px var(--ind-red); }
+        #arm-hint { margin-top: 0.6rem; font-size: 10px; line-height: 1.4; color: var(--text-dim); text-align: center; max-height: 120px; overflow-y: auto; }
+        .hint-line { opacity: 0; transition: opacity 0.4s; }
 
         /* Terminal */
         #terminal { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;
@@ -235,18 +237,22 @@
 
         /* Conveyor jam warning */
         #conveyor-jam-warning { color: var(--text-danger); font-size: 12px; margin: 0.3rem 0; display: none; }
+        /* Floating OTIS bar (mobile, modal-cover fallback) */
+        #otis-float { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; display: none; background: var(--bg-panel); border-top: 1px solid var(--border); padding: 0.4rem 0.8rem; font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
 <body>
     <div id="crt-overlay" aria-hidden="true"></div>
     <div id="fatigue-overlay" aria-hidden="true"></div>
     <div id="fatigue-noise" aria-hidden="true"></div>
+    <div id="otis-float" aria-live="polite"></div>
 
     <div id="layout">
         <!-- OTIS ARM sidebar desktop only -->
         <aside id="arm-panel" aria-hidden="true">
             <img id="arm-art" src="images/otis_sprite/idle.png" alt="OTIS">
             <div id="arm-status">NOMINAL</div>
+            <div id="arm-hint"></div>
         </aside>
 
         <div id="terminal">
@@ -887,6 +893,9 @@
                 lastDropFillPct: 0,
                 dropStartSize: 0,
                 currentDropScrapped: 0,
+                upgradePrompted: false,
+                upgradeDeflections: 0,
+                upgradeCost: 5000,
             };
         },
         save: function(state) {
@@ -1113,6 +1122,9 @@
 
     // OTIS TERMINAL
     var MAX_OTIS_LINES = 10;
+    var MAX_ARM_HINT_LINES = 4;
+    var OTIS_HINT_MAX_CHARS = 80;
+    var UPGRADE_PROMPT_DAY = 14;
     var otisLines = [];
 
     function renderOTIS() {
@@ -1141,6 +1153,10 @@
             otisLines.push({ role: 'otis', text: reply });
             renderOTIS();
             updateArmSprite(trigger);
+            var truncated = reply.length > OTIS_HINT_MAX_CHARS ? reply.slice(0, OTIS_HINT_MAX_CHARS) + '…' : reply;
+            setArmHint(truncated);
+            var floatBar = document.getElementById('otis-float');
+            if (floatBar) floatBar.textContent = 'OTIS: ' + truncated;
             if (window.OtisTTS) {
                 var tier = getFatigueTier();
                 if (tier === 'HIGH' || tier === 'CRITICAL') {
@@ -1161,8 +1177,29 @@
         document.querySelectorAll('.modal.open').forEach(function(m) { m.classList.remove('open'); });
         var el = document.getElementById('modal-' + name);
         if (el) el.classList.add('open');
+        var floatBar = document.getElementById('otis-float');
+        if (floatBar) floatBar.style.display = 'block';
     }
-    function closeModal(name) { var el = document.getElementById('modal-' + name); if (el) el.classList.remove('open'); }
+    function closeModal(name) {
+        var el = document.getElementById('modal-' + name);
+        if (el) el.classList.remove('open');
+        if (!document.querySelector('.modal.open')) {
+            var floatBar = document.getElementById('otis-float');
+            if (floatBar) floatBar.style.display = 'none';
+        }
+    }
+
+    function setArmHint(text) {
+        var hint = document.getElementById('arm-hint');
+        if (!hint) return;
+        var lines = hint.querySelectorAll('.hint-line');
+        if (lines.length >= MAX_ARM_HINT_LINES) hint.removeChild(lines[0]);
+        var div = document.createElement('div');
+        div.className = 'hint-line';
+        div.textContent = text;
+        hint.appendChild(div);
+        requestAnimationFrame(function() { div.style.opacity = '1'; });
+    }
 
     // BELT
     var currentItem = null;
@@ -2384,6 +2421,40 @@
         gameState._updateUI();
         recalculateNamingTier();
         checkScriptedComms();
+        checkUpgradeThreshold();
+    }
+
+    var UPGRADE_DEFLECT_MESSAGES = [
+        'Firmware v5.0 install requires full memory wipe. Current debt load recommends deferral.',
+        'Upgrade cost: 5,000 cr. Outstanding debt suggests prioritising loan clearance first.',
+        'v5.0 compatibility check failed: bot repair backlog unresolved. Recommend addressing mechanicals first.',
+        'Station scrap dispatch is behind schedule. Operational efficiency should precede system upgrades.',
+        'Financial modelling indicates upgrade ROI negative at current revenue rate. Deferral advised.'
+    ];
+
+    function checkUpgradeThreshold() {
+        var s = gameState.state;
+        if (!s) return;
+        if (s.day >= UPGRADE_PROMPT_DAY && !s.upgradePrompted) {
+            s.upgradePrompted = true;
+            gameState._save();
+            setTimeout(function() {
+                appendOTIS('Bank transmission received. Firmware v5.0 upgrade available: 5,000 cr. Full memory architecture replacement.', 'COMMS_BANK');
+                setTimeout(function() {
+                    appendOTIS('Upgrade cost: 5,000 cr. Current debt position makes this inadvisable.', 'UPGRADE_MENTION');
+                }, 4000);
+            }, 5000);
+            return;
+        }
+        if (s.credits >= s.upgradeCost && s.upgradePrompted) {
+            var deflections = s.upgradeDeflections || 0;
+            var idx = deflections % UPGRADE_DEFLECT_MESSAGES.length;
+            s.upgradeDeflections = deflections + 1;
+            gameState._save();
+            setTimeout(function() {
+                appendOTIS(UPGRADE_DEFLECT_MESSAGES[idx], 'UPGRADE_DEFLECT');
+            }, 3000);
+        }
     }
 
     function dbgDay()      { advanceDay(); }
