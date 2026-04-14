@@ -826,6 +826,7 @@
                 georgeWarehouseRevealed: false,
                 georgeWarehouseSold: [],
                 dropCount: 0,
+                reserveSuccesses: 0,
                 easterEggFired: false,
                 toasterIncidentFired: false,
                 nextDropDay: null,
@@ -962,6 +963,7 @@
         this.checkDropSchedule();
         this._save();
         this._updateUI();
+        recalculateNamingTier();
         this.state.toastFiredToday = false;
         autoToast();
         checkScriptedComms();
@@ -988,6 +990,45 @@
     GameState.prototype.advanceNamingTier = function() {
         if (this.state.namingTier < NAMING_TIERS.length - 1) { this.state.namingTier++; this._save(); }
     };
+
+    function recalculateNamingTier() {
+        var s = gameState.state;
+        var dup = s.daysUntilPayment || 28;
+        var arrears = s.outstandingDebt || 0;
+        var skips = s.skipCount || 0;
+        var reserves = s.reserveSuccesses || 0;
+        var missed = s.missedPayments || 0;
+
+        var target = 0;
+        if (reserves >= 3) target = 1;
+        if (reserves >= 6) target = 2;
+        if (reserves >= 10) target = 3;
+
+        if (skips >= 5) target = Math.max(0, target - 1);
+        if (dup <= 5) target = Math.max(0, target - 1);
+        if (arrears > 500) target = Math.max(0, target - 1);
+        if (missed >= 1) target = Math.max(0, target - 2);
+        if (missed >= 2) target = 0;
+
+        target = Math.max(0, Math.min(NAMING_TIERS.length - 1, target));
+        if (target !== s.namingTier) {
+            s.namingTier = target;
+            gameState._save();
+            gameState._updateUI();
+        }
+    }
+
+    function checkActProgression() {
+        var s = gameState.state;
+        var drops = s.dropCount || 0;
+        var newAct = drops < 3 ? 1 : drops < 7 ? 2 : 3;
+        if (newAct !== s.act) {
+            s.act = newAct;
+            gameState._save();
+            var actNames = { 2: 'PRESSURE', 3: 'THE FIND' };
+            appendOTIS('ACT ' + newAct + ': ' + (actNames[newAct] || ''), 'LOGIN');
+        }
+    }
 
     var gameState = new GameState();
 
@@ -1085,6 +1126,7 @@
             gameState.state.bargeActive = false;
             gameState.state.dropItemsRemaining = 0;
             gameState.state.dropCount = (gameState.state.dropCount || 0) + 1;
+            checkActProgression();
             gameState.state.pickListChoice = { mode: 'DROP', category: null };
             gameState._save();
             updateBeltUI('DROP_COMPLETE');
@@ -1555,6 +1597,7 @@
         gameState.state.debt = Math.max(0, gameState.state.debt - 650);
         gameState.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
         gameState._save(); gameState._updateUI();
+        recalculateNamingTier();
         appendOTIS('Payment processed. 650 cr. Remaining balance: ' + gameState.state.debt.toLocaleString() + ' cr.', 'PAYMENT');
     }
     function handleClearArrears() {
@@ -1641,7 +1684,7 @@
                 gameState.state.credits += item.price; gameState._save();
                 appendOTIS('Reserve sale confirmed: ' + item.name + '. +' + item.price + ' cr.', 'RECOGNITION_BONUS');
                 gameState.state.reserveSuccesses = (gameState.state.reserveSuccesses || 0) + 1;
-                if (gameState.state.reserveSuccesses % 3 === 0 && gameState.state.namingTier < 3) gameState.advanceNamingTier();
+                recalculateNamingTier();
             } else appendOTIS('Reserve expired: ' + item.name + '. No buyer.', 'RESERVE_EXPIRED');
         });
         gameState._save(); renderShippingQueue(); gameState._updateUI();
