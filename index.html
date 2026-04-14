@@ -1267,6 +1267,20 @@
     }
 
     var SCRAP_SHORTS = ['Canned.','Logged.','Processed.','To May.','Binned.','Filed as scrap.'];
+    var BATCH_REPORT_THRESHOLD = 3;
+
+    function trackDeclarationBatch(itemName, salePrice) {
+        var s = gameState.state;
+        s.declarationBatch = s.declarationBatch || [];
+        s.declarationBatch.push(itemName.substring(0, 20) + ' — ' + salePrice);
+        s.declarationBatchCount = (s.declarationBatchCount || 0) + 1;
+        if (s.declarationBatchCount >= BATCH_REPORT_THRESHOLD) {
+            var batchMsg = 'Last ' + BATCH_REPORT_THRESHOLD + ': ' + s.declarationBatch.join(', ') + '.';
+            s.declarationBatch = [];
+            s.declarationBatchCount = 0;
+            appendOTIS(batchMsg, 'DECLARATION_OTIS');
+        }
+    }
 
     function handleDeclare(method) {
         if (!currentItem) return;
@@ -1279,17 +1293,7 @@
             gameState._save();
             trackOTISLearning('SELL', item);
             clearItemQueue();
-            var s = gameState.state;
-            s.declarationBatch = s.declarationBatch || [];
-            var salePrice = String(ev * eeMultiplier) + ' cr';
-            s.declarationBatch.push(item.name.substring(0,20) + ' — ' + salePrice);
-            s.declarationBatchCount = (s.declarationBatchCount || 0) + 1;
-            if (s.declarationBatchCount >= 3) {
-                var batchMsg = 'Last 3: ' + s.declarationBatch.join(', ') + '.';
-                s.declarationBatch = [];
-                s.declarationBatchCount = 0;
-                appendOTIS(batchMsg, 'DECLARATION_OTIS');
-            }
+            trackDeclarationBatch(item.name, String(ev * eeMultiplier) + ' cr');
         } else if (method === 'RESERVE') {
             var rp;
             if (item.rarity === 'Anomalous') rp = Math.floor(Math.random() * (TIMING.ANOMALOUS_RESERVE_MAX - TIMING.ANOMALOUS_RESERVE_MIN + 1)) + TIMING.ANOMALOUS_RESERVE_MIN;
@@ -1309,17 +1313,7 @@
             gameState._save();
             trackOTISLearning('SELL', item);
             clearItemQueue();
-            var s = gameState.state;
-            s.declarationBatch = s.declarationBatch || [];
-            var salePrice = String(earned) + ' cr';
-            s.declarationBatch.push(item.name.substring(0,20) + ' — ' + salePrice);
-            s.declarationBatchCount = (s.declarationBatchCount || 0) + 1;
-            if (s.declarationBatchCount >= 3) {
-                var batchMsg = 'Last 3: ' + s.declarationBatch.join(', ') + '.';
-                s.declarationBatch = [];
-                s.declarationBatchCount = 0;
-                appendOTIS(batchMsg, 'DECLARATION_OTIS');
-            }
+            trackDeclarationBatch(item.name, String(earned) + ' cr');
         } else if (method === 'KEEP') {
             gameState.state.keepLog.push({ name: item.name, day: gameState.state.day, condition: item.condition, otisValue: item.otisValue });
             gameState.state.keepLog = gameState.state.keepLog.slice(0, 12);
