@@ -850,7 +850,7 @@
                     var parsed = JSON.parse(raw);
                     if (!parsed.stateVersion || parsed.stateVersion < 2) {
                         console.log('Old save detected. Clearing for v2 economy.');
-                        localStorage.removeItem(STATE_KEY);
+                        this.clear();
                         return null;
                     }
                     return Object.assign({}, this._default(), parsed);
