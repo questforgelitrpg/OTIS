@@ -47,7 +47,10 @@
         #arm-panel.arm-alert #arm-status { color: var(--ind-red); text-shadow: 0 0 6px var(--ind-red); }
 
         /* Terminal */
-        #terminal { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+        #terminal { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;
+            border: 10px solid #060a06; border-radius: 6px;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.9), 0 0 16px rgba(0,255,70,0.06), inset 0 0 2px #1a3a1a;
+            filter: blur(0px); transition: filter 4s; }
 
         /* Header */
         #hdr { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; padding: 0.4rem 0.8rem; border-bottom: 1px solid var(--border); background: var(--bg-panel); font-size: 12px; flex-shrink: 0; }
@@ -176,12 +179,25 @@
         .zone-hint { font-size: 11px; color: var(--text-dim); margin: 0.2rem 0; }
         #manifest-pool-panel { margin-top: 0.4rem; max-height: 180px; overflow-y: auto; font-size: 11px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 
+        /* Fatigue overlay */
+        #fatigue-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 9997;
+            opacity: 0; transition: opacity 2s;
+            background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,20,0,0.15) 3px, rgba(0,20,0,0.15) 4px); }
+        #fatigue-noise { position: fixed; inset: 0; pointer-events: none; z-index: 9996;
+            opacity: 0; transition: opacity 3s;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+            background-size: 150px 150px; }
+
+        /* Fatigue pulse animation */
+        @keyframes fatigue-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .fatigue-pulse { animation: fatigue-pulse 0.9s infinite; }
+
         /* Mobile */
         @media (max-width: 600px) {
             #arm-panel { display: none; }
             html, body { font-size: 12px; overflow: auto; }
             #layout { height: auto; min-height: 100vh; }
-            #terminal { height: auto; }
+            #terminal { height: auto; border-width: 4px; }
             #otis-output { height: 200px; flex: none; }
             .module-btn { font-size: 11px; min-height: 44px; }
             .modal.open { padding: 0.5rem; align-items: flex-start; }
@@ -209,6 +225,8 @@
 </head>
 <body>
     <div id="crt-overlay" aria-hidden="true"></div>
+    <div id="fatigue-overlay" aria-hidden="true"></div>
+    <div id="fatigue-noise" aria-hidden="true"></div>
 
     <div id="layout">
         <!-- OTIS ARM sidebar desktop only -->
@@ -226,6 +244,11 @@
                 <span class="hdr-stat" id="hdr-payment">PAY: 28d</span>
                 <span class="hdr-stat" id="hdr-barge">BARGE: 7d</span>
                 <span class="hdr-stat" id="hdr-naming">MR. SERLING</span>
+                <button id='fatigue-warn-btn' onclick='handleLogoff()'
+                    style='display:none; border-color:#ffb700; color:#ffb700; animation:none'
+                    class='payment-warn'>
+                    &#9888; FATIGUE CRITICAL — LOG OFF
+                </button>
             </header>
 
             <div id="otis-output" role="log" aria-live="polite" aria-label="OTIS conversation log"></div>
@@ -784,7 +807,7 @@
         if (this._sessionTimer) return;
         this._sessionStart = Date.now() - this.state.sessionHours * 60000;
         var self = this;
-        this._sessionTimer = setInterval(function() { self.state.sessionHours = Math.floor((Date.now() - self._sessionStart) / 60000); self._save(); }, 60000);
+        this._sessionTimer = setInterval(function() { self.state.sessionHours = Math.floor((Date.now() - self._sessionStart) / 60000); self._save(); updateFatigueVisuals(); }, 60000);
     };
     GameState.prototype.startDayTimer = function() {
         if (this._dayTimer) return;
@@ -1657,6 +1680,49 @@
         p.innerHTML = html;
     }
 
+    // FATIGUE VISUALS
+    function getFatigueTier() {
+        var h = gameState.state.sessionHours;
+        if (h < 30) return 'NONE';
+        if (h < 60) return 'LOW';
+        if (h < 120) return 'MODERATE';
+        if (h < 180) return 'HIGH';
+        return 'CRITICAL';
+    }
+    function updateFatigueVisuals() {
+        var h = gameState.state.sessionHours;
+        var overlay = document.getElementById('fatigue-overlay');
+        var noise = document.getElementById('fatigue-noise');
+        var term = document.getElementById('terminal');
+        var warnBtn = document.getElementById('fatigue-warn-btn');
+        if (h < 30) {
+            if (overlay) overlay.style.opacity = '0';
+            if (noise) noise.style.opacity = '0';
+            if (term) term.style.filter = 'blur(0px)';
+            if (warnBtn) warnBtn.style.display = 'none';
+        } else if (h < 60) {
+            if (overlay) overlay.style.opacity = '0.3';
+            if (noise) noise.style.opacity = '0.05';
+            if (term) term.style.filter = 'blur(0.2px)';
+            if (warnBtn) warnBtn.style.display = 'none';
+        } else if (h < 120) {
+            if (overlay) overlay.style.opacity = '0.6';
+            if (noise) noise.style.opacity = '0.15';
+            if (term) term.style.filter = 'blur(0.6px)';
+            if (warnBtn) warnBtn.style.display = 'none';
+        } else if (h < 180) {
+            if (overlay) overlay.style.opacity = '0.85';
+            if (noise) noise.style.opacity = '0.30';
+            if (term) term.style.filter = 'blur(1.2px)';
+            if (warnBtn) warnBtn.style.display = '';
+        } else {
+            if (overlay) overlay.style.opacity = '1';
+            if (noise) noise.style.opacity = '0.50';
+            if (term) term.style.filter = 'blur(2px)';
+            if (warnBtn) { warnBtn.style.display = ''; warnBtn.classList.add('fatigue-pulse'); }
+        }
+    }
+
     // LOGOFF / TTS / DEBUG
     function handleLogoff() {
         gameState._save();
@@ -1710,6 +1776,7 @@
         updateBeltUI('CLEAR');
         gameState.startSessionTimer();
         gameState.startDayTimer();
+        updateFatigueVisuals();
         var ttsBtn = document.getElementById('tts-btn');
         if (ttsBtn && window.OtisTTS) { if (!window.OtisTTS.isSupported()) ttsBtn.style.display = 'none'; else ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON'; }
         var isNewGame = gameState.state.day === 1 && !gameState.state.dropActive && gameState.state.manifestItems.length === 0 && !gameState.state.toastFiredToday;
