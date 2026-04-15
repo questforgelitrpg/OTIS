@@ -997,10 +997,10 @@
         var list  = document.getElementById('keep-log-list');
         var empty = document.getElementById('keep-log-empty');
         var cnt   = document.getElementById('keep-log-count');
-        var n = this.state.keepLog.length;
+        var state = this.state;
+        var n = state.keepLog.length;
         if (cnt) { cnt.textContent = n + ' / 12'; cnt.style.color = n >= 12 ? 'var(--text-danger)' : n >= 10 ? 'var(--text-warn)' : 'var(--text-dim)'; }
         if (list) {
-            var state = this.state;
             list.innerHTML = state.keepLog.map(function(k, i) {
                 var daysHeld = Math.max(0, (state.day||1) - (k.keepDay||k.day||1));
                 var appraised = getAppraisedValue(k);
@@ -1014,7 +1014,7 @@
         }
         if (empty) empty.style.display = n ? 'none' : '';
         var hc = document.getElementById('humanity-count');
-        if (hc) hc.textContent = s.humanityArchive || 0;
+        if (hc) hc.textContent = state.humanityArchive || 0;
     };
     GameState.prototype.startSessionTimer = function() {
         if (this._sessionTimer) return;
