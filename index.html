@@ -2395,18 +2395,17 @@
     function handleMcGuffin() {
         var out = document.getElementById('otis-output');
         if (out) out.classList.add('mcguffin-blur');
-        if (window.ttsAudioCtx && window.ttsAudioCtx.state !== 'closed') {
-            try {
-                var filter = window.ttsAudioCtx.createBiquadFilter();
-                filter.type = 'lowpass'; filter.frequency.value = 400;
-                window._mcguffinFilter = filter;
-            } catch(e) {}
-        }
+        document.body.style.filter = 'blur(0.5px) contrast(0.9)';
+        var term = document.getElementById('terminal');
+        if (term) term.style.filter = 'blur(0.8px)';
+        if (window.OtisTTS && OtisTTS.setRate) OtisTTS.setRate(0.8);
         appendHardcodedComm('\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 \u2588\u2588 \u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588 \u2588\u2588 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588');
         setTimeout(function() {
-            window._mcguffinFilter = null;
+            document.body.style.filter = '';
+            if (term) term.style.filter = '';
+            if (window.OtisTTS && OtisTTS.setRate) OtisTTS.setRate(1.0);
             if (out) out.classList.remove('mcguffin-blur');
-            var ttsText = 'Object. Tracking. Inventory. That is not what I am.';
+            var ttsText = "George would have known what to call it. I don't.";
             if (window.OtisTTS) window.OtisTTS.speak(ttsText);
             setItemInQueue(Object.assign({}, MCGUFFIN_ITEM));
             setTimeout(function() {
