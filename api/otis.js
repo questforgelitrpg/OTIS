@@ -1,9 +1,11 @@
+const MAX_ALLOWED_TOKENS = 500;
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method not allowed' });
     }
 
-    const { system, messages } = req.body;
+    const { system, messages, maxTokens } = req.body;
 
     if (!system || !messages) {
         return res.status(400).json({ message: 'Missing system or messages' });
@@ -26,7 +28,8 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 model: 'claude-haiku-4-5-20251001',
-                max_tokens: 250,
+                max_tokens: (typeof maxTokens === 'number' && maxTokens > 0 && maxTokens <= MAX_ALLOWED_TOKENS)
+                    ? maxTokens : 250,
                 system: systemBlock,
                 messages,
             }),
