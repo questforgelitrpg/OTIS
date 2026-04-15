@@ -2886,22 +2886,22 @@
             await appendOTIS('Operator logging in.', 'LOGIN');
             // Day 1: load 4 random starter items onto the belt before any barge drop.
             var s1 = gameState.state;
-            if (s1.day === 1 && (s1.dropCount || 0) === 0 && !s1.dropActive && (s1.manifestItems || []).length === 0) {
+            if (s1.day === 1 && (s1.dropCount || 0) === 0 && !s1.dropActive && (!s1.manifestItems || s1.manifestItems.length === 0)) {
                 var day1Items = [];
-                for (var _i = 0; _i < 4; _i++) day1Items.push(weightedPickItem());
+                for (var i = 0; i < 4; i++) day1Items.push(weightedPickItem());
                 s1.manifestItems = day1Items;
                 s1.dropActive = true;
                 s1.dropItemsRemaining = day1Items.length;
                 s1.dropStartSize = day1Items.length;
                 gameState._save();
-                var scanBtn0 = document.getElementById('btn-scan-belt'); if (scanBtn0) scanBtn0.disabled = false;
+                var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
                 setBotDots(true);
                 updateBeltUI('DELIVERING');
                 startBeltDelivery();
             }
             // Resume belt delivery if a drop was active when the page last loaded.
             if (gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
-                var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
+                var resumeBtn = document.getElementById('btn-scan-belt'); if (resumeBtn) resumeBtn.disabled = false;
                 setBotDots(true); startBeltDelivery();
             }
         }
