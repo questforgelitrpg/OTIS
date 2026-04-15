@@ -2876,6 +2876,7 @@
             if (loginBtn) {
                 loginBtn.classList.remove('login-pulse');
                 loginBtn.disabled = true;
+                loginBtn.style.display = 'none';
             }
             checkScriptedComms();
             // Fire the daily toast first so it slides in before OTIS responds,
