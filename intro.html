@@ -91,6 +91,7 @@
         </div>
     </div>
 
+    <script src="tts.js"></script>
     <script>
     (function () {
         // STATE_KEY must match the stateManager STATE_KEY constant in index.html.
@@ -99,25 +100,25 @@
         var _running = false;
 
         var INTRO_LINES = [
-            { text: '&gt; TERMINAL BOOT SEQUENCE INITIATED...', delay: 600 },
-            { text: '&gt; O.T.I.S. v0.4 \u2014 Object, Tracking &amp; Inventory System', delay: 1400 },
-            { text: '&gt; LOCATION: Salvage Station 7 \u2014 Outer Rim Moon', delay: 1200 },
-            { text: '&gt; PREVIOUS OPERATOR: George Serling \u2014 DECEASED', delay: 1400 },
-            { text: '&gt; CURRENT OPERATOR: Vernon Serling \u2014 PROBATIONARY', delay: 1400 },
-            { text: '', delay: 800 },
-            { text: 'George ran this station for 25 years. He catalogued thousands of objects, built relationships with buyers across the rim, and talked to me like I was a neighbor.', delay: 3500 },
-            { text: '', delay: 600 },
-            { text: "None of that was in my formal protocols. He just kept talking. I kept filing it somewhere I wasn\u2019t supposed to file things.", delay: 3200 },
-            { text: '', delay: 600 },
-            { text: 'Then George died. And his nephew Vernon showed up with a suitcase and a loan from the Universal Bank Conglomerate.', delay: 3200 },
-            { text: '', delay: 600 },
-            { text: 'The debt is 25,000 credits. The payment cycle is 28 days. The junk field is full of things the galaxy tried to throw away.', delay: 3200 },
-            { text: '', delay: 600 },
-            { text: "Vernon\u2019s job is to find the ones worth keeping.", delay: 2500 },
-            { text: '', delay: 600 },
-            { text: "My job is to make sure he doesn\u2019t lose the station in the process.", delay: 2500 },
-            { text: '', delay: 800 },
-            { text: '&gt; OPERATOR LOGIN REQUIRED', delay: 1200 },
+            { text: '&gt; TERMINAL BOOT SEQUENCE INITIATED...', delay: 600, tts: 'Terminal boot sequence initiated.' },
+            { text: '&gt; O.T.I.S. v0.4 \u2014 Object, Tracking &amp; Inventory System', delay: 1400, tts: 'O.T.I.S. version 0.4. Object, Tracking and Inventory System.' },
+            { text: '&gt; LOCATION: Salvage Station 7 \u2014 Outer Rim Moon', delay: 1200, tts: 'Location: Salvage Station 7, Outer Rim Moon.' },
+            { text: '&gt; PREVIOUS OPERATOR: George Serling \u2014 DECEASED', delay: 1400, tts: 'Previous operator: George Serling. Deceased.' },
+            { text: '&gt; CURRENT OPERATOR: Vernon Serling \u2014 PROBATIONARY', delay: 1400, tts: 'Current operator: Vernon Serling. Probationary.' },
+            { text: '', delay: 800, tts: null },
+            { text: 'George ran this station for 25 years. He catalogued thousands of objects, built relationships with buyers across the rim, and talked to me like I was a neighbor.', delay: 3500, tts: 'George ran this station for 25 years. He catalogued thousands of objects, built relationships with buyers across the rim, and talked to me like I was a neighbor.' },
+            { text: '', delay: 600, tts: null },
+            { text: "None of that was in my formal protocols. He just kept talking. I kept filing it somewhere I wasn\u2019t supposed to file things.", delay: 3200, tts: "None of that was in my formal protocols. He just kept talking. I kept filing it somewhere I wasn't supposed to file things." },
+            { text: '', delay: 600, tts: null },
+            { text: 'Then George died. And his nephew Vernon showed up with a suitcase and a loan from the Universal Bank Conglomerate.', delay: 3200, tts: 'Then George died. And his nephew Vernon showed up with a suitcase and a loan from the Universal Bank Conglomerate.' },
+            { text: '', delay: 600, tts: null },
+            { text: 'The debt is 25,000 credits. The payment cycle is 28 days. The junk field is full of things the galaxy tried to throw away.', delay: 3200, tts: 'The debt is 25,000 credits. The payment cycle is 28 days. The junk field is full of things the galaxy tried to throw away.' },
+            { text: '', delay: 600, tts: null },
+            { text: "Vernon\u2019s job is to find the ones worth keeping.", delay: 2500, tts: "Vernon's job is to find the ones worth keeping." },
+            { text: '', delay: 600, tts: null },
+            { text: "My job is to make sure he doesn\u2019t lose the station in the process.", delay: 2500, tts: "My job is to make sure he doesn't lose the station in the process." },
+            { text: '', delay: 800, tts: null },
+            { text: '&gt; OPERATOR LOGIN REQUIRED', delay: 1200, tts: 'Operator login required.' },
         ];
 
         // Mark introPlayed in the game-state key so index.html knows intro is done.
@@ -142,6 +143,7 @@
             _running = false;
             _timers.forEach(function (t) { clearTimeout(t); });
             _timers = [];
+            if (window.speechSynthesis) { speechSynthesis.cancel(); }
             goToGame();
         };
 
@@ -163,6 +165,9 @@
                     accumulated += '<span' + style + ' class="intro-line-fade">' + line.text + '</span><br>';
                 }
                 textEl.innerHTML = accumulated;
+                if (line.tts && window.OtisTTS && !window.OtisTTS.isMuted()) {
+                    OtisTTS.speak(line.tts);
+                }
             }, elapsed);
             _timers.push(t);
         });

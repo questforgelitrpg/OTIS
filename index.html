@@ -2851,6 +2851,7 @@
         if (!window._otisSessionIntervalId) {
             window._otisSessionIntervalId = setInterval(function() {
                 gameState.state.sessionHours = (gameState.state.sessionHours || 0) + 1;
+                gameState._save();
                 updateFatigueVisuals();
                 gameState._updateUI(); // refresh hdr-hours each real-time minute
             }, 60000);
@@ -2872,16 +2873,19 @@
 
         async function bootSequence() {
             var loginBtn = document.getElementById('btn-login');
-            if (loginBtn) loginBtn.classList.remove('login-pulse');
-            checkScriptedComms();
-            // Await the LOGIN OTIS response so the toast always fires after OTIS
-            // has acknowledged the operator login — not in a race with the API call.
-            await appendOTIS('Operator logging in.', 'LOGIN');
-            // autoToast() is self-guarded by toastFiredToday so a same-day reload
-            // that has already recorded the toast is safe to call here (no-op).
-            if (!gameState.state.toastFiredToday) {
-                setTimeout(autoToast, 500);
+            if (loginBtn) {
+                loginBtn.classList.remove('login-pulse');
+                loginBtn.disabled = true;
             }
+            checkScriptedComms();
+            // Fire the daily toast first so it slides in before OTIS responds,
+            // giving the correct sequence: toast → OTIS welcome.
+            // autoToast() is self-guarded by toastFiredToday so reloads are safe.
+            if (!gameState.state.toastFiredToday) {
+                autoToast();
+            }
+            // Await the LOGIN OTIS response (welcome Vernon).
+            await appendOTIS('Operator logging in.', 'LOGIN');
             // Resume belt delivery if a drop was active when the page last loaded.
             if (gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
                 var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
