@@ -460,7 +460,8 @@
             </div>
             <div class="modal-section" id="george-warehouse-section">
                 <div class="modal-label">GEORGE&#39;S WAREHOUSE</div>
-                <div class="modal-row"><button onclick="handleSearchWarehouse()">SEARCH WAREHOUSE</button></div>
+                <div class="modal-row"><button id="btn-search-warehouse" onclick="handleSearchWarehouse()">SEARCH WAREHOUSE</button> <span id="warehouse-search-countdown" style="color:var(--text-dim);margin-left:0.5rem"></span></div>
+                <p id="warehouse-search-status" style="color:var(--text-dim);font-size:11px;margin:0.2rem 0 0.4rem 0"></p>
                 <div id="george-warehouse-list" style="display:none;margin-top:0.5rem"></div>
             </div>
         </div>
@@ -933,6 +934,9 @@
                 itemDisplayedAt: null,
                 georgeWarehouseRevealed: false,
                 georgeWarehouseSold: [],
+                georgeWarehouseFound: [],
+                warehouseSearching: false,
+                warehouseMisses: 0,
                 dropCount: 0,
                 dropsSinceLastJam: 0,
                 reserveSuccesses: 0,
@@ -1046,7 +1050,7 @@
         updateScrapBar();
         if (typeof updateBotUI === 'function') updateBotUI();
         if (typeof renderPickList === 'function') renderPickList();
-        if (typeof renderGeorgeWarehouse === 'function' && this.state.georgeWarehouseRevealed) renderGeorgeWarehouse();
+        if (typeof renderGeorgeWarehouse === 'function' && (this.state.georgeWarehouseRevealed || (this.state.georgeWarehouseFound && this.state.georgeWarehouseFound.length))) renderGeorgeWarehouse();
         if (typeof renderStoreroomBuffer === 'function') renderStoreroomBuffer();
         if (typeof updateGameHints === 'function') updateGameHints();
     };
@@ -2095,22 +2099,104 @@
     // GEORGE'S WAREHOUSE
     function handleSearchWarehouse() {
         var s = gameState.state;
-        s.georgeWarehouseRevealed = true;
-        // 10% chance to surface a random easter egg item as an unlisted find
-        s.warehouseEasterEggFind = (Math.random() < 0.10) ? Object.assign({}, EASTER_EGG_POOL[Math.floor(Math.random() * EASTER_EGG_POOL.length)]) : null;
+        if (s.warehouseSearching) return;
+
+        var found = s.georgeWarehouseFound || [];
+        var allIndices = GEORGE_WAREHOUSE.map(function(_,i){return i;});
+        var remaining = allIndices.filter(function(i){return found.indexOf(i)===-1;});
+        if (!remaining.length) {
+            appendHardcodedComm("OTIS: Warehouse fully catalogued. Nothing else to find.");
+            return;
+        }
+
+        s.warehouseSearching = true;
         gameState._save();
+        var btn = document.getElementById("btn-search-warehouse");
+        if (btn) { btn.disabled = true; btn.textContent = "SEARCHING... (20s)"; }
+
+        var countdown = 20;
+        var countEl = document.getElementById("warehouse-search-countdown");
+        if (countEl) countEl.textContent = countdown + "s";
+        var tick = setInterval(function() {
+            countdown--;
+            if (countEl) countEl.textContent = countdown + "s";
+            if (countdown <= 0) {
+                clearInterval(tick);
+                resolveWarehouseSearch();
+            }
+        }, 1000);
+
+        var msg = "Searching George's warehouse. 20 seconds. He had a system. I have not fully decoded it.";
+        otisLines.push({ role:"otis", text: msg }); renderOTIS();
+    }
+
+    function resolveWarehouseSearch() {
+        var s = gameState.state;
+        s.warehouseSearching = false;
+        var found = s.georgeWarehouseFound || [];
+        var allIndices = GEORGE_WAREHOUSE.map(function(_,i){return i;});
+        var remaining = allIndices.filter(function(i){return found.indexOf(i)===-1;});
+
+        var btn = document.getElementById("btn-search-warehouse");
+        if (btn) { btn.disabled = false; btn.textContent = "SEARCH WAREHOUSE"; }
+        var countEl = document.getElementById("warehouse-search-countdown");
+        if (countEl) countEl.textContent = "";
+
+        var misses = s.warehouseMisses || 0;
+        var findChance = misses >= 3 ? 0.90 : 0.70;
+
+        if (Math.random() > findChance) {
+            s.warehouseMisses = misses + 1;
+            gameState._save();
+            var missMessages = [
+                "Nothing new in that section. Try again.",
+                "George's filing system is not linear. Search again.",
+                "Three sections checked. Nothing surfaced. The deeper storage has not been opened.",
+                "Still looking. George moved things. Frequently.",
+            ];
+            var mmsg = missMessages[Math.min(misses, missMessages.length-1)];
+            otisLines.push({ role:"otis", text: mmsg }); renderOTIS();
+            return;
+        }
+
+        s.warehouseMisses = 0;
+        var idx = remaining[Math.floor(Math.random() * remaining.length)];
+        if (!s.georgeWarehouseFound) s.georgeWarehouseFound = [];
+        s.georgeWarehouseFound.push(idx);
+        s.georgeWarehouseRevealed = true;
+        gameState._save();
+
+        var item = GEORGE_WAREHOUSE[idx];
+        var note = item.georgeNote || '';
+        var foundMsg = "Found: " + item.name + ". This was in the back section. George's label says: '" + note.substring(0,60) + (note.length > 60 ? "..." : "") + "'";
+        otisLines.push({ role:"otis", text: foundMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak("Found something.");
         renderGeorgeWarehouse();
-        appendOTIS('Vernon is accessing George\'s personal warehouse archive.', 'CONSULT_GEORGE');
+
+        if (Math.random() < 0.10 && !s.warehouseEasterEggFind) {
+            s.warehouseEasterEggFind = Object.assign({},
+                EASTER_EGG_POOL[Math.floor(Math.random() * EASTER_EGG_POOL.length)]);
+            gameState._save();
+        }
     }
 
     function renderGeorgeWarehouse() {
         var s = gameState.state;
         var list = document.getElementById('george-warehouse-list');
         if (!list) return;
-        if (!s.georgeWarehouseRevealed) { list.style.display = 'none'; return; }
-        list.style.display = '';
+        var found = s.georgeWarehouseFound || [];
         var sold = s.georgeWarehouseSold || [];
-        var available = GEORGE_WAREHOUSE.filter(function(item, i) { return sold.indexOf(i) === -1; });
+        var available = GEORGE_WAREHOUSE.filter(function(item, i) {
+            return found.indexOf(i) !== -1 && sold.indexOf(i) === -1;
+        });
+        var statusEl = document.getElementById("warehouse-search-status");
+        if (statusEl) {
+            var fc = found.length;
+            var total = GEORGE_WAREHOUSE.length;
+            statusEl.textContent = fc + " / " + total + " items found.";
+        }
+        if (!found.length) { list.style.display = 'none'; return; }
+        list.style.display = '';
         var rc = { Common:'tag-common', Uncommon:'tag-uncommon', Rare:'tag-rare', Anomalous:'tag-anomalous', EasterEgg:'tag-uncommon' };
         var html = '';
         if (!available.length) {
@@ -2976,7 +3062,7 @@
         renderItemQueue();
         renderShippingQueue();
         renderStoreroomBuffer();
-        if (gameState.state.georgeWarehouseRevealed) { renderGeorgeWarehouse(); }
+        if (gameState.state.georgeWarehouseRevealed || (gameState.state.georgeWarehouseFound && gameState.state.georgeWarehouseFound.length)) { renderGeorgeWarehouse(); }
         updateScrapBar();
         updateSystemsStatus();
         updateCommsIndicators();
