@@ -132,10 +132,10 @@
     function _startBuzz() {
         if (_ambients['background_buzz']) return;
         var el = document.createElement('audio');
+        el.crossOrigin = 'anonymous';
         el.src    = PATHS['background_buzz'];
         el.loop   = true;
         el.preload = 'auto';
-        el.crossOrigin = 'anonymous';
         var gainNode = _wire(el);
         if (!gainNode) return;
         _ambients['background_buzz'] = { el: el, gainNode: gainNode, counted: false };
@@ -182,10 +182,10 @@
 
         function _boot() {
             var el = document.createElement('audio');
+            el.crossOrigin = 'anonymous';
             el.src     = PATHS[name];
             el.loop    = true;
             el.preload = 'auto';
-            el.crossOrigin = 'anonymous';
             var gainNode = _wire(el);
             if (!gainNode) { _setMusicActive(false); return; }
             _musicCurrent = { name: name, el: el, gainNode: gainNode };
@@ -230,10 +230,10 @@
         }
         if (_ambients[name]) return; // already playing
         var el = document.createElement('audio');
+        el.crossOrigin = 'anonymous';
         el.src     = PATHS[name];
         el.loop    = true;
         el.preload = 'auto';
-        el.crossOrigin = 'anonymous';
         var gainNode = _wire(el);
         if (!gainNode) return;
         _ambients[name] = { el: el, gainNode: gainNode, counted: false };
@@ -268,10 +268,10 @@
             return;
         }
         var el = document.createElement('audio');
+        el.crossOrigin = 'anonymous';
         el.src     = PATHS[name];
         el.loop    = false;
         el.preload = 'auto';
-        el.crossOrigin = 'anonymous';
         var gainNode = _wire(el);
         if (!gainNode) return;
         _nonBuzzCount++;
