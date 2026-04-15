@@ -7,7 +7,7 @@
     let _rate = 1.2;
     const PITCH = 1.0;
     const VOLUME = 1.0;
-    const MAX_QUEUE_DEPTH = 6; // prevent unbounded backup
+    const MAX_QUEUE_DEPTH = 3; // prevent unbounded backup; keep spoken output close to current dialog
 
     let _muted = false;
     try { _muted = localStorage.getItem(STORAGE_KEY) === 'true'; } catch (e) { /* private browsing or storage disabled */ }
@@ -52,20 +52,25 @@
         try { localStorage.setItem(STORAGE_KEY, String(_muted)); } catch (e) { /* storage unavailable */ }
     }
 
-    // Watchdog: Chrome can silently stall synthesis (onend never fires).
-    // If _speaking has been true for longer than a reasonable ceiling, reset and advance.
+    // Watchdog: Chrome can silently stall or pause synthesis (onend never fires).
+    // First try resume() in case Chrome merely paused (common when tab loses focus).
+    // If still stuck after a longer wait, cancel and advance to the next queued item.
     function _startWatchdog() {
         _stopWatchdog();
         _watchdogTimer = setInterval(function () {
             if (!_speaking) return;
             const elapsed = Date.now() - _utteranceStartedAt;
-            // Allow up to 30 s for a single utterance; longer than any realistic message.
-            if (elapsed > 30000) {
+            // After 10 s attempt a resume in case Chrome silently paused synthesis.
+            if (elapsed > 10000) {
+                if (window.speechSynthesis) window.speechSynthesis.resume();
+            }
+            // After 12 s give up, cancel, and advance the queue.
+            if (elapsed > 12000) {
                 if (window.speechSynthesis) window.speechSynthesis.cancel();
                 _speaking = false;
                 _speakNext();
             }
-        }, 5000);
+        }, 2000);
     }
 
     function _stopWatchdog() {
@@ -152,5 +157,11 @@
         speak(text);
     }
 
-    window.OtisTTS = { speak, interrupt, isSupported, isMuted, toggleMute, setMuted, setRate };
+    // Flush the pending queue without interrupting the currently-speaking utterance.
+    // Use this to skip stale queued items while letting the current sentence finish.
+    function flush() {
+        _queue.length = 0;
+    }
+
+    window.OtisTTS = { speak, interrupt, flush, isSupported, isMuted, toggleMute, setMuted, setRate };
 })();
