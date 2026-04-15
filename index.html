@@ -309,6 +309,7 @@
                 <button onclick="appendOTIS('How bad is the debt?','CONSULT_DEBT')">DEBT</button>
                 <button onclick="handleLogoff()">LOGOFF</button>
                 <button id="tts-btn" onclick="handleTTSToggle()">TTS: ON</button>
+                <button id="tts-skip-btn" onclick="handleTTSSkip()" title="Skip current speech and clear queue">TTS: SKIP</button>
                 <button id="tutorial-skip-btn" onclick="tutorialExit()" style="display:none;color:var(--text-dim);border-color:var(--border-dim)">SKIP TUTORIAL</button>
             </div>
 
@@ -1362,7 +1363,7 @@
             updateArmSprite(trigger);
             if (window.OtisTTS) {
                 var tier = getFatigueTier();
-                if (tier === 'HIGH' || tier === 'CRITICAL') {
+                if (tier === 'MODERATE' || tier === 'HIGH' || tier === 'CRITICAL') {
                     OtisTTS.interrupt(reply);
                 } else {
                     OtisTTS.speak(reply);
@@ -2127,7 +2128,7 @@
         gameState.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
         gameState._save(); gameState._updateUI();
         recalculateNamingTier();
-        appendOTIS('Payment processed. 650 credits. Remaining balance: ' + gameState.state.debt.toLocaleString() + ' credits.', 'PAYMENT');
+        appendOTIS('Payment processed. 650 credits. Remaining balance: ' + gameState.state.debt.toLocaleString() + ' credits. Next payment in ' + TIMING.PAYMENT_CYCLE_DAYS + ' days.', 'PAYMENT');
     }
     function handleClearArrears() {
         var a = gameState.state.outstandingDebt || 0; if (a === 0) return;
@@ -2949,6 +2950,12 @@
         var muted = window.OtisTTS.toggleMute();
         var btn = document.getElementById('tts-btn'); if (btn) btn.textContent = muted ? 'TTS: OFF' : 'TTS: ON';
     }
+    function handleTTSSkip() {
+        if (!window.OtisTTS) return;
+        // Cancel the current utterance and drop all pending queued speech.
+        window.speechSynthesis.cancel();
+        window.OtisTTS.flush();
+    }
     function toggleDebug() { var p = document.getElementById('debug-panel'); if (p) p.style.display = p.style.display !== 'block' ? 'block' : 'none'; }
 
     function advanceDay() {
@@ -2963,7 +2970,7 @@
         if (s.daysUntilPayment <= 0) {
             if (s.credits >= 650 && (s.outstandingDebt || 0) === 0) {
                 s.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
-                appendOTIS('Payment due. 650 credits. Make payment when ready.', 'PAYMENT');
+                appendOTIS('Payment due. 650 credits. Make payment when ready.', 'DAY_TICK');
             } else {
                 s.missedPayments = (s.missedPayments || 0) + 1;
                 s.outstandingDebt = (s.outstandingDebt || 0) + 650;
@@ -3485,6 +3492,8 @@
 
         var ttsBtn = document.getElementById('tts-btn');
         if (ttsBtn && window.OtisTTS) { if (!window.OtisTTS.isSupported()) ttsBtn.style.display = 'none'; else ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON'; }
+        var ttsSkipBtn = document.getElementById('tts-skip-btn');
+        if (ttsSkipBtn && window.OtisTTS && !window.OtisTTS.isSupported()) ttsSkipBtn.style.display = 'none';
         if (gameState.state.easterEggFired && !gameState.state.toasterIncidentFired) {
             var auxBtn = document.getElementById('module-btn-auxiliary');
             if (auxBtn) { auxBtn.style.display = ''; auxBtn.style.opacity = '1'; }

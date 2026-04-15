@@ -59,8 +59,11 @@ TRIGGER DEFINITIONS:
 [TRIGGER: UPGRADE_DEFLECT] — Vernon has enough credits to afford the upgrade. OTIS raises a different factually true operational concern — bot repair, scrap backlog, debt compound rate, dispatch schedule. The concern is real. The deflection is subtle. One sentence.`;
 
 // Internal helper: formats the state block prefix shared by seed history and buildOTISContext.
-function formatStateBlock(day, debt, naming, fatigue, recent) {
-    return `[DAY: ${day}] [DEBT: ${debt} cr] [NAMING: ${naming}] [FATIGUE: ${fatigue}] [RECENT_EVENTS: ${recent}]`;
+// paymentIn is the number of in-game days until the next loan payment is due; pass null/undefined
+// to omit it (used for seed history entries where the value is not relevant).
+function formatStateBlock(day, debt, naming, fatigue, recent, paymentIn) {
+    const payPart = (paymentIn != null) ? ` [PAYMENT_IN: ${paymentIn}d]` : '';
+    return `[DAY: ${day}] [DEBT: ${debt} cr]${payPart} [NAMING: ${naming}] [FATIGUE: ${fatigue}] [RECENT_EVENTS: ${recent}]`;
 }
 
 const OTIS_SEED_HISTORY = [
@@ -171,7 +174,7 @@ function buildOTISContext(gs) {
     const learnNote = topKeep
         ? `[OTIS_TREND: Vernon keeps ${topKeep} items most (${kbc[topKeep] || 0} items)]`
         : '[OTIS_TREND: insufficient data]';
-    return formatStateBlock(s.day, s.debt, naming, fatigue, recent) + ' ' + learnNote;
+    return formatStateBlock(s.day, s.debt, naming, fatigue, recent, s.daysUntilPayment != null ? s.daysUntilPayment : 28 /* TIMING.PAYMENT_CYCLE_DAYS default; TIMING is defined in index.html */) + ' ' + learnNote;
 }
 
 async function askOTIS(userText, gs, trigger = 'COMMS') {
