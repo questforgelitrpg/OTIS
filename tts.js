@@ -7,6 +7,7 @@
     let _rate = 1.2;
     const PITCH = 1.0;
     const VOLUME = 1.0;
+    const MAX_QUEUE_DEPTH = 6; // prevent unbounded backup
 
     let _muted = false;
     try { _muted = localStorage.getItem(STORAGE_KEY) === 'true'; } catch (e) { /* private browsing or storage disabled */ }
@@ -15,6 +16,8 @@
     // Queue of pending text strings; spoken one at a time via onend chaining.
     const _queue = [];
     let _speaking = false;
+    let _utteranceStartedAt = 0; // timestamp when current utterance began
+    let _watchdogTimer = null;
 
     function _resolveVoice() {
         if (_resolvedVoice) return _resolvedVoice;
@@ -49,12 +52,33 @@
         try { localStorage.setItem(STORAGE_KEY, String(_muted)); } catch (e) { /* storage unavailable */ }
     }
 
+    // Watchdog: Chrome can silently stall synthesis (onend never fires).
+    // If _speaking has been true for longer than a reasonable ceiling, reset and advance.
+    function _startWatchdog() {
+        _stopWatchdog();
+        _watchdogTimer = setInterval(function () {
+            if (!_speaking) return;
+            const elapsed = Date.now() - _utteranceStartedAt;
+            // Allow up to 30 s for a single utterance; longer than any realistic message.
+            if (elapsed > 30000) {
+                if (window.speechSynthesis) window.speechSynthesis.cancel();
+                _speaking = false;
+                _speakNext();
+            }
+        }, 5000);
+    }
+
+    function _stopWatchdog() {
+        if (_watchdogTimer !== null) { clearInterval(_watchdogTimer); _watchdogTimer = null; }
+    }
+
     // Speak the next item in _queue if nothing is currently speaking.
     function _speakNext() {
         if (_speaking || _queue.length === 0) return;
         if (!window.speechSynthesis) { _queue.length = 0; return; }
 
         _speaking = true;
+        _utteranceStartedAt = Date.now();
         const text = _queue.shift();
         const utterance = new SpeechSynthesisUtterance(text);
         const voice = _resolveVoice();
@@ -73,11 +97,14 @@
         };
 
         window.speechSynthesis.speak(utterance);
+        _startWatchdog();
     }
 
     function speak(text) {
         if (_muted) return;
         if (!window.speechSynthesis) return;
+        // Drop oldest queued items if queue is already deep to prevent backup.
+        while (_queue.length >= MAX_QUEUE_DEPTH) _queue.shift();
         _queue.push(text);
         _speakNext();
     }
@@ -96,6 +123,7 @@
         if (_muted && window.speechSynthesis) {
             _queue.length = 0;
             _speaking = false;
+            _stopWatchdog();
             window.speechSynthesis.cancel();
         }
         return _muted;
@@ -107,6 +135,7 @@
         if (_muted && window.speechSynthesis) {
             _queue.length = 0;
             _speaking = false;
+            _stopWatchdog();
             window.speechSynthesis.cancel();
         }
     }
@@ -119,6 +148,7 @@
         if (window.speechSynthesis) window.speechSynthesis.cancel();
         _queue.length = 0;
         _speaking = false;
+        _stopWatchdog();
         speak(text);
     }
 

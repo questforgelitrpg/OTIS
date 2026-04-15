@@ -363,7 +363,7 @@
                 <p class="zone-hint" id="belt-backed-up" style="display:none;color:var(--text-warn)">&#9888; BELT BACKED UP &mdash; clear item queue</p>
                 <p class="zone-hint" id="storeroom-overflow-warning" style="display:none;color:var(--text-danger)">&#9888; OVERFLOW: <span id="overflow-count">0</span> items queued &mdash; <button aria-label="Route overflow items to storeroom buffer" onclick="handleRouteToStoreroom()">ROUTE TO STOREROOM</button></p>
                 <div class="modal-row">
-                    <button id="btn-barge-drop" onclick="handleBargeArrival()">BARGE DROP</button>
+                    <button id="btn-pull-storeroom" onclick="handlePullNextStoreroomItem()" disabled>PULL STOREROOM ITEM</button>
                     <button id="btn-scan-belt" onclick="handleBeltScan()" disabled>SCAN BELT</button>
                 </div>
                 <p id="conveyor-jam-warning">&#9888; CONVEYOR JAM &mdash; BELT STALLED</p>
@@ -1242,7 +1242,7 @@
         if (!data) return;
         var el = document.getElementById(data.target);
         if (el) el.classList.add('tutorial-highlight');
-        var msg = 'OTIS: ' + data.msg;
+        var msg = data.msg;
         otisLines.push({ role: 'otis', text: msg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(msg);
         _showTutorialSkip(true);
@@ -1258,7 +1258,7 @@
             _showTutorialSkip(false);
             s.tutorialStep = 0;
             gameState._save();
-            var doneMsg = 'OTIS: Tutorial complete. You know enough to start. The rest you learn by doing.';
+            var doneMsg = 'Tutorial complete. You know enough to start. The rest you learn by doing.';
             otisLines.push({ role: 'otis', text: doneMsg }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(doneMsg);
             return;
@@ -1274,7 +1274,7 @@
         _showTutorialSkip(false);
         gameState.state.tutorialStep = 0;
         gameState._save();
-        var msg = 'OTIS: Tutorial skipped. The belt does not wait.';
+        var msg = 'Tutorial skipped. The belt does not wait.';
         otisLines.push({ role: 'otis', text: msg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(msg);
     }
@@ -1485,8 +1485,6 @@
 
     function handleBargeArrival() {
         if (gameState.state.dropActive) return;
-        var btn = document.getElementById('btn-barge-drop');
-        if (btn && btn.disabled) return;
         var manifest = [];
         if (gameState.state.day === 1) {
             // Day 1 scripted drop: 4 Common items, all Used condition, no easter eggs
@@ -1522,7 +1520,6 @@
         gameState.state.dropStartSize = manifest.length;
         gameState.state.currentDropScrapped = 0;
         gameState._save();
-        if (btn) btn.disabled = true;
         var scanBtn = document.getElementById('btn-scan-belt');
         if (scanBtn) scanBtn.disabled = false;
         setBotDots(true);
@@ -1531,6 +1528,23 @@
         renderManifestSummary(manifest);
         startBeltDelivery();
         deliverNextBeltItem();
+    }
+
+    // Pull the next available item from the storeroom buffer onto the belt.
+    function handlePullNextStoreroomItem() {
+        var s = gameState.state;
+        if (!s.storeroomBuffer || s.storeroomBuffer.length === 0) return;
+        if (currentItem !== null) return;
+        handlePullFromBuffer(0);
+        _updatePullStoreroomBtn();
+    }
+
+    // Sync the pull-storeroom button state to current buffer / belt state.
+    function _updatePullStoreroomBtn() {
+        var btn = document.getElementById('btn-pull-storeroom');
+        if (!btn) return;
+        var buf = (gameState.state.storeroomBuffer || []).length;
+        btn.disabled = (buf === 0 || currentItem !== null);
     }
 
     function setBotDots(active) {
@@ -1561,8 +1575,8 @@
             if (backed) backed.style.display = 'none';
             if (st) st.textContent = 'DROP COMPLETE';
             if (bdc) bdc.textContent = days;
-            var btn = document.getElementById('btn-barge-drop'); if (btn) btn.disabled = false;
             var sb  = document.getElementById('btn-scan-belt');  if (sb)  sb.disabled = true;
+            _updatePullStoreroomBtn();
         } else {
             if (track) track.style.display = 'none';
             if (backed) backed.style.display = 'none';
@@ -1577,8 +1591,9 @@
         gameState.state.itemDisplayedAt = Date.now();
         gameState.state.beltJammed = false;
         renderItemQueue();
+        _updatePullStoreroomBtn();
     }
-    function clearItemQueue() { currentItem = null; renderItemQueue(); }
+    function clearItemQueue() { currentItem = null; renderItemQueue(); _updatePullStoreroomBtn(); }
 
     function renderItemQueue() {
         var emptyEl = document.getElementById('item-queue-empty');
@@ -1988,6 +2003,7 @@
                 '<span class="keep-item-meta">' + escapeHtml(item.condition || '') + '</span>' +
                 '<button aria-label="Pull ' + escapeHtml(item.name) + ' from buffer" onclick="handlePullFromBuffer(' + i + ')"' + disabled + '>PULL</button></li>';
         }).join('');
+        _updatePullStoreroomBtn();
     }
 
     function handlePullFromBuffer(index) {
