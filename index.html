@@ -919,6 +919,7 @@
                 humanityLog: [],
                 endingTriggered: false,
                 missedPayments: 0,
+                scrapDispatchCount: 0,
                 avgScrapFillPct: 0,
                 lastDropFillPct: 0,
                 dropStartSize: 0,
@@ -1252,12 +1253,9 @@
             gameState.state.bargeActive = false;
             gameState.state.dropItemsRemaining = 0;
             gameState.state.dropCount = (gameState.state.dropCount || 0) + 1;
-            // Track scrap fill and running average for May
+            // Track scrap fill per drop
             var s0 = gameState.state;
             s0.lastDropFillPct = (s0.dropStartSize||0) > 0 ? Math.round(((s0.currentDropScrapped||0) / s0.dropStartSize) * 100) : 0;
-            s0.avgScrapFillPct = s0.dropCount > 0
-                ? Math.round(((s0.avgScrapFillPct||0) * (s0.dropCount-1) + s0.lastDropFillPct) / s0.dropCount)
-                : 0;
             s0.currentDropScrapped = 0;
             s0.dropStartSize = 0;
             checkActProgression();
@@ -1806,7 +1804,13 @@
     function handleDispatchMay() {
         var fill = gameState.state.scrapFill || 0; if (fill === 0) return;
         var earned = Math.floor(fill * (5 + Math.random() * 5));
+        var s = gameState.state;
         gameState.state.credits += earned; gameState.state.scrapFill = 0;
+        s.scrapDispatchCount = (s.scrapDispatchCount || 0) + 1;
+        s.avgScrapFillPct = Math.round(
+            ((s.avgScrapFillPct||0) * (s.scrapDispatchCount - 1) + fill)
+            / s.scrapDispatchCount
+        );
         gameState._save(); gameState._updateUI();
         renderStoreroomBuffer();
         appendOTIS('Dispatching scrap to May Finster. Fill: ' + fill + '%. +' + earned + ' cr returned.', 'SCRAP_DISPATCH');
@@ -2552,19 +2556,20 @@
     // COMMS — ANSWER BANK (scripted, no API)
     function handleAnswerBank() {
         var s = gameState.state;
-        var debt = s.outstandingDebt || 0;
+        var arrears = s.outstandingDebt || 0;
         var dup  = s.daysUntilPayment || 28;
+        var loanBalance = s.debt || 0;
         var msg;
-        if (debt > 500) {
+        if (arrears > 500) {
             msg = '[BANK] Account ' + (s.accountId||'VRN-001') + '. Arrears exceed threshold. Escalation notice filed. Respond within 3 business cycles or asset review commences.';
         } else if (dup <= 0) {
             msg = '[BANK] Payment past due. Interest accruing at standard rate. Settle balance within next cycle or penalty surcharge applies.';
         } else if (dup <= 5) {
-            msg = '[BANK] Payment window closing. ' + dup + ' days remaining. Current balance: ' + debt + ' cr. No action required if funds are available.';
-        } else if (debt <= 0) {
+            msg = '[BANK] Payment window closing. ' + dup + ' days remaining. Current balance: ' + arrears + ' cr. No action required if funds are available.';
+        } else if (arrears <= 0) {
             msg = '[BANK] Account current. No outstanding balance. Continue operations.';
         } else {
-            msg = '[BANK] Scheduled payment in ' + dup + ' days. Outstanding: ' + debt + ' cr. No further action required at this time.';
+            msg = '[BANK] Scheduled payment in ' + dup + ' days. Loan balance: ' + loanBalance.toLocaleString() + ' cr. No further action required at this time.';
         }
         otisLines.push({ role:'otis', text: msg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(msg);
@@ -2576,7 +2581,8 @@
     function handleAnswerSven() {
         var s = gameState.state;
         var ignoreDays = s.svenIgnoreDays || 0;
-        var rareInQueue = (s.manifestItems||[]).some(function(i){ return i.rarity==='Rare'||i.category==='Industrial'; });
+        var rareInQueue = (s.shippingQueue||[]).length > 0 ||
+            (s.manifestItems||[]).some(function(i){ return i.rarity==='Rare'||i.rarity==='Anomalous'; });
         var botConflict = s.recentBotConflict || false;
         var msg;
         if (botConflict) {
@@ -2630,7 +2636,10 @@
             var hints = [
                 '[MAY DISPATCH] Your fill rate is solid. Next barge out of Sector 9 is running heavy — Industrial and Vessel mix. Plan accordingly.',
                 '[MAY DISPATCH] Good numbers. Heard from the bay coordinator — next manifest is settlement clearance, civilian heavy. Low value but high volume.',
-                '[MAY DISPATCH] You\'re running clean. FYI: Act ' + act + ' barges have been carrying more Rare since the last refit cycle. That\'s unofficial.'
+                '[MAY DISPATCH] You\'re running clean. FYI: Act ' + act + ' barges have been carrying more Rare since the last refit cycle. That\'s unofficial.',
+                '[MAY DISPATCH] Fill rate good. Heard a pre-collapse haul is clearing next cycle — expect Vessel heavy, possible Anomalous. George always held something back from those. Up to you.',
+                '[MAY DISPATCH] You are running cleaner than I expected. Sector 12 clearance next barge. Civilian debris mostly, but there is usually one outlier. George found three. Two of them are still in the warehouse. Just noting that.',
+                '[MAY DISPATCH] Volume is good. Next manifest has Settlement items. George used to keep the registry slabs. Said they were not worthless just because the registration lapsed. Your call.'
             ];
             msg = hints[dropCount % hints.length];
         } else if (avg >= 50) {
