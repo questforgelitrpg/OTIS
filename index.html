@@ -2531,7 +2531,8 @@
         }).filter(Boolean);
         list.innerHTML = entries.map(function(entry) {
             var isFinal = entry.id === 28;
-            var textColor = isFinal ? 'color:#0f3020' : '';
+            // Final entry uses a slightly dimmer shade than --text-muted to signal it is incomplete/cut off
+            var textColor = isFinal ? 'color:var(--text-muted)' : '';
             return '<div class="diary-entry">' +
                 '<div class="diary-header">YEAR ' + entry.year + ', DAY ' + entry.day + ' &mdash; ENTRY ' + entry.id + '</div>' +
                 '<pre class="diary-text" style="' + textColor + '">' + escapeHtml(entry.text) + '</pre>' +
