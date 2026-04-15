@@ -1980,7 +1980,7 @@
         gameState._save();
         gameState._updateUI();
         var msg = 'Selling from keep log: ' + item.name + '. +' + val + ' credits.';
-        if (gained > 0) msg += ' Held ' + daysHeld + ' days. +' + gained + ' cr appreciated.';
+        if (gained > 0) msg += ' Held ' + daysHeld + ' days. +' + gained + ' credits appreciated.';
         appendOTIS(msg, 'SELL_FROM_LOG');
     }
 
@@ -3114,7 +3114,7 @@
         } else if (ignoreDays >= 3) {
             msg = '[SVEN COMMS] Three days, no reply. I know you got the signal. Price drops if you keep doing this. — S.';
         } else if (rareInQueue) {
-            msg = '[SVEN COMMS] Scanner picked up something interesting in your queue. 60 cr flat, no questions. First right of refusal. — S.';
+            msg = '[SVEN COMMS] Scanner picked up something interesting in your queue. 60 credits flat, no questions. First right of refusal. — S.';
         } else {
             msg = '[SVEN COMMS] Routine check-in. Bay looks nominal. Let me know if anything comes through worth my time. — S.';
         }
