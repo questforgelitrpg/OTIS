@@ -589,14 +589,14 @@
     // TIMING
     const TIMING = {
         MS_PER_INGAME_DAY:     240000,
-        BELT_DELIVERY_MS:      12000,
+        BELT_DELIVERY_MS:      20000,
         DAYS_BETWEEN_DROPS:    7,
         DROP_VARIANCE_DAYS:    2,
-        DROP_SIZE_ACT1:        20,
-        DROP_SIZE_ACT2_MIN:    28,
-        DROP_SIZE_ACT2_MAX:    32,
-        DROP_SIZE_ACT3_MIN:    36,
-        DROP_SIZE_ACT3_MAX:    42,
+        DROP_SIZE_ACT1:        15,
+        DROP_SIZE_ACT2_MIN:    23,
+        DROP_SIZE_ACT2_MAX:    27,
+        DROP_SIZE_ACT3_MIN:    31,
+        DROP_SIZE_ACT3_MAX:    37,
         PAYMENT_CYCLE_DAYS:    28,
         RESERVE_RESOLVE_MIN:   120000,
         RESERVE_RESOLVE_MAX:   480000,
@@ -1803,22 +1803,19 @@
         if (empty) empty.style.display = buf.length ? 'none' : '';
         if (!list) return;
         list.innerHTML = buf.map(function(item, i) {
+            var disabled = currentItem !== null ? ' disabled' : '';
             return '<li class="keep-list-item"><span>' + escapeHtml(item.name) + '</span>' +
                 '<span class="keep-item-meta">' + escapeHtml(item.condition || '') + '</span>' +
-                '<button aria-label="Pull ' + escapeHtml(item.name) + ' from buffer" onclick="handlePullFromBuffer(' + i + ')">PULL</button></li>';
+                '<button aria-label="Pull ' + escapeHtml(item.name) + ' from buffer" onclick="handlePullFromBuffer(' + i + ')"' + disabled + '>PULL</button></li>';
         }).join('');
     }
 
     function handlePullFromBuffer(index) {
         var s = gameState.state;
         if (!s.storeroomBuffer || !s.storeroomBuffer[index]) return;
+        if (currentItem !== null) return; // only one item at a time — belt must be clear first
         var item = s.storeroomBuffer.splice(index, 1)[0];
-        if (currentItem === null) {
-            setItemInQueue(item);
-        } else {
-            s.manifestItems.unshift(item);
-            s.dropItemsRemaining = s.manifestItems.length;
-        }
+        setItemInQueue(item);
         gameState._save();
         renderStoreroomBuffer();
         gameState._updateUI();
@@ -2887,9 +2884,24 @@
             }
             // Await the LOGIN OTIS response (welcome Vernon).
             await appendOTIS('Operator logging in.', 'LOGIN');
+            // Day 1: load 4 random starter items onto the belt before any barge drop.
+            var s1 = gameState.state;
+            if (s1.day === 1 && (s1.dropCount || 0) === 0 && !s1.dropActive && (!s1.manifestItems || s1.manifestItems.length === 0)) {
+                var day1Items = [];
+                for (var i = 0; i < 4; i++) day1Items.push(weightedPickItem());
+                s1.manifestItems = day1Items;
+                s1.dropActive = true;
+                s1.dropItemsRemaining = day1Items.length;
+                s1.dropStartSize = day1Items.length;
+                gameState._save();
+                var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
+                setBotDots(true);
+                updateBeltUI('DELIVERING');
+                startBeltDelivery();
+            }
             // Resume belt delivery if a drop was active when the page last loaded.
             if (gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
-                var scanBtn = document.getElementById('btn-scan-belt'); if (scanBtn) scanBtn.disabled = false;
+                var resumeBtn = document.getElementById('btn-scan-belt'); if (resumeBtn) resumeBtn.disabled = false;
                 setBotDots(true); startBeltDelivery();
             }
         }
