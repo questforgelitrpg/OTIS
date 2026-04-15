@@ -2167,7 +2167,8 @@
         gameState._save();
 
         var item = GEORGE_WAREHOUSE[idx];
-        var foundMsg = "Found: " + item.name + ". This was in the back section. George's label says: '" + item.georgeNote.substring(0,60) + "...'";
+        var note = item.georgeNote || '';
+        var foundMsg = "Found: " + item.name + ". This was in the back section. George's label says: '" + note.substring(0,60) + (note.length > 60 ? "..." : "") + "'";
         otisLines.push({ role:"otis", text: foundMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak("Found something.");
         renderGeorgeWarehouse();
