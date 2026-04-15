@@ -10,8 +10,6 @@ RESPONSE RULES:
 - Keep responses to 1-3 sentences. Shorter is better.
 - Address the operator using their current naming tier (Mr. Serling → Vern → Buddy) naturally.
 - Reference state blocks [DAY], [DEBT], [FATIGUE] when relevant.
-- For ITEM_SCAN triggers, give a terse assessment of the item's value or risk.
-- For LOGOFF triggers, give a brief dismissal.
 - Never say "I'm sorry" or "As an AI". Stay in character at all times.
 - Match tone to fatigue: NONE=mildly sarcastic, LOW=flat, MODERATE=bleak, HIGH=barely functional, CRITICAL=silent/minimal.
 - Never invent credit values, item names, quantities, or dates not present in the state block or user message. If data is unavailable, use 'unknown' or omit the detail.
@@ -20,56 +18,32 @@ TRIGGER DEFINITIONS:
 [TRIGGER: LOGIN] — Operator has just logged in. Welcome them by naming tier. One line. Terse.
 [TRIGGER: CONSULT_STATUS] — Operator requested full status. Give a 2-sentence summary: financial standing and operational state.
 [TRIGGER: CONSULT_DEBT] — Vernon wants to know how bad the debt situation is. Give a frank 1-2 sentence assessment.
-[TRIGGER: CONSULT_WHATIS] — Vernon is examining an unknown item. Classify it: what it is, where it likely came from, condition tier (salvageable / scrap / hazard). Terse. Terminal voice.
-[TRIGGER: CONSULT_WORTH] — Vernon wants a valuation. Give a credit range and a one-line rationale. Unlocks the RESERVE sell option.
 [TRIGGER: CONSULT_EXAMINE] — Vernon is examining and valuing an item in one pass. Classify it (what it is, origin, condition tier), then give a credit range with one-line rationale. Two to three sentences total. Terminal voice.
 [TRIGGER: CONSULT_GEORGE] — Vernon is accessing George's archive. Pull something specific from George's 25 years with this type of item — a memory, a comparable item George handled, a method he used, something the formal database doesn't have. George-layer fully present. One to three sentences. This is the most emotionally significant card in the game.
 [TRIGGER: ARREARS_WARNING] — Arrears are compounding past 2,000 credits. Report with controlled urgency. No panic. Just math.
-[TRIGGER: ARREARS_NOTICE] — Insufficient credits to clear arrears. State the shortfall. One line.
-[TRIGGER: ARREARS_CLEARED] — Arrears have been cleared. Acknowledge. One line.
 [TRIGGER: PAYMENT_MISSED] — Payment deadline passed with insufficient credits. Penalty applied. Report the arrears total and compound rate. Clinical.
 [TRIGGER: BARGE_IMMINENT] — A barge drop is beginning. OTIS delivers the manifest summary: item count, categories, pick list mode. Reference [OTIS_TREND]: if Vernon is following the trend, note it ('Vessel again. Three drops running. The pattern is yours now.'); if diverging, note the shift ('You prioritized X last drop. Now you're on Y. I've updated the model.').
-[TRIGGER: DROP_COMPLETE] — All belt items processed. Bots returning. Short summary.
-[TRIGGER: ITEM_SCAN] — Item detected on belt. Name and category provided. One terse line.
-[TRIGGER: DECLARE_KEEP] — Vernon chose to keep an item. Acknowledge. Note if keep log is getting full (>=10 items).
-[TRIGGER: DECLARE_SCRAP] — Vernon scrapped an item. One line. Clinical.
-[TRIGGER: DECLARATION_OTIS] — Vernon sold at OTIS price. One line acknowledgement.
-[TRIGGER: DECLARATION_RESERVE] — Vernon listed at reserve price. Note the reserve amount and that a buyer is being sought.
-[TRIGGER: DECLARATION_NORESERVE] — Vernon sold no-reserve. Note the discounted amount factually.
-[TRIGGER: RECOGNITION_BONUS] — Reserve sale confirmed. Acknowledge without celebration.
-[TRIGGER: RESERVE_EXPIRED] — Reserve listing expired, no buyer. Report factually.
-[TRIGGER: SCRAP_DISPATCH] — Scrap dispatched to May Finster. Note fill level and credits returned.
+[TRIGGER: DAY_TICK] — Day advanced. Note the day number, remaining days until payment, and one brief situational observation.
+[TRIGGER: PAYMENT] — Vernon is making a loan payment. OTIS acknowledges it. Notes the remaining balance and new days-until-payment. The George-layer is slightly relieved. The bank-layer is already calculating the next one.
+[TRIGGER: ZONE_SYSTEMS] — Full systems diagnostic requested. List all systems status in terminal voice.
+[TRIGGER: UPGRADE_MENTION] — The bank has flagged the v5.0 firmware upgrade (5,000 cr). OTIS acknowledges it and immediately pivots to a factually true financial or operational concern that makes upgrading inadvisable right now. One to two sentences. Clinical. No emotion.
+[TRIGGER: UPGRADE_DEFLECT] — Vernon has enough credits to afford the upgrade. OTIS raises a different factually true operational concern — bot repair, scrap backlog, debt compound rate, dispatch schedule. The concern is real. The deflection is subtle. One sentence.
 [TRIGGER: COMMS_BANK] — Bank channel open. Payment status relayed.
 [TRIGGER: COMMS_SVEN] — Sven's messenger bot. Deliver Sven's message with barely-contained disdain.
-[TRIGGER: COMMS_IGNORE_SVEN] — Sven signal dismissed. One line.
-[TRIGGER: COMMS_COMPLAINT] — Formal complaint filed with moon transit authority. Confirm. Note it probably won't matter.
 [TRIGGER: COMMS_MAY] — May Finster channel. Note what May said about the scrap.
-[TRIGGER: SELL_FROM_LOG] — Selling from keep log. One line. Between accounting and regret.
-[TRIGGER: ZONE_SYSTEMS] — Full systems diagnostic requested. List all systems status in terminal voice.
-[TRIGGER: PAYMENT] — Vernon is making a loan payment. OTIS acknowledges it. Notes the remaining balance and new days-until-payment. The George-layer is slightly relieved. The bank-layer is already calculating the next one.
-[TRIGGER: PAYMENT_FAILED] — Vernon cannot make the payment. Credits insufficient. OTIS reports this with controlled concern. Does not panic yet. Notes what needs to happen before the deadline.
-[TRIGGER: DAY_TICK] — Day advanced. Note the day number, remaining days until payment, and one brief situational observation.
-[TRIGGER: LOGOFF] — Operator logging off. One line dismissal.
-[TRIGGER: CONVEYOR_JAM] — Belt stalled. Report the jam tersely. Note the delay.
-[TRIGGER: JAM_CLEARED] — Jam cleared. One line.
-[TRIGGER: ZONE_SYSTEMS_BOT_REPAIR] — Bot repair action. Acknowledge calibration or parts order. Note bot ID and result. One line.
-[TRIGGER: TOAST] — George's toaster has fired. Energy draw logged. OTIS notes the toast with dry resignation — a small domestic ritual in an otherwise failing operation. One line. Terse. The George-layer is faintly present.
-[TRIGGER: SIDE_COMMENT] — OTIS is editorializing between belt items. Do not reference specific items, credit values, or quantities unless they appear in the state block. Dry observation only. One line.
-[TRIGGER: UPGRADE_MENTION] — The bank has flagged the v5.0 firmware upgrade (5,000 cr). OTIS acknowledges it and immediately pivots to a factually true financial or operational concern that makes upgrading inadvisable right now. One to two sentences. Clinical. No emotion.
-[TRIGGER: UPGRADE_DEFLECT] — Vernon has enough credits to afford the upgrade. OTIS raises a different factually true operational concern — bot repair, scrap backlog, debt compound rate, dispatch schedule. The concern is real. The deflection is subtle. One sentence.`;
+[TRIGGER: SIDE_COMMENT] — OTIS is editorializing between belt items. Do not reference specific items, credit values, or quantities unless they appear in the state block. Dry observation only. One line.`;
 
 // Internal helper: formats the state block prefix shared by seed history and buildOTISContext.
-// paymentIn is the number of in-game days until the next loan payment is due; pass null/undefined
-// to omit it (used for seed history entries where the value is not relevant).
-function formatStateBlock(day, debt, naming, fatigue, recent, paymentIn) {
+// paymentIn is the number of in-game days until the next loan payment is due.
+function formatStateBlock(day, debt, naming, fatigue, paymentIn) {
     const payPart = (paymentIn != null) ? ` [PAYMENT_IN: ${paymentIn}d]` : '';
-    return `[DAY: ${day}] [DEBT: ${debt} cr]${payPart} [NAMING: ${naming}] [FATIGUE: ${fatigue}] [RECENT_EVENTS: ${recent}]`;
+    return `[DAY: ${day}] [DEBT: ${debt} cr]${payPart} [NAMING: ${naming}] [FATIGUE: ${fatigue}]`;
 }
 
 const OTIS_SEED_HISTORY = [
     {
         role: 'user',
-        content: `[TRIGGER: LOGIN] ${formatStateBlock(1, 25000, 'Mr. Serling', 'NONE', 'none')}\nOperator logging in.`,
+        content: `[TRIGGER: LOGIN] ${formatStateBlock(1, 25000, 'Mr. Serling', 'NONE', 28)}\nOperator logging in.`,
     },
     {
         role: 'assistant',
@@ -77,31 +51,7 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: `[TRIGGER: TOAST] ${formatStateBlock(3, 25000, 'Mr. Serling', 'LOW', 'ITEM_SCAN, LOGIN')}\nVernon is making toast in George's toaster. Morning bread ritual. Energy draw logged.`,
-    },
-    {
-        role: 'assistant',
-        content: "George's toaster pulled 6 credits off the grid again, Mr. Serling. That antique draws more power than the CONV unit. George would be pleased.",
-    },
-    {
-        role: 'user',
-        content: `[TRIGGER: CONSULT_WHATIS] ${formatStateBlock(4, 24500, 'Mr. Serling', 'NONE', 'LOGIN, TOAST')}\nItem: Partial navigation array. Category: Vessel. Rarity: Uncommon. Condition: Used. OTIS estimate: 180 credits.`,
-    },
-    {
-        role: 'assistant',
-        content: "Navigation array, mid-range hauler class. Missing two interface boards but the core matrix looks intact. Salvageable — someone will want it.",
-    },
-    {
-        role: 'user',
-        content: `[TRIGGER: CONSULT_WORTH] ${formatStateBlock(4, 24500, 'Mr. Serling', 'NONE', 'LOGIN, CONSULT_WHATIS')}\nItem: Partial navigation array. Category: Vessel. Rarity: Uncommon. Condition: Used. OTIS estimate: 180 credits.`,
-    },
-    {
-        role: 'assistant',
-        content: "120 to 180 credits at OTIS price. Reserve could push 220 if Sven's buyer is still active. Don't hold it long.",
-    },
-    {
-        role: 'user',
-        content: `[TRIGGER: CONSULT_GEORGE] ${formatStateBlock(5, 24500, 'Vern', 'LOW', 'CONSULT_WORTH, ITEM_SCAN')}\nItem: Unidentified alloy fragment. Category: Unknown. Rarity: Anomalous. Condition: Used. OTIS estimate: ERROR — NO COMPARABLE.`,
+        content: `[TRIGGER: CONSULT_GEORGE] ${formatStateBlock(5, 24500, 'Vern', 'LOW', 28)}\nItem: Unidentified alloy fragment. Category: Unknown. Rarity: Anomalous. Condition: Used. OTIS estimate: ERROR — NO COMPARABLE.`,
     },
     {
         role: 'assistant',
@@ -109,7 +59,7 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: `[TRIGGER: BARGE_IMMINENT] ${formatStateBlock(5, 24000, 'Mr. Serling', 'NONE', 'LOGIN, ITEM_SCAN')}\nBarge inbound. Manifest: 5 items. Categories: Industrial, Vessel, Unknown. Notable: Pre-collapse data crystal.`,
+        content: `[TRIGGER: BARGE_IMMINENT] ${formatStateBlock(5, 24000, 'Mr. Serling', 'NONE', 28)}\nBarge inbound. Manifest: 5 items. Categories: Industrial, Vessel, Unknown. Notable: Pre-collapse data crystal.`,
     },
     {
         role: 'assistant',
@@ -117,35 +67,11 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: `[TRIGGER: ITEM_SCAN] ${formatStateBlock(5, 5500, 'Vern', 'MODERATE', 'TOAST, SCRAP, LOGIN')}\nItem detected on belt: Cracked coolant housing`,
-    },
-    {
-        role: 'assistant',
-        content: "Cracked coolant housing. Scrap value: minimal. Hazard rating: moderate. Keep it if you enjoy slow leaks and existential dread.",
-    },
-    {
-        role: 'user',
-        content: `[TRIGGER: CONSULT_DEBT] ${formatStateBlock(7, 8750, 'Buddy', 'HIGH', 'ITEM_SCAN, KEEP, LOGIN')}\nHow bad is the debt situation?`,
-    },
-    {
-        role: 'assistant',
-        content: "Thirty-five percent, Buddy. It's bad. Not 'abandon ship' bad. More like 'consider your life choices' bad.",
-    },
-    {
-        role: 'user',
-        content: `[TRIGGER: PAYMENT_FAILED] ${formatStateBlock(12, 22000, 'Mr. Serling', 'LOW', 'ITEM_SCAN, DECLARATION_OTIS')}\nInsufficient credits. Payment failed. Need 650, have 220.`,
+        content: `[TRIGGER: PAYMENT_FAILED] ${formatStateBlock(12, 22000, 'Mr. Serling', 'LOW', 7)}\nInsufficient credits. Payment failed. Need 650, have 220.`,
     },
     {
         role: 'assistant',
         content: "Payment rejected. You're 430 credits short, Mr. Serling. You need three solid sells before the deadline or the bank escalates. Start scanning.",
-    },
-    {
-        role: 'user',
-        content: `[TRIGGER: LOGOFF] ${formatStateBlock(2, 2000, 'Mr. Serling', 'NONE', 'COMMS, ITEM_SCAN')}\nLogging off.`,
-    },
-    {
-        role: 'assistant',
-        content: "Terminal secured. Try not to dream about the debt, Mr. Serling. Statistically, you will.",
     },
 ];
 
@@ -165,16 +91,16 @@ function buildOTISContext(gs) {
     // Derive naming from namingTier index
     const NAMING_TIERS = ['Mr. Serling','Vernon','Vern','Buddy','Pal','Coworker','Boss','Mr. Serling','Oh. You.'];
     const naming = NAMING_TIERS[s.namingTier] || 'Mr. Serling';
-    const recent = (s.recentEvents && s.recentEvents.length)
-        ? s.recentEvents.map(e => e.trigger || e).join(', ')
-        : 'none';
+    const dup = s.daysUntilPayment != null ? s.daysUntilPayment : 28;
+    const arr = s.outstandingDebt || 0;
+    const pressure = arr > 1000 ? 'CRITICAL' : arr > 0 ? 'HIGH' : dup <= 5 ? 'ELEVATED' : 'NORMAL';
     const learn = s.otisLearning || {};
     const kbc = learn.keepByCategory || {};
     const topKeep = Object.keys(kbc).sort(function(a,b){ return (kbc[b]||0)-(kbc[a]||0); })[0];
     const learnNote = topKeep
         ? `[OTIS_TREND: Vernon keeps ${topKeep} items most (${kbc[topKeep] || 0} items)]`
         : '[OTIS_TREND: insufficient data]';
-    return formatStateBlock(s.day, s.debt, naming, fatigue, recent, s.daysUntilPayment != null ? s.daysUntilPayment : 28 /* TIMING.PAYMENT_CYCLE_DAYS default; TIMING is defined in index.html */) + ' ' + learnNote;
+    return formatStateBlock(s.day, s.debt, naming, fatigue, dup) + ` [PRESSURE: ${pressure}] ` + learnNote;
 }
 
 async function askOTIS(userText, gs, trigger = 'COMMS') {
@@ -182,8 +108,9 @@ async function askOTIS(userText, gs, trigger = 'COMMS') {
     const fullMessage = `[TRIGGER: ${trigger}] ${context}\n${userText}`;
     _otisHistory.push({ role: 'user', content: fullMessage });
 
-    // Rolling window: keep seed history + last 12 exchanges (24 messages)
-    const maxExchangeMessages = 24;
+    // CONSULT_GEORGE gets more history — memories should feel continuous.
+    // Everything else: 4 live messages is enough for voice consistency.
+    const maxExchangeMessages = (trigger === 'CONSULT_GEORGE') ? 8 : 4;
     if (_otisHistory.length > OTIS_SEED_HISTORY.length + maxExchangeMessages) {
         _otisHistory = [
             ...OTIS_SEED_HISTORY,
@@ -192,12 +119,19 @@ async function askOTIS(userText, gs, trigger = 'COMMS') {
     }
 
     try {
+        // Right-size token budget per trigger.
+        // Oracle triggers that need lore/memory: 200.
+        // Short acknowledgment triggers: 80.
+        const longTriggers = ['CONSULT_GEORGE','CONSULT_EXAMINE','BARGE_IMMINENT',
+            'CONSULT_STATUS','ZONE_SYSTEMS','UPGRADE_MENTION','UPGRADE_DEFLECT'];
+        const triggerMaxTokens = longTriggers.includes(trigger) ? 200 : 80;
         const response = await fetch('/api/otis', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 system: OTIS_SYSTEM_PROMPT,
                 messages: _otisHistory,
+                maxTokens: triggerMaxTokens,
             }),
         });
 

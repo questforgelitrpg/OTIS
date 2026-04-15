@@ -1565,7 +1565,9 @@
             setBotDots(false);
             renderPickList();
             renderManifestSummary([]);
-            appendOTIS('Belt clear. All items processed. Bots returning.', 'DROP_COMPLETE');
+            var daysLeft = (gameState.state.daysUntilNextDrop != null)
+                ? gameState.state.daysUntilNextDrop : TIMING.DAYS_BETWEEN_DROPS;
+            narratorLine(DROP_COMPLETE_POOL, { DAYS: daysLeft });
             onDropCompleteBotDegradation();
             rollConveyorJam();
             checkEasterEgg();
@@ -1599,18 +1601,46 @@
         var s = gameState.state;
         var dup = s.daysUntilPayment || 28;
         var tier = s.namingTier || 0;
-        var msg;
-        if (dup <= 5) msg = 'Payment in ' + dup + ' days. Belt is not moving fast enough.';
-        else if (tier >= 2) msg = 'George would have cleared that last item faster. Then again, so would you.';
-        else if (s.skipCount > 5) msg = 'Still not asking. Still noting it.';
-        else if ((s.keepLog || []).length >= 8) msg = 'Keep log is getting heavy. George only kept seven.';
-        else {
-            var GENERIC = ['Belt running.','Inventory accumulates.','The moon does not care about your backlog.',
-                'George would have had an opinion about that one.','Running nominal. Barely.'];
-            msg = GENERIC[Math.floor(Math.random() * GENERIC.length)];
+        var keeps = (s.keepLog || []).length;
+        var drops = s.dropCount || 0;
+        var msgs;
+        if (dup <= 3) {
+            msgs = [
+                'Payment in ' + dup + ' days. Belt is not moving fast enough.',
+                'Three days. George always had something in the queue by now.',
+                'The bank does not send reminders. They send receivers.',
+            ];
+        } else if (keeps >= 8) {
+            msgs = [
+                'Keep log is heavy. ' + keeps + ' items. George capped at seven.',
+                'You are keeping a lot. George said that is either instinct or sentiment.',
+                'The keep log does not pay the debt. Just noting that.',
+            ];
+        } else if (tier >= 2) {
+            msgs = [
+                "George cleared this in under a minute on day one. You're faster now.",
+                "Belt running. That's what matters.",
+                "You're getting George's rhythm. I'm noting that whether you want me to or not.",
+            ];
+        } else if (drops >= 5 && s.skipCount > drops) {
+            msgs = [
+                "You've been skipping more than consulting. That's your call.",
+                "George consulted on everything. I'm not saying you're wrong.",
+                "The George Archive is there. You don't have to use it.",
+            ];
+        } else {
+            msgs = [
+                'Belt running.',
+                'Intake nominal.',
+                'George had an opinion about this one. You didn\'t ask.',
+                'The moon does not care about your backlog.',
+                'Running nominal. Barely.',
+                'Station holding.',
+            ];
         }
-        otisLines.push({ role: 'otis', text: msg }); renderOTIS();
-        if (window.OtisTTS) OtisTTS.speak(msg);
+        var sideMsg = msgs[Math.floor(Math.random() * msgs.length)];
+        otisLines.push({ role: 'otis', text: sideMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(sideMsg);
     }
 
     var _dropShuffledPool = [];
@@ -1689,7 +1719,16 @@
         if (scanBtn) scanBtn.disabled = false;
         setBotDots(true);
         updateBeltUI('DELIVERING');
-        appendOTIS(buildManifestSummary(manifest), 'BARGE_IMMINENT');
+        var bargeSummary = buildManifestSummary(manifest);
+        // Append pick list status so OTIS can comment on whether Vernon confirmed it
+        var confirmed = gameState.state.confirmedPickChoice;
+        if (confirmed && confirmed.mode !== 'DROP') {
+            bargeSummary += ' Pick list confirmed: ' + confirmed.mode
+                + (confirmed.category ? ' / ' + confirmed.category : '') + '.';
+        } else {
+            bargeSummary += ' No pick list confirmed for this drop.';
+        }
+        appendOTIS(bargeSummary, 'BARGE_IMMINENT');
         renderManifestSummary(manifest);
         startBeltDelivery();
         deliverNextBeltItem();
@@ -1843,7 +1882,14 @@
         if (trigger === 'CONSULT_WORTH')  { currentItem.consultedWorth = true; var b = document.getElementById('btn-reserve'); if (b) b.disabled = false; }
         if (trigger === 'CONSULT_GEORGE') currentItem.consultedGeorge = true;
         renderItemQueue();
-        appendOTIS(ctx, trigger);
+        if (trigger === 'CONSULT_GEORGE') {
+            var georgeCtx = '[GEORGE ARCHIVE REQUEST] ' + ctx
+                + ' Vernon is asking specifically what George knew about this type of item.'
+                + ' Surface a specific memory, method, or comparable — not general knowledge.';
+            appendOTIS(georgeCtx, 'CONSULT_GEORGE');
+        } else {
+            appendOTIS(ctx, trigger);
+        }
         if (gameState.state.tutorialStep === 2) tutorialAdvance();
     }
 
@@ -1874,6 +1920,61 @@
     }
 
     var SCRAP_SHORTS = ['Canned.','Logged.','Processed.','To May.','Binned.','Filed as scrap.'];
+
+    // ── NARRATOR POOLS — added for narrator refactor ──────────────────────────
+    var DROP_COMPLETE_POOL = [
+        "Belt clear. Bots returning.",
+        "Drop window closed. Bots returning to dock.",
+        "Manifest processed. Bots standing down.",
+        "Clear. George used to run the count himself. Old habit.",
+        "Belt empty. That is the drop.",
+        "All items through. Bots in.",
+        "Done. Next drop window opens in {DAYS} days.",
+    ];
+    var DECLARE_KEEP_POOL = [
+        "Logged to keep.",
+        "Filed. George kept things too.",
+        "Hold log updated.",
+        "On record.",
+        "Noted. {N} items in the log.",
+        "Kept. Flagged.",
+        "That one stays.",
+        "George would have kept that one too.",
+    ];
+    var DECLARE_KEEP_FULL_POOL = [
+        "Keep log at {N}. Storage risk noted.",
+        "That is {N}. The log is getting heavy.",
+        "{N} in the log. George never went past seven.",
+        "Keep log at capacity. Consider selling back before the next drop.",
+    ];
+    var RESERVE_CONFIRMED_POOL = [
+        "Reserve confirmed. {CR} cr logged.",
+        "Buyer found. {CR} cr.",
+        "{CR} cr. Reserve held.",
+        "Confirmed at {CR} cr. George read was close.",
+        "Sale through. {CR} cr to the ledger.",
+        "Reserve cleared. {CR} cr.",
+    ];
+    var SELL_FROM_LOG_POOL = [
+        "Sold from hold. {CR} cr.",
+        "Log item liquidated. {CR} cr.",
+        "{CR} cr. It was held a while.",
+        "Cleared from the log. {CR} cr.",
+        "Sold. {CR} cr. George would have held longer.",
+        "Out of the log. {CR} cr to hand.",
+    ];
+    var DAY_TICK_POOL = [
+        "Day {D}. Belt is {STATE}.",
+        "Day {D}. {PAY} days to payment.",
+        "Day {D}. George ran this station for 9,125 of these.",
+        "Day {D}. Operational.",
+        "Day {D}. Debt at {DEBT} cr.",
+        "Day {D}. Nothing critical.",
+        "Day {D}. The belt keeps moving.",
+        "Day {D}. Still here.",
+        "Day {D}. George log shows nothing unusual for this date either.",
+    ];
+    // ── END NARRATOR POOLS ────────────────────────────────────────────────────
     var BATCH_REPORT_THRESHOLD = 3;
 
     function trackDeclarationBatch(itemName, salePrice) {
@@ -1885,7 +1986,8 @@
             var batchMsg = 'Last ' + BATCH_REPORT_THRESHOLD + ': ' + s.declarationBatch.join(', ') + '.';
             s.declarationBatch = [];
             s.declarationBatchCount = 0;
-            appendOTIS(batchMsg, 'DECLARATION_OTIS');
+            otisLines.push({ role: 'otis', text: batchMsg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(batchMsg);
         }
     }
 
@@ -1928,7 +2030,9 @@
                 gameState.state.humanityArchive = Math.max(0, (gameState.state.humanityArchive||0) - 1);
             }
             clearItemQueue();
-            appendOTIS('Reserve listing: ' + item.name + '. Reserve: ' + rp + ' credits. Awaiting buyer. ' + ctx, 'DECLARATION_RESERVE');
+            var reserveMsg = item.name.substring(0, 22) + '. Reserve: ' + rp + ' cr. Awaiting buyer.';
+            otisLines.push({ role: 'otis', text: reserveMsg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(reserveMsg);
         } else if (method === 'NORESERVE') {
             var earned = Math.floor(ev * 0.75 * eeMultiplier);
             gameState.state.credits += earned;
@@ -1951,7 +2055,17 @@
             trackOTISLearning('KEEP', item);
             clearItemQueue();
             var kn = gameState.state.keepLog.length;
-            appendOTIS(kn >= 10 ? 'Keeping: ' + item.name + '. Keep log at ' + kn + ' items.' : 'Keeping: ' + item.name + '.', 'DECLARE_KEEP');
+            if (kn >= 10) {
+                narratorLine(DECLARE_KEEP_FULL_POOL, { N: kn });
+            } else {
+                // Use pool for variety, append item name prefix
+                var keepPool = DECLARE_KEEP_POOL.slice(0, -2); // skip George references for low counts
+                var keepMsg = keepPool[Math.floor(Math.random() * keepPool.length)]
+                    .replace('{N}', kn);
+                keepMsg = item.name.substring(0, 22) + '. ' + keepMsg;
+                otisLines.push({ role: 'otis', text: keepMsg }); renderOTIS();
+                if (window.OtisTTS) OtisTTS.speak(keepMsg);
+            }
         } else if (method === 'SCRAP') {
             gameState.state.scrapFill = Math.min(100, (gameState.state.scrapFill || 0) + 12);
             gameState.state.currentDropScrapped = (gameState.state.currentDropScrapped || 0) + 1;
@@ -1972,16 +2086,11 @@
     function handleSellBack(index) {
         var item = gameState.state.keepLog[index]; if (!item) return;
         var val = getAppraisedValue(item);
-        var baseVal = Math.floor((item.baseValue||item.otisValue||0) * (CONDITION_MULTIPLIERS[item.condition]||1.0));
-        var gained = val - baseVal;
-        var daysHeld = Math.max(0, (gameState.state.day || 1) - (item.keepDay || item.day || 1));
         gameState.state.credits += val;
         gameState.state.keepLog.splice(index, 1);
         gameState._save();
         gameState._updateUI();
-        var msg = 'Selling from keep log: ' + item.name + '. +' + val + ' credits.';
-        if (gained > 0) msg += ' Held ' + daysHeld + ' days. +' + gained + ' credits appreciated.';
-        appendOTIS(msg, 'SELL_FROM_LOG');
+        narratorLine(SELL_FROM_LOG_POOL, { CR: val });
     }
 
     function trackOTISLearning(action, item) {
@@ -2077,6 +2186,20 @@
         may: '[MAY] May Finster, Leftover Recycling. I handle scrap for this station — always have, since your uncle. You fill the bin, you dispatch to me, I return credits based on fill rate. Simple. Don\'t let it back up past 90. George never did.',
     };
 
+    // Narrator delivery — picks from a pool, substitutes {tokens}, speaks.
+    // Does NOT call the API. Does NOT add to _otisHistory.
+    function narratorLine(pool, tokens) {
+        tokens = tokens || {};
+        var line = pool[Math.floor(Math.random() * pool.length)];
+        // Substitute {KEY} tokens
+        Object.keys(tokens).forEach(function(k) {
+            line = line.replace(new RegExp('\\{' + k + '\\}', 'g'), String(tokens[k]));
+        });
+        otisLines.push({ role: 'otis', text: line });
+        renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(line);
+    }
+
     function appendHardcodedComm(text) {
         otisLines.push({ role: 'otis', text: text });
         renderOTIS();
@@ -2119,38 +2242,45 @@
 
     // PAYMENT
     function handleMakePayment() {
-        if ((gameState.state.outstandingDebt || 0) > 0) { appendOTIS('Cannot make loan payment while arrears outstanding. Clear arrears first.', 'PAYMENT_FAILED'); return; }
-        if (gameState.state.credits < 650) { appendOTIS('Insufficient credits. Need 650, have ' + gameState.state.credits + '. Payment failed.', 'PAYMENT_FAILED'); return; }
+        if ((gameState.state.outstandingDebt || 0) > 0) { var pf1 = 'Cannot process. Arrears outstanding. Clear arrears first.'; otisLines.push({ role: 'otis', text: pf1 }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(pf1); return; }
+        if (gameState.state.credits < 650) { var pf2 = 'Insufficient credits. Need 650 cr, have ' + gameState.state.credits + ' cr.'; otisLines.push({ role: 'otis', text: pf2 }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(pf2); return; }
         gameState.state.credits -= 650;
         gameState.state.debt = Math.max(0, gameState.state.debt - 650);
         // Reset the full cycle from the payment date, whether early or on time.
         gameState.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
         gameState._save(); gameState._updateUI();
         recalculateNamingTier();
-        appendOTIS('Payment processed. 650 credits. Remaining balance: ' + gameState.state.debt.toLocaleString() + ' credits. Next payment in ' + TIMING.PAYMENT_CYCLE_DAYS + ' days.', 'PAYMENT');
+        var mpMsg = 'Payment processed. 650 cr. Balance: ' + gameState.state.debt.toLocaleString() + ' cr.';
+        otisLines.push({ role: 'otis', text: mpMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(mpMsg);
     }
     function handleClearArrears() {
         var a = gameState.state.outstandingDebt || 0; if (a === 0) return;
-        if (gameState.state.credits < a) { appendOTIS('Insufficient credits to clear arrears. Need ' + a + ' credits, have ' + gameState.state.credits + ' credits.', 'ARREARS_NOTICE'); return; }
+        if (gameState.state.credits < a) { var pf3 = 'Insufficient credits. Need ' + a + ' cr to clear arrears, have ' + gameState.state.credits + ' cr.'; otisLines.push({ role: 'otis', text: pf3 }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(pf3); return; }
         gameState.state.credits -= a; gameState.state.outstandingDebt = 0;
         gameState._save(); gameState._updateUI();
-        appendOTIS('Arrears cleared.', 'ARREARS_CLEARED');
+        var arMsg = 'Arrears cleared. Balance zero.';
+        otisLines.push({ role: 'otis', text: arMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(arMsg);
     }
 
     // SCRAP
     function handleDispatchMay() {
         var fill = gameState.state.scrapFill || 0; if (fill === 0) return;
+        var prevFill = fill;
         var earned = Math.floor(fill * (5 + Math.random() * 5));
         var s = gameState.state;
         gameState.state.credits += earned; gameState.state.scrapFill = 0;
         s.scrapDispatchCount = (s.scrapDispatchCount || 0) + 1;
         s.avgScrapFillPct = Math.round(
-            ((s.avgScrapFillPct||0) * (s.scrapDispatchCount - 1) + fill)
+            ((s.avgScrapFillPct||0) * (s.scrapDispatchCount - 1) + prevFill)
             / s.scrapDispatchCount
         );
         gameState._save(); gameState._updateUI();
         renderStoreroomBuffer();
-        appendOTIS('Dispatching scrap to May Finster. Fill: ' + fill + '%. +' + earned + ' cr returned.', 'SCRAP_DISPATCH');
+        var sdMsg = 'Scrap dispatched. ' + prevFill + '% fill. +' + earned + ' cr from May.';
+        otisLines.push({ role: 'otis', text: sdMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(sdMsg);
     }
 
     function handleRouteToStoreroom() {
@@ -2166,7 +2296,9 @@
         renderStoreroomBuffer();
         var warn = document.getElementById('storeroom-overflow-warning');
         if (warn) warn.style.display = 'none';
-        appendOTIS('Routing ' + TIMING.BUFFER_ROUTE_COUNT + ' items to storeroom buffer. ' + s.storeroomBuffer.length + ' items waiting.', 'ZONE_SYSTEMS');
+        var rsMsg = 'Routing ' + TIMING.BUFFER_ROUTE_COUNT + ' items to buffer. ' + s.storeroomBuffer.length + ' held.';
+        otisLines.push({ role: 'otis', text: rsMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(rsMsg);
     }
 
     function renderStoreroomBuffer() {
@@ -2215,13 +2347,15 @@
         resolved.forEach(function(item) {
             if (Math.random() < RESERVE_SALE_SUCCESS_RATE) {
                 gameState.state.credits += item.price; gameState._save();
-                appendOTIS('Reserve sale confirmed: ' + item.name + '. +' + item.price + ' credits.', 'RECOGNITION_BONUS');
+                narratorLine(RESERVE_CONFIRMED_POOL, { CR: item.price });
                 gameState.state.reserveSuccesses = (gameState.state.reserveSuccesses || 0) + 1;
                 recalculateNamingTier();
             } else {
                 var otisVal = item.otisValue || 0;
                 gameState.state.credits += otisVal;
-                appendOTIS('Reserve expired: ' + item.name + '. No buyer. Listed at OTIS price. +' + otisVal + ' credits.', 'RESERVE_EXPIRED');
+                var expMsg = item.name.substring(0, 22) + ' \u2014 no buyer. Relisted at OTIS price. +' + otisVal + ' cr.';
+                otisLines.push({ role: 'otis', text: expMsg }); renderOTIS();
+                if (window.OtisTTS) OtisTTS.speak(expMsg);
             }
         });
         gameState._save(); renderShippingQueue(); gameState._updateUI();
@@ -2281,8 +2415,8 @@
     function handleBotCalibrate(id) {
         var s = gameState.state;
         var bot = (s.bots || []).find(function(b) { return b.id === id; });
-        if (!bot || bot.status === 'OFFLINE') { appendOTIS('BOT-' + id + ' is OFFLINE. Cannot calibrate. Order parts.', 'ZONE_SYSTEMS_BOT_REPAIR'); return; }
-        if (s.credits < 50) { appendOTIS('Insufficient credits. CALIBRATE costs 50 credits.', 'ZONE_SYSTEMS'); return; }
+        if (!bot || bot.status === 'OFFLINE') { var b1 = 'BOT-' + id + ' OFFLINE. Order parts to restore.'; otisLines.push({ role: 'otis', text: b1 }); renderOTIS(); return; }
+        if (s.credits < 50) { var b2 = 'Insufficient credits. CALIBRATE: 50 cr.'; otisLines.push({ role: 'otis', text: b2 }); renderOTIS(); return; }
         s.credits -= 50;
         bot.degradation = Math.max(0, bot.degradation - 2);
         if (bot.degradation >= 9) bot.status = 'OFFLINE';
@@ -2290,19 +2424,21 @@
         else if (bot.degradation >= 3) bot.status = 'AMBER';
         else bot.status = 'NOMINAL';
         gameState._save(); gameState._updateUI();
-        appendOTIS('BOT-' + id + ' calibrated. Degradation reduced. Status: ' + bot.status + '.', 'ZONE_SYSTEMS_BOT_REPAIR');
+        var b3 = 'BOT-' + id + ' calibrated. Status: ' + bot.status + '.';
+        otisLines.push({ role: 'otis', text: b3 }); renderOTIS();
     }
 
     function handleBotOrderParts(id) {
         var s = gameState.state;
         var bot = (s.bots || []).find(function(b) { return b.id === id; });
         if (!bot) return;
-        if (s.credits < 200) { appendOTIS('Insufficient credits. ORDER PARTS costs 200 credits.', 'ZONE_SYSTEMS'); return; }
+        if (s.credits < 200) { var b4 = 'Insufficient credits. ORDER PARTS: 200 cr.'; otisLines.push({ role: 'otis', text: b4 }); renderOTIS(); return; }
         s.credits -= 200;
         bot.degradation = 0;
         bot.status = 'NOMINAL';
         gameState._save(); gameState._updateUI();
-        appendOTIS('BOT-' + id + ' parts ordered. Delivery ETA: 2 days. Bot restored to NOMINAL.', 'ZONE_SYSTEMS_BOT_REPAIR');
+        var b5 = 'BOT-' + id + ' parts ordered. ETA: 2 days.';
+        otisLines.push({ role: 'otis', text: b5 }); renderOTIS();
     }
 
     // CONVEYOR JAM
@@ -2318,7 +2454,9 @@
         var clr  = document.getElementById('conveyor-jam-clear');
         if (warn) warn.style.display = '';
         if (clr)  clr.style.display  = '';
-        appendOTIS('Conveyor jam detected. Belt stalled. Next drop delayed 1 day.', 'CONVEYOR_JAM');
+        var jamMsg = 'Conveyor jam. Belt stalled.';
+        otisLines.push({ role: 'otis', text: jamMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(jamMsg);
     }
 
     function checkBeltJam() {
@@ -2330,7 +2468,9 @@
         if (s.beltJammed) return;
         s.beltJammed = true;
         gameState._save();
-        appendOTIS('[CONVEYOR] Belt backed up. Process current item to clear.', 'CONVEYOR_JAM');
+        var backMsg = 'Belt backed up. Clear the queue.';
+        otisLines.push({ role: 'otis', text: backMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(backMsg);
         updateArmSprite('CONVEYOR_JAM');
         setLight('light-belt', 'light-amber');
         var w = document.getElementById('conveyor-jam-warning');
@@ -2348,7 +2488,9 @@
         var clr  = document.getElementById('conveyor-jam-clear');
         if (warn) warn.style.display = 'none';
         if (clr)  clr.style.display  = 'none';
-        appendOTIS('Jam cleared.', 'JAM_CLEARED');
+        var clearMsg = 'Jam cleared. Belt running.';
+        otisLines.push({ role: 'otis', text: clearMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(clearMsg);
     }
 
     // AUXILIARY CHANNEL
@@ -2773,7 +2915,10 @@
         var toastContent = document.getElementById('toast-content');
         if (toastContent) toastContent.textContent = "George's toaster fired. Energy draw logged.";
         openModal('toast');
-        appendOTIS("George's toaster fired. Energy draw logged.", 'TOAST');
+        // fireToasterIncident toast is hardcoded — different from daily autoToast
+        var tiMsg = 'Toaster event. Grid draw detected. Cascade possible.';
+        otisLines.push({ role: 'otis', text: tiMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(tiMsg);
         setTimeout(function() { closeModal('toast'); runPowerOutageSequence(); }, 2000);
     }
 
@@ -2964,7 +3109,7 @@
         s.daysUntilNextDrop = Math.max(0, (s.daysUntilNextDrop || 7) - 1);
         if (s.outstandingDebt > 0) {
             s.outstandingDebt = Math.ceil(s.outstandingDebt * 1.05);
-            if (s.outstandingDebt > 2000) appendOTIS('Arrears exceeding 2,000 credits. Compound rate: 5% per day.', 'ARREARS_WARNING');
+            if (s.outstandingDebt > 2000) { var awMsg = 'Arrears: ' + s.outstandingDebt.toLocaleString() + ' cr. Compounding at 5% per day.'; otisLines.push({ role: 'otis', text: awMsg }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(awMsg); }
         }
         if (s.daysUntilPayment <= 0) {
             if (s.credits >= 650 && (s.outstandingDebt || 0) === 0) {
@@ -2973,7 +3118,9 @@
                 s.credits -= 650;
                 s.debt = Math.max(0, s.debt - 650);
                 s.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
-                appendOTIS('Payment auto-processed. 650 credits deducted. Remaining balance: ' + s.debt.toLocaleString() + ' credits. Next payment in ' + TIMING.PAYMENT_CYCLE_DAYS + ' days.', 'PAYMENT');
+                var payMsg = 'Payment logged. 650 cr. Balance: ' + s.debt.toLocaleString() + ' cr.';
+                otisLines.push({ role: 'otis', text: payMsg }); renderOTIS();
+                if (window.OtisTTS) OtisTTS.speak(payMsg);
             } else {
                 s.missedPayments = (s.missedPayments || 0) + 1;
                 s.outstandingDebt = (s.outstandingDebt || 0) + 650;
@@ -2997,7 +3144,20 @@
         // previous setTimeout(handleToasterIncident, 3000) approach.
         s.toastFiredToday = false;
         autoToast();
-        appendOTIS('Day ' + s.day + '. Another one.', 'DAY_TICK');
+        // Every 3rd day: real API call so OTIS can observe the actual state.
+        // Other days: scripted pool — fast, no latency, still atmospheric.
+        if (s.day % 3 === 0) {
+            appendOTIS('Day ' + s.day + '. Status check.', 'DAY_TICK');
+        } else {
+            var beltState = s.dropActive ? 'active' : 'idle';
+            var dayMsg = DAY_TICK_POOL[Math.floor(Math.random() * DAY_TICK_POOL.length)]
+                .replace('{D}', s.day)
+                .replace('{STATE}', beltState)
+                .replace('{PAY}', s.daysUntilPayment || 28)
+                .replace('{DEBT}', (s.debt || 0).toLocaleString());
+            otisLines.push({ role: 'otis', text: dayMsg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(dayMsg);
+        }
         updateArmSprite('DAY_TICK');
         gameState._save();
         gameState._updateUI();
