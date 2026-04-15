@@ -2873,18 +2873,17 @@
             setLight('light-auxiliary', 'light-amber');
         }
 
-        function bootSequence() {
+        async function bootSequence() {
             var loginBtn = document.getElementById('btn-login');
             if (loginBtn) loginBtn.classList.remove('login-pulse');
             checkScriptedComms();
-            // Fire login message without awaiting the API response so the toast timer
-            // is always scheduled regardless of OTIS API latency or availability.
-            appendOTIS('Operator logging in.', 'LOGIN');
-            // Schedule the daily toast independently of the OTIS API call.
+            // Await the LOGIN OTIS response so the toast always fires after OTIS
+            // has acknowledged the operator login — not in a race with the API call.
+            await appendOTIS('Operator logging in.', 'LOGIN');
             // autoToast() is self-guarded by toastFiredToday so a same-day reload
             // that has already recorded the toast is safe to call here (no-op).
             if (!gameState.state.toastFiredToday) {
-                setTimeout(autoToast, 1500);
+                setTimeout(autoToast, 500);
             }
             // Resume belt delivery if a drop was active when the page last loaded.
             if (gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
@@ -2894,17 +2893,14 @@
         }
 
         if (shouldShowIntro && typeof runIntroSequence === 'function') {
-            var loginBtn = document.getElementById('btn-login');
-            if (loginBtn) loginBtn.classList.add('login-pulse');
             // NEW GAME SEQUENCE (Day 1, intro not yet played):
             //   1. Resources loaded above (gameState.init, UI render).
             //   2. runIntroSequence — Script Back Story module plays.
-            //   3. Intro pauses at "OPERATOR LOGIN REQUIRED"; operator clicks LOGIN or
-            //      SKIP to continue (button is changed by intro.js on completion).
-            //   4. Callback fires → bootSequence():
-            //      a. appendOTIS LOGIN trigger → OTIS says "Good morning…"
-            //      b. autoToast() fires after 1500 ms — deducts 6 credits, shows the
-            //         Daily Toast module, OTIS adds a toast comment.
+            //   3. Intro pauses at "OPERATOR LOGIN REQUIRED"; intro-skip-btn pulses
+            //      and becomes "OPERATOR LOGIN ►" (handled in intro.js).
+            //   4. Operator clicks "OPERATOR LOGIN ►" → _doComplete() → callback:
+            //      a. appendOTIS LOGIN trigger — awaited so OTIS responds first.
+            //      b. autoToast() fires 500 ms after the OTIS login response.
             //   5. Day 1 gameplay begins.
             //
             // Only mark introPlayed when the intro genuinely displayed so a failed

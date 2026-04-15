@@ -6,6 +6,8 @@
     // Shared completion handler — closes the intro modal and fires the callback.
     // Called by both skipIntro() (early exit) and the LOGIN button (normal exit).
     function _doComplete() {
+        var skipBtn = document.getElementById('intro-skip-btn');
+        if (skipBtn) skipBtn.classList.remove('login-pulse');
         var modal = document.getElementById('modal-intro');
         if (modal) modal.style.display = 'none';
         if (_cb) { var cb = _cb; _cb = null; cb(true); }
@@ -89,6 +91,7 @@
             var skipBtn = document.getElementById('intro-skip-btn');
             if (skipBtn) {
                 skipBtn.textContent = 'OPERATOR LOGIN \u25BA';
+                skipBtn.classList.add('login-pulse');
                 skipBtn.onclick = function () { _doComplete(); };
             } else {
                 // Fallback if the button element is missing.
