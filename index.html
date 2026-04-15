@@ -310,6 +310,7 @@
                 <button onclick="handleLogoff()">LOGOFF</button>
                 <button id="tts-btn" onclick="handleTTSToggle()">TTS: ON</button>
                 <button id="tts-skip-btn" onclick="handleTTSSkip()" title="Skip current speech and clear queue">TTS: SKIP</button>
+                <button id="sfx-btn" onclick="handleSoundToggle()">SFX: ON</button>
                 <button id="tutorial-skip-btn" onclick="tutorialExit()" style="display:none;color:var(--text-dim);border-color:var(--border-dim)">SKIP TUTORIAL</button>
             </div>
 
@@ -1467,6 +1468,7 @@
         var floatBar = document.getElementById('otis-float');
         if (floatBar) floatBar.style.display = 'block';
         checkTutorialModalOpen(name);
+        if (name === 'store' && window.OtisSound) OtisSound.startAmbient('storeroom');
     }
     function closeModal(name) {
         var el = document.getElementById('modal-' + name);
@@ -1480,6 +1482,7 @@
             var bankBtn = document.getElementById('btn-answer-bank');
             if (bankBtn) bankBtn.classList.remove('tutorial-highlight');
         }
+        if (name === 'store' && window.OtisSound) OtisSound.stopAmbient('storeroom');
     }
 
     function updateGameHints() {
@@ -1563,6 +1566,7 @@
             gameState._save();
             updateBeltUI('DROP_COMPLETE');
             setBotDots(false);
+            if (window.OtisSound) OtisSound.stopAmbient('conveyor');
             renderPickList();
             renderManifestSummary([]);
             var daysLeft = (gameState.state.daysUntilNextDrop != null)
@@ -1681,6 +1685,7 @@
 
     function handleBargeArrival() {
         if (gameState.state.dropActive) return;
+        if (window.OtisSound) OtisSound.playSFX('bargedrop');
         var manifest = [];
         if (gameState.state.day === 1) {
             // Day 1 scripted drop: 4 Common items, all Used condition, no easter eggs
@@ -1756,6 +1761,10 @@
         ['bot-dot-1','bot-dot-2','bot-dot-3','sys-bot-dot-1','sys-bot-dot-2','sys-bot-dot-3'].forEach(function(id) {
             var d = document.getElementById(id); if (d) d.className = 'dot' + (active ? ' amber' : '');
         });
+        if (window.OtisSound) {
+            if (active) OtisSound.startAmbient('bots');
+            else OtisSound.stopAmbient('bots');
+        }
     }
 
     function updateBeltUI(status) {
@@ -1771,6 +1780,7 @@
             if (fill) { fill.className = 'belt-bar-fill'; setTimeout(function() { fill.style.animationDuration = (getBeltMs()/1000)+'s'; fill.classList.add('belt-active'); }, 0); }
             if (backed) backed.style.display = 'none';
             if (st) st.textContent = 'ACTIVE \u2014 ' + rem + ' items remaining';
+            if (window.OtisSound) OtisSound.startAmbient('conveyor');
         } else if (status === 'BACKED_UP') {
             if (fill) fill.className = 'belt-bar-fill';
             if (backed) backed.style.display = '';
@@ -2168,6 +2178,7 @@
     // incident is a separate Act-3 event; see fireToasterIncident() below.
     function autoToast() {
         if (gameState.state.toastFiredToday) return;
+        if (window.OtisSound) OtisSound.startMusic('music2');
         var s = gameState.state;
         if (s.credits >= 6) s.credits -= 6;
         else { s.outstandingDebt = (s.outstandingDebt || 0) + (6 - s.credits); s.credits = 0; }
@@ -2910,6 +2921,7 @@
     // from any daily-toast code path — the two events are intentionally separate.
     function fireToasterIncident() {
         if (gameState.state.toasterIncidentFired) return;
+        if (window.OtisSound) OtisSound.startMusic('music3');
         var s = gameState.state;
         if (s.credits >= 6) s.credits -= 6;
         else { s.outstandingDebt = (s.outstandingDebt || 0) + (6 - s.credits); s.credits = 0; }
@@ -3103,6 +3115,11 @@
         window.speechSynthesis.cancel();
         window.OtisTTS.flush();
     }
+    function handleSoundToggle() {
+        if (!window.OtisSound) return;
+        var muted = window.OtisSound.toggleMute();
+        var btn = document.getElementById('sfx-btn'); if (btn) btn.textContent = muted ? 'SFX: OFF' : 'SFX: ON';
+    }
     function toggleDebug() { var p = document.getElementById('debug-panel'); if (p) p.style.display = p.style.display !== 'block' ? 'block' : 'none'; }
 
     function advanceDay() {
@@ -3251,6 +3268,7 @@
 
     // COMMS — ANSWER BANK (scripted, no API)
     function handleAnswerBank() {
+        if (window.OtisSound) OtisSound.playSFX('comms');
         var s = gameState.state;
         var arrears = s.outstandingDebt || 0;
         var dup  = s.daysUntilPayment || 28;
@@ -3276,6 +3294,7 @@
 
     // COMMS — ANSWER SVEN (scripted, no API)
     function handleAnswerSven() {
+        if (window.OtisSound) OtisSound.playSFX('comms');
         var s = gameState.state;
         var ignoreDays = s.svenIgnoreDays || 0;
         var rareInQueue = (s.shippingQueue||[]).length > 0 ||
@@ -3324,6 +3343,7 @@
 
     // COMMS — ANSWER MAY (behavior-keyed, intel reward at 75%+ fill)
     function handleAnswerMay() {
+        if (window.OtisSound) OtisSound.playSFX('comms');
         var s = gameState.state;
         var avg = s.avgScrapFillPct || 0;
         var dropCount = s.dropCount || 0;
@@ -3623,6 +3643,7 @@
     <script src="otis.js"></script>
     <script src="tts.js"></script>
     <script src="audio.js"></script>
+    <script src="sound.js"></script>
 
     <script>
     (async function() {
@@ -3639,6 +3660,14 @@
         updateModuleLights();
         updateBeltUI('CLEAR');
         updateFatigueVisuals();
+
+        // Sound system — unlock on first user gesture and auto-start music after 60s
+        document.addEventListener('click', function unlockSound() {
+            if (window.OtisSound) OtisSound.init();
+        }, { once: true });
+        setTimeout(function() {
+            if (window.OtisSound) OtisSound.startMusic('music1');
+        }, 60000);
 
         // Timers — IDs stored on window to prevent duplicate intervals on hot reload
         if (!window._otisSessionIntervalId) {
@@ -3660,6 +3689,8 @@
         if (ttsBtn && window.OtisTTS) { if (!window.OtisTTS.isSupported()) ttsBtn.style.display = 'none'; else ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON'; }
         var ttsSkipBtn = document.getElementById('tts-skip-btn');
         if (ttsSkipBtn && window.OtisTTS && !window.OtisTTS.isSupported()) ttsSkipBtn.style.display = 'none';
+        var sfxBtn = document.getElementById('sfx-btn');
+        if (sfxBtn && window.OtisSound) sfxBtn.textContent = window.OtisSound.isMuted() ? 'SFX: OFF' : 'SFX: ON';
         if (gameState.state.easterEggFired && !gameState.state.toasterIncidentFired) {
             var auxBtn = document.getElementById('module-btn-auxiliary');
             if (auxBtn) { auxBtn.style.display = ''; auxBtn.style.opacity = '1'; }
