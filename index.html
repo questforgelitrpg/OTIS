@@ -1278,6 +1278,62 @@
     var UPGRADE_PROMPT_DAY = 14;
     var otisLines = [];
 
+    // SILENCE TIMER — OTIS fires a dad joke after 2 real minutes of silence
+    var _lastOtisActivity = Date.now();
+
+    // Patch appendOTIS and appendHardcodedComm to reset the silence clock
+    var _origAppendOTIS = appendOTIS;
+    appendOTIS = async function(userText, trigger) {
+        _lastOtisActivity = Date.now();
+        return _origAppendOTIS(userText, trigger);
+    };
+    var _origAppendHardcoded = appendHardcodedComm;
+    appendHardcodedComm = function(text) {
+        _lastOtisActivity = Date.now();
+        return _origAppendHardcoded(text);
+    };
+
+    var _dadJokeIndex = 0;
+    var _dadJokeShuffled = null;
+    function _getNextDadJoke() {
+        if (!_dadJokeShuffled) {
+            _dadJokeShuffled = DAD_JOKES.slice();
+            for (var i = _dadJokeShuffled.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var t = _dadJokeShuffled[i]; _dadJokeShuffled[i] = _dadJokeShuffled[j]; _dadJokeShuffled[j] = t;
+            }
+        }
+        if (_dadJokeIndex >= _dadJokeShuffled.length) {
+            _dadJokeShuffled = null; _dadJokeIndex = 0; return _getNextDadJoke();
+        }
+        return _dadJokeShuffled[_dadJokeIndex++];
+    }
+
+    var SILENCE_THRESHOLD_MS = 120000; // 2 real minutes
+    setInterval(function() {
+        var s = gameState.state;
+        // Only fire during active session, not during a drop or power outage
+        if (s.dropActive || s.powerOutageActive) return;
+        if (Date.now() - _lastOtisActivity < SILENCE_THRESHOLD_MS) return;
+
+        var joke = _getNextDadJoke();
+        var setups = [
+            'Station quiet. Nothing on the belt. George used to tell jokes.',
+            'Intake window closed. Running a catalogue maintenance subroutine. Also:',
+            'No manifest activity. Idle logging active. Unrelated:',
+            'Systems nominal. Belt clear. Processing non-essential data.',
+            'Routine observation while belt is inactive:',
+            'Nothing actionable on the manifest. Filing a non-operational entry:',
+        ];
+        var setup = setups[Math.floor(Math.random() * setups.length)];
+        var full = setup + ' ' + joke;
+
+        otisLines.push({ role: 'otis', text: full });
+        renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(full);
+        _lastOtisActivity = Date.now(); // reset so it doesn't fire again immediately
+    }, 30000); // check every 30 seconds
+
     function renderOTIS() {
         var out = document.getElementById('otis-output');
         if (!out) return;
@@ -3385,6 +3441,7 @@
 
     </script>
 
+    <script src="dad-jokes.js"></script>
     <script src="otis.js"></script>
     <script src="tts.js"></script>
     <script src="audio.js"></script>
