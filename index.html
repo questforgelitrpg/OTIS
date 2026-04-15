@@ -830,6 +830,9 @@
     }
 
     function buildManifestSummary(manifest) {
+        if (gameState.state.day === 1) {
+            return "First intake. Four items. Common origin. Belt is running. Examine each one. George had a method. Worth learning before diverging from it.";
+        }
         var n = manifest.length;
         var cats = {};
         manifest.forEach(function(i) { cats[i.category] = (cats[i.category] || 0) + 1; });
@@ -1350,18 +1353,32 @@
         if (gameState.state.dropActive) return;
         var btn = document.getElementById('btn-barge-drop');
         if (btn && btn.disabled) return;
-        var act = gameState.state.act;
-        var count;
-        if (act === 1) count = TIMING.DROP_SIZE_ACT1;
-        else if (act === 2) count = TIMING.DROP_SIZE_ACT2_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT2_MAX - TIMING.DROP_SIZE_ACT2_MIN + 1));
-        else count = TIMING.DROP_SIZE_ACT3_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT3_MAX - TIMING.DROP_SIZE_ACT3_MIN + 1));
-        shuffleDropPool(gameState.state.pickListChoice);
         var manifest = [];
-        for (var k = 0; k < count; k++) manifest.push(weightedPickItem());
-        // 10% chance to append one easter egg item to the drop
-        if (Math.random() < 0.10) {
-            var eeItem = Object.assign({}, EASTER_EGG_POOL[Math.floor(Math.random() * EASTER_EGG_POOL.length)]);
-            manifest.push(eeItem);
+        if (gameState.state.day === 1) {
+            // Day 1 scripted drop: 4 Common items, all Used condition, no easter eggs
+            var commonPool = MANIFEST_POOL.filter(function(i) {
+                return i.rarity === 'Common';
+            });
+            for (var si = commonPool.length - 1; si > 0; si--) {
+                var sj = Math.floor(Math.random() * (si + 1));
+                var st = commonPool[si]; commonPool[si] = commonPool[sj]; commonPool[sj] = st;
+            }
+            manifest = commonPool.slice(0, 4).map(function(i) {
+                return Object.assign({}, i, { condition: 'Used' });
+            });
+        } else {
+            var act = gameState.state.act;
+            var count;
+            if (act === 1) count = TIMING.DROP_SIZE_ACT1;
+            else if (act === 2) count = TIMING.DROP_SIZE_ACT2_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT2_MAX - TIMING.DROP_SIZE_ACT2_MIN + 1));
+            else count = TIMING.DROP_SIZE_ACT3_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT3_MAX - TIMING.DROP_SIZE_ACT3_MIN + 1));
+            shuffleDropPool(gameState.state.pickListChoice);
+            for (var k = 0; k < count; k++) manifest.push(weightedPickItem());
+            // 10% chance to append one easter egg item to the drop
+            if (Math.random() < 0.10) {
+                var eeItem = Object.assign({}, EASTER_EGG_POOL[Math.floor(Math.random() * EASTER_EGG_POOL.length)]);
+                manifest.push(eeItem);
+            }
         }
         gameState.state.manifestItems = manifest.slice();
         gameState.state.dropActive = true;
