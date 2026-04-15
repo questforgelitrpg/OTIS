@@ -1793,13 +1793,28 @@
 
     function handleConsultMerged() {
         if (!currentItem) return;
-        var ctx = buildItemContext(currentItem);
         currentItem.consultedExamine = true;
         currentItem.consultedWorth = true;
         var b = document.getElementById('btn-reserve'); if (b) b.disabled = false;
         renderItemQueue();
-        appendOTIS(ctx, 'CONSULT_EXAMINE');
         if (gameState.state.tutorialStep === 2) tutorialAdvance();
+
+        // Common items: no API call — display hardcoded assessment
+        if (currentItem.rarity === 'Common') {
+            var ev = getEffectiveValue(currentItem);
+            var condNote = currentItem.condition !== 'Used'
+                ? ' ' + currentItem.condition + ' condition.'
+                : '';
+            var msg = currentItem.category + '. Common salvage.' + condNote
+                + ' OTIS estimate: ' + ev + ' cr.';
+            otisLines.push({ role: 'otis', text: msg });
+            renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(msg);
+            return;
+        }
+
+        // Uncommon, Rare, Anomalous, George items — full API call
+        appendOTIS(buildItemContext(currentItem), 'CONSULT_EXAMINE');
     }
 
     var SCRAP_SHORTS = ['Canned.','Logged.','Processed.','To May.','Binned.','Filed as scrap.'];
