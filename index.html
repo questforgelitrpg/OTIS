@@ -1623,6 +1623,7 @@
                 "You're getting George's rhythm. I'm noting that whether you want me to or not.",
             ];
         } else if (drops >= 5 && s.skipCount > drops) {
+            // Operator has skipped GEORGE consults more times than drops completed
             msgs = [
                 "You've been skipping more than consulting. That's your call.",
                 "George consulted on everything. I'm not saying you're wrong.",
@@ -1938,6 +1939,8 @@
         "On record.",
         "Noted. {N} items in the log.",
         "Kept. Flagged.",
+        // NOTE: Last 2 entries are George-reference lines — only used when keep count >= 10.
+        // If you add entries here, keep George-reference lines at the end.
         "That one stays.",
         "George would have kept that one too.",
     ];
@@ -2058,8 +2061,8 @@
             if (kn >= 10) {
                 narratorLine(DECLARE_KEEP_FULL_POOL, { N: kn });
             } else {
-                // Use pool for variety, append item name prefix
-                var keepPool = DECLARE_KEEP_POOL.slice(0, -2); // skip George references for low counts
+                // Skip the last 2 entries (George-reference lines) for low keep counts
+                var keepPool = DECLARE_KEEP_POOL.slice(0, -2);
                 var keepMsg = keepPool[Math.floor(Math.random() * keepPool.length)]
                     .replace('{N}', kn);
                 keepMsg = item.name.substring(0, 22) + '. ' + keepMsg;
