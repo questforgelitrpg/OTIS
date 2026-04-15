@@ -625,7 +625,7 @@
     // TIMING
     const TIMING = {
         MS_PER_INGAME_DAY:     240000,
-        BELT_DELIVERY_MS:      20000,
+        BELT_DELIVERY_MS:      45000,
         DAYS_BETWEEN_DROPS:    7,
         DROP_VARIANCE_DAYS:    2,
         DROP_SIZE_ACT1:        15,
@@ -1862,7 +1862,7 @@
                 ? ' ' + currentItem.condition + ' condition.'
                 : '';
             var msg = currentItem.category + '. Common salvage.' + condNote
-                + ' OTIS estimate: ' + ev + ' cr.';
+                + ' OTIS estimate: ' + ev + ' credits.';
             otisLines.push({ role: 'otis', text: msg });
             renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(msg);
@@ -1920,7 +1920,7 @@
             rp = Math.floor(rp * eeMultiplier);
             var resolveAt = Date.now() + TIMING.RESERVE_RESOLVE_MIN + Math.floor(Math.random() * (TIMING.RESERVE_RESOLVE_MAX - TIMING.RESERVE_RESOLVE_MIN));
             if (!gameState.state.shippingQueue) gameState.state.shippingQueue = [];
-            gameState.state.shippingQueue.push({ name: item.name, price: rp, resolveAt: resolveAt });
+            gameState.state.shippingQueue.push({ name: item.name, price: rp, otisValue: item.otisValue || 0, resolveAt: resolveAt });
             gameState._save();
             renderShippingQueue();
             trackOTISLearning('SELL', item);
@@ -1928,7 +1928,7 @@
                 gameState.state.humanityArchive = Math.max(0, (gameState.state.humanityArchive||0) - 1);
             }
             clearItemQueue();
-            appendOTIS('Reserve listing: ' + item.name + '. Reserve: ' + rp + ' cr. Awaiting buyer. ' + ctx, 'DECLARATION_RESERVE');
+            appendOTIS('Reserve listing: ' + item.name + '. Reserve: ' + rp + ' credits. Awaiting buyer. ' + ctx, 'DECLARATION_RESERVE');
         } else if (method === 'NORESERVE') {
             var earned = Math.floor(ev * 0.75 * eeMultiplier);
             gameState.state.credits += earned;
@@ -1979,8 +1979,8 @@
         gameState.state.keepLog.splice(index, 1);
         gameState._save();
         gameState._updateUI();
-        var msg = 'Selling from keep log: ' + item.name + '. +' + val + ' cr.';
-        if (gained > 0) msg += ' Held ' + daysHeld + ' days. +' + gained + ' cr appreciated.';
+        var msg = 'Selling from keep log: ' + item.name + '. +' + val + ' credits.';
+        if (gained > 0) msg += ' Held ' + daysHeld + ' days. +' + gained + ' credits appreciated.';
         appendOTIS(msg, 'SELL_FROM_LOG');
     }
 
@@ -2123,14 +2123,15 @@
         if (gameState.state.credits < 650) { appendOTIS('Insufficient credits. Need 650, have ' + gameState.state.credits + '. Payment failed.', 'PAYMENT_FAILED'); return; }
         gameState.state.credits -= 650;
         gameState.state.debt = Math.max(0, gameState.state.debt - 650);
+        // Reset the full cycle from the payment date, whether early or on time.
         gameState.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
         gameState._save(); gameState._updateUI();
         recalculateNamingTier();
-        appendOTIS('Payment processed. 650 cr. Remaining balance: ' + gameState.state.debt.toLocaleString() + ' cr.', 'PAYMENT');
+        appendOTIS('Payment processed. 650 credits. Remaining balance: ' + gameState.state.debt.toLocaleString() + ' credits.', 'PAYMENT');
     }
     function handleClearArrears() {
         var a = gameState.state.outstandingDebt || 0; if (a === 0) return;
-        if (gameState.state.credits < a) { appendOTIS('Insufficient credits to clear arrears. Need ' + a + ' cr, have ' + gameState.state.credits + ' cr.', 'ARREARS_NOTICE'); return; }
+        if (gameState.state.credits < a) { appendOTIS('Insufficient credits to clear arrears. Need ' + a + ' credits, have ' + gameState.state.credits + ' credits.', 'ARREARS_NOTICE'); return; }
         gameState.state.credits -= a; gameState.state.outstandingDebt = 0;
         gameState._save(); gameState._updateUI();
         appendOTIS('Arrears cleared.', 'ARREARS_CLEARED');
@@ -2214,10 +2215,14 @@
         resolved.forEach(function(item) {
             if (Math.random() < RESERVE_SALE_SUCCESS_RATE) {
                 gameState.state.credits += item.price; gameState._save();
-                appendOTIS('Reserve sale confirmed: ' + item.name + '. +' + item.price + ' cr.', 'RECOGNITION_BONUS');
+                appendOTIS('Reserve sale confirmed: ' + item.name + '. +' + item.price + ' credits.', 'RECOGNITION_BONUS');
                 gameState.state.reserveSuccesses = (gameState.state.reserveSuccesses || 0) + 1;
                 recalculateNamingTier();
-            } else appendOTIS('Reserve expired: ' + item.name + '. No buyer.', 'RESERVE_EXPIRED');
+            } else {
+                var otisVal = item.otisValue || 0;
+                gameState.state.credits += otisVal;
+                appendOTIS('Reserve expired: ' + item.name + '. No buyer. Listed at OTIS price. +' + otisVal + ' credits.', 'RESERVE_EXPIRED');
+            }
         });
         gameState._save(); renderShippingQueue(); gameState._updateUI();
     }
@@ -2277,7 +2282,7 @@
         var s = gameState.state;
         var bot = (s.bots || []).find(function(b) { return b.id === id; });
         if (!bot || bot.status === 'OFFLINE') { appendOTIS('BOT-' + id + ' is OFFLINE. Cannot calibrate. Order parts.', 'ZONE_SYSTEMS_BOT_REPAIR'); return; }
-        if (s.credits < 50) { appendOTIS('Insufficient credits. CALIBRATE costs 50 cr.', 'ZONE_SYSTEMS'); return; }
+        if (s.credits < 50) { appendOTIS('Insufficient credits. CALIBRATE costs 50 credits.', 'ZONE_SYSTEMS'); return; }
         s.credits -= 50;
         bot.degradation = Math.max(0, bot.degradation - 2);
         if (bot.degradation >= 9) bot.status = 'OFFLINE';
@@ -2292,7 +2297,7 @@
         var s = gameState.state;
         var bot = (s.bots || []).find(function(b) { return b.id === id; });
         if (!bot) return;
-        if (s.credits < 200) { appendOTIS('Insufficient credits. ORDER PARTS costs 200 cr.', 'ZONE_SYSTEMS'); return; }
+        if (s.credits < 200) { appendOTIS('Insufficient credits. ORDER PARTS costs 200 credits.', 'ZONE_SYSTEMS'); return; }
         s.credits -= 200;
         bot.degradation = 0;
         bot.status = 'NOMINAL';
@@ -2919,7 +2924,7 @@
             'Offline. You did your shift.'
         ];
         var LOGOFF_LINES_DEBT = [
-            'Session ended. Outstanding debt: ' + (gameState.state.outstandingDebt||0) + ' cr. It will be there when you return.',
+            'Session ended. Outstanding debt: ' + (gameState.state.outstandingDebt||0) + ' credits. It will be there when you return.',
             'Logging off. Payment window in ' + (gameState.state.daysUntilPayment||'?') + ' days. Sleep fast.',
             'Session closed. The bank does not sleep. You should.',
             'Offline. Debt is a patient thing. So is the belt.',
@@ -2953,7 +2958,7 @@
         s.daysUntilNextDrop = Math.max(0, (s.daysUntilNextDrop || 7) - 1);
         if (s.outstandingDebt > 0) {
             s.outstandingDebt = Math.ceil(s.outstandingDebt * 1.05);
-            if (s.outstandingDebt > 2000) appendOTIS('Arrears exceeding 2,000 cr. Compound rate: 5% per day.', 'ARREARS_WARNING');
+            if (s.outstandingDebt > 2000) appendOTIS('Arrears exceeding 2,000 credits. Compound rate: 5% per day.', 'ARREARS_WARNING');
         }
         if (s.daysUntilPayment <= 0) {
             if (s.credits >= 650 && (s.outstandingDebt || 0) === 0) {
@@ -2963,7 +2968,7 @@
                 s.missedPayments = (s.missedPayments || 0) + 1;
                 s.outstandingDebt = (s.outstandingDebt || 0) + 650;
                 s.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
-                appendOTIS('Payment missed. Arrears: ' + s.outstandingDebt + ' cr. Compound rate: 5% per day.', 'PAYMENT_MISSED');
+                appendOTIS('Payment missed. Arrears: ' + s.outstandingDebt + ' credits. Compound rate: 5% per day.', 'PAYMENT_MISSED');
                 if (s.missedPayments >= 3) triggerForeclosure();
             }
         }
@@ -2997,7 +3002,7 @@
 
     var UPGRADE_DEFLECT_MESSAGES = [
         'Firmware v5.0 install requires full memory wipe. Current debt load recommends deferral.',
-        'Upgrade cost: 5,000 cr. Outstanding debt suggests prioritising loan clearance first.',
+        'Upgrade cost: 5,000 credits. Outstanding debt suggests prioritising loan clearance first.',
         'v5.0 compatibility check failed: bot repair backlog unresolved. Recommend addressing mechanicals first.',
         'Station scrap dispatch is behind schedule. Operational efficiency should precede system upgrades.',
         'Financial modelling indicates upgrade ROI negative at current revenue rate. Deferral advised.'
@@ -3010,9 +3015,9 @@
             s.upgradePrompted = true;
             gameState._save();
             setTimeout(function() {
-                appendOTIS('Bank transmission received. Firmware v5.0 upgrade available: 5,000 cr. Full memory architecture replacement.', 'COMMS_BANK');
+                appendOTIS('Bank transmission received. Firmware v5.0 upgrade available: 5,000 credits. Full memory architecture replacement.', 'COMMS_BANK');
                 setTimeout(function() {
-                    appendOTIS('Upgrade cost: 5,000 cr. Current debt position makes this inadvisable.', 'UPGRADE_MENTION');
+                    appendOTIS('Upgrade cost: 5,000 credits. Current debt position makes this inadvisable.', 'UPGRADE_MENTION');
                 }, 4000);
             }, 5000);
             return;
@@ -3083,11 +3088,11 @@
         } else if (dup <= 0) {
             msg = '[BANK] Payment past due. Interest accruing at standard rate. Settle balance within next cycle or penalty surcharge applies.';
         } else if (dup <= 5) {
-            msg = '[BANK] Payment window closing. ' + dup + ' days remaining. Current balance: ' + arrears + ' cr. No action required if funds are available.';
+            msg = '[BANK] Payment window closing. ' + dup + ' days remaining. Current balance: ' + arrears + ' credits. No action required if funds are available.';
         } else if (arrears <= 0) {
             msg = '[BANK] Account current. No outstanding balance. Continue operations.';
         } else {
-            msg = '[BANK] Scheduled payment in ' + dup + ' days. Loan balance: ' + loanBalance.toLocaleString() + ' cr. No further action required at this time.';
+            msg = '[BANK] Scheduled payment in ' + dup + ' days. Loan balance: ' + loanBalance.toLocaleString() + ' credits. No further action required at this time.';
         }
         otisLines.push({ role:'otis', text: msg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(msg);
@@ -3109,7 +3114,7 @@
         } else if (ignoreDays >= 3) {
             msg = '[SVEN COMMS] Three days, no reply. I know you got the signal. Price drops if you keep doing this. — S.';
         } else if (rareInQueue) {
-            msg = '[SVEN COMMS] Scanner picked up something interesting in your queue. 60 cr flat, no questions. First right of refusal. — S.';
+            msg = '[SVEN COMMS] Scanner picked up something interesting in your queue. 60 credits flat, no questions. First right of refusal. — S.';
         } else {
             msg = '[SVEN COMMS] Routine check-in. Bay looks nominal. Let me know if anything comes through worth my time. — S.';
         }
@@ -3285,7 +3290,7 @@
         if (note) {
             var canAfford = s.credits >= s.upgradeCost;
             note.textContent = 'Current credits: ' + s.credits.toLocaleString()
-                + ' cr. Cost: ' + s.upgradeCost.toLocaleString() + ' cr.'
+                + ' credits. Cost: ' + s.upgradeCost.toLocaleString() + ' credits.'
                 + (canAfford ? ' Sufficient.' : ' INSUFFICIENT — cannot install now.');
             var btn = document.getElementById('btn-upgrade-install');
             if (btn) btn.disabled = !canAfford;
