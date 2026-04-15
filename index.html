@@ -1265,8 +1265,6 @@
         }
         s.tutorialStep = next;
         gameState._save();
-        // Step 2 needs an item in queue — deliver one immediately if queue empty
-        if (next === 2 && currentItem === null) { deliverNextBeltItem(); }
         _startTutorialStep(next);
     }
 
@@ -1311,6 +1309,11 @@
         if (!document.querySelector('.modal.open')) {
             var floatBar = document.getElementById('otis-float');
             if (floatBar) floatBar.style.display = 'none';
+        }
+        // Remove ANSWER BANK highlight if comms modal closes during step 4
+        if (name === 'comms') {
+            var bankBtn = document.getElementById('btn-answer-bank');
+            if (bankBtn) bankBtn.classList.remove('tutorial-highlight');
         }
     }
 
