@@ -57,6 +57,7 @@
         #intro-actions {
             display: flex;
             justify-content: flex-end;
+            gap: 0.5rem;
             margin-top: 1rem;
         }
 
@@ -86,6 +87,7 @@
         <div id="intro-inner">
             <div id="intro-text"></div>
             <div id="intro-actions">
+                <button id="tutorial-btn" style="display:none" onclick="takeTutorial()">TAKE TUTORIAL &#9658;</button>
                 <button id="intro-btn" onclick="skipIntro()">SKIP &#9658;</button>
             </div>
         </div>
@@ -137,6 +139,19 @@
             window.location.href = 'index.html';
         }
 
+        // TAKE TUTORIAL button — marks intro played, sets tutorialStep=1, goes to game.
+        window.takeTutorial = function () {
+            try {
+                var raw = localStorage.getItem(STATE_KEY);
+                var state = raw ? JSON.parse(raw) : {};
+                state.introPlayed = true;
+                state.tutorialStep = 1;
+                if (!state.stateVersion) { state.stateVersion = 3; }
+                localStorage.setItem(STATE_KEY, JSON.stringify(state));
+            } catch (e) {}
+            window.location.href = 'index.html';
+        };
+
         // SKIP button — visible during playback, cancels timers and goes straight to game.
         window.skipIntro = function () {
             if (!_running) { return; }
@@ -185,6 +200,9 @@
             } else {
                 goToGame();
             }
+            // Show the TAKE TUTORIAL button alongside OPERATOR LOGIN
+            var tutBtn = document.getElementById('tutorial-btn');
+            if (tutBtn) { tutBtn.style.display = ''; }
         }, elapsed);
         _timers.push(endT);
     }());

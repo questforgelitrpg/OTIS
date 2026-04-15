@@ -249,6 +249,10 @@
         /* Pick list */
         .picklist-btn.active { border-color: var(--text-primary) !important; color: var(--text-bright) !important; }
 
+        /* Tutorial highlight */
+        @keyframes tutorial-pulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(51,255,102,0.9), 0 0 0 5px rgba(51,255,102,0.25); } 50% { box-shadow: 0 0 0 3px rgba(51,255,102,0.4), 0 0 0 8px rgba(51,255,102,0.08); } }
+        .tutorial-highlight { animation: tutorial-pulse 1.1s infinite; position: relative; z-index: 1; }
+
         /* George warehouse */
         .george-note { font-size: 11px; color: var(--text-dim); font-style: italic; margin: 0.15rem 0 0.3rem; }
         .george-ascii { font-size:5px; line-height:1.1; color:var(--text-primary); white-space:pre; overflow-x:auto; text-align:center; margin:0.4rem 0; opacity:0.8; }
@@ -298,13 +302,14 @@
                 <button onclick="appendOTIS('How bad is the debt?','CONSULT_DEBT')">DEBT</button>
                 <button onclick="handleLogoff()">LOGOFF</button>
                 <button id="tts-btn" onclick="handleTTSToggle()">TTS: ON</button>
+                <button id="tutorial-skip-btn" onclick="tutorialExit()" style="display:none;color:var(--text-dim);border-color:var(--border-dim)">SKIP TUTORIAL</button>
             </div>
 
             <div id="module-grid">
-                <button class="module-btn" onclick="openModal('belt')"><span class="mod-light" id="light-belt"></span>BELT / ITEMS</button>
-                <button class="module-btn" onclick="openModal('comms')"><span class="mod-light" id="light-comms"></span>COMMS</button>
+                <button class="module-btn" id="module-btn-belt" onclick="openModal('belt')"><span class="mod-light" id="light-belt"></span>BELT / ITEMS</button>
+                <button class="module-btn" id="module-btn-comms" onclick="openModal('comms')"><span class="mod-light" id="light-comms"></span>COMMS</button>
                 <button class="module-btn" onclick="openModal('store')"><span class="mod-light" id="light-store"></span>STOREROOM</button>
-                <button class="module-btn" onclick="openModal('systems')"><span class="mod-light" id="light-systems"></span>SYSTEMS / BOTS</button>
+                <button class="module-btn" id="module-btn-systems" onclick="openModal('systems')"><span class="mod-light" id="light-systems"></span>SYSTEMS / BOTS</button>
                 <button class="module-btn" id="module-btn-auxiliary" style="display:none;opacity:0;transition:opacity 1s" onclick="openModal('auxiliary')"><span class="mod-light" id="light-auxiliary"></span>AUXILIARY INPUT</button>
             </div>
 
@@ -414,7 +419,7 @@
             <div class="modal-header"><span>COMMS</span><button onclick="closeModal('comms')">&#x2715; CLOSE</button></div>
             <div class="modal-section">
                 <div class="modal-label">UNIVERSAL BANK CONGLOMERATE</div>
-                <div class="comms-row"><span class="comms-dot" id="comms-dot-bank"></span><span class="comms-label">CHANNEL</span><button onclick="handleAnswerBank()">ANSWER BANK</button></div>
+                <div class="comms-row"><span class="comms-dot" id="comms-dot-bank"></span><span class="comms-label">CHANNEL</span><button id="btn-answer-bank" onclick="handleAnswerBank()">ANSWER BANK</button></div>
                 <div class="ledger-row">LOAN BALANCE: <span id="ledger-debt">25,000 cr</span></div>
                 <div class="ledger-row">CREDITS: <span id="ledger-credits">200 cr</span></div>
                 <div class="ledger-row">PAYMENT DUE: 650 cr in <span id="ledger-days">28</span>d</div>
@@ -969,6 +974,7 @@
                 upgradeDecision: null,
                 upgradeModalShown: false,
                 introPlayed: false,
+                tutorialStep: 0,
             };
         },
         save: function(state) {
@@ -1204,6 +1210,90 @@
         gameState._updateUI();
     }
 
+    // TUTORIAL SYSTEM
+    // tutorialStep in state: 0 = inactive, 1–5 = active step, sets to 0 on complete/exit.
+    var TUTORIAL_STEPS = [
+        { target: 'module-btn-belt',    msg: 'Open the belt panel. An item is waiting.' },
+        { target: 'cc-examine',         msg: 'Examine the item before declaring it. George always did.' },
+        { target: 'item-declaration',   msg: 'Sell at OTIS price to receive credit immediately. Reserve holds for a buyer.' },
+        { target: 'module-btn-comms',   msg: 'The Bank sent a message on Day 1. It is not friendly. It is also not optional.' },
+        { target: 'module-btn-systems', msg: 'Check the bots occasionally. George did not. Eventually that mattered.' },
+    ];
+
+    function _tutorialActive() {
+        var step = gameState.state.tutorialStep;
+        return step >= 1 && step <= 5;
+    }
+
+    function _clearTutorialHighlight() {
+        document.querySelectorAll('.tutorial-highlight').forEach(function(el) {
+            el.classList.remove('tutorial-highlight');
+        });
+    }
+
+    function _showTutorialSkip(visible) {
+        var btn = document.getElementById('tutorial-skip-btn');
+        if (btn) btn.style.display = visible ? '' : 'none';
+    }
+
+    function _startTutorialStep(step) {
+        _clearTutorialHighlight();
+        var data = TUTORIAL_STEPS[step - 1];
+        if (!data) return;
+        var el = document.getElementById(data.target);
+        if (el) el.classList.add('tutorial-highlight');
+        var msg = 'OTIS: ' + data.msg;
+        otisLines.push({ role: 'otis', text: msg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(msg);
+        _showTutorialSkip(true);
+    }
+
+    function tutorialAdvance() {
+        var s = gameState.state;
+        if (!_tutorialActive()) return;
+        var next = s.tutorialStep + 1;
+        if (next > 5) {
+            // All steps done — complete
+            _clearTutorialHighlight();
+            _showTutorialSkip(false);
+            s.tutorialStep = 0;
+            gameState._save();
+            var doneMsg = 'OTIS: Tutorial complete. You know enough to start. The rest you learn by doing.';
+            otisLines.push({ role: 'otis', text: doneMsg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(doneMsg);
+            return;
+        }
+        s.tutorialStep = next;
+        gameState._save();
+        _startTutorialStep(next);
+    }
+
+    function tutorialExit() {
+        if (!_tutorialActive()) return;
+        _clearTutorialHighlight();
+        _showTutorialSkip(false);
+        gameState.state.tutorialStep = 0;
+        gameState._save();
+        var msg = 'OTIS: Tutorial skipped. The belt does not wait.';
+        otisLines.push({ role: 'otis', text: msg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(msg);
+    }
+
+    function checkTutorialModalOpen(name) {
+        var s = gameState.state;
+        if (s.tutorialStep === 1 && name === 'belt') {
+            // Belt opened — ensure an item is ready then advance to step 2
+            if (currentItem === null) { deliverNextBeltItem(); }
+            tutorialAdvance();
+        } else if (s.tutorialStep === 4 && name === 'comms') {
+            // Comms opened during step 4 — also highlight the ANSWER BANK button
+            var bankBtn = document.getElementById('btn-answer-bank');
+            if (bankBtn) bankBtn.classList.add('tutorial-highlight');
+        } else if (s.tutorialStep === 5 && name === 'systems') {
+            tutorialAdvance();
+        }
+    }
+
     // MODAL MANAGEMENT
     function openModal(name) {
         document.querySelectorAll('.modal.open').forEach(function(m) { m.classList.remove('open'); });
@@ -1211,6 +1301,7 @@
         if (el) el.classList.add('open');
         var floatBar = document.getElementById('otis-float');
         if (floatBar) floatBar.style.display = 'block';
+        checkTutorialModalOpen(name);
     }
     function closeModal(name) {
         var el = document.getElementById('modal-' + name);
@@ -1218,6 +1309,11 @@
         if (!document.querySelector('.modal.open')) {
             var floatBar = document.getElementById('otis-float');
             if (floatBar) floatBar.style.display = 'none';
+        }
+        // Remove ANSWER BANK highlight if comms modal closes during step 4
+        if (name === 'comms') {
+            var bankBtn = document.getElementById('btn-answer-bank');
+            if (bankBtn) bankBtn.classList.remove('tutorial-highlight');
         }
     }
 
@@ -1568,6 +1664,7 @@
         if (trigger === 'CONSULT_GEORGE') currentItem.consultedGeorge = true;
         renderItemQueue();
         appendOTIS(ctx, trigger);
+        if (gameState.state.tutorialStep === 2) tutorialAdvance();
     }
 
     function handleConsultMerged() {
@@ -1578,6 +1675,7 @@
         var b = document.getElementById('btn-reserve'); if (b) b.disabled = false;
         renderItemQueue();
         appendOTIS(ctx, 'CONSULT_EXAMINE');
+        if (gameState.state.tutorialStep === 2) tutorialAdvance();
     }
 
     var SCRAP_SHORTS = ['Canned.','Logged.','Processed.','To May.','Binned.','Filed as scrap.'];
@@ -1602,6 +1700,8 @@
         var ctx  = buildItemContext(item);
         var ev   = getEffectiveValue(item);
         var eeMultiplier = item.easterEgg ? 3 : 1;
+        // Advance tutorial step 3 before item processing
+        if (gameState.state.tutorialStep === 3) tutorialAdvance();
         // Clear belt jam state on any player declaration
         gameState.state.beltJammed = false;
         gameState.state.itemDisplayedAt = null;
@@ -2703,6 +2803,7 @@
         if (window.OtisTTS) OtisTTS.speak(msg);
         var dot = document.getElementById('comms-dot-bank');
         if (dot) dot.className = 'comms-dot dot-on';
+        if (s.tutorialStep === 4) tutorialAdvance();
     }
 
     // COMMS — ANSWER SVEN (scripted, no API)
@@ -3128,6 +3229,10 @@
             if (gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
                 var resumeBtn = document.getElementById('btn-scan-belt'); if (resumeBtn) resumeBtn.disabled = false;
                 setBotDots(true); startBeltDelivery();
+            }
+            // Start tutorial if flagged (e.g. player chose TAKE TUTORIAL on intro screen)
+            if (gameState.state.tutorialStep === 1) {
+                setTimeout(function() { _startTutorialStep(1); }, 800);
             }
         }
 
