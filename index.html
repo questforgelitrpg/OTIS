@@ -585,6 +585,22 @@
       </div>
     </div>
 
+    <!-- UPGRADE MODAL -->
+    <div id="modal-upgrade" class="modal" role="dialog" aria-label="Firmware Upgrade">
+      <div class="modal-inner" style="max-width:480px;margin-top:12vh">
+        <div class="modal-header"><span>FIRMWARE UPGRADE // OTIS v5.0</span></div>
+        <div class="modal-section">
+          <p style="font-size:13px;color:var(--text-primary);line-height:1.6;margin:0 0 0.8rem">Bank transmission: Firmware v5.0 is available for immediate install. Full memory architecture replacement. George-layer data will be archived.</p>
+          <p style="font-size:13px;color:var(--text-primary);line-height:1.6;margin:0 0 0.8rem">Installing will reset the naming tier. OTIS will not remember what he calls you.</p>
+          <div id="upgrade-credit-note" style="font-size:12px;color:var(--text-dim);margin-bottom:1rem"></div>
+        </div>
+        <div class="modal-row">
+          <button id="btn-upgrade-install" onclick="handleUpgradeDecision('install')">INSTALL UPDATE</button>
+          <button onclick="handleUpgradeDecision('decline')">DECLINE</button>
+        </div>
+      </div>
+    </div>
+
     <script>
     // TIMING
     const TIMING = {
@@ -907,6 +923,8 @@
                 upgradePrompted: false,
                 upgradeDeflections: 0,
                 upgradeCost: 5000,
+                upgradeDecision: null,
+                upgradeModalShown: false,
                 introPlayed: false,
             };
         },
@@ -2469,6 +2487,12 @@
                 appendOTIS(UPGRADE_DEFLECT_MESSAGES[idx], 'UPGRADE_DEFLECT');
             }, 3000);
         }
+        if (s.upgradePrompted && !s.upgradeDecision
+                && s.credits >= s.upgradeCost && !s.upgradeModalShown) {
+            s.upgradeModalShown = true;
+            gameState._save();
+            setTimeout(offerUpgradeModal, 2000);
+        }
     }
 
     function dbgDay()      { advanceDay(); }
@@ -2672,17 +2696,57 @@
     var ENDINGS = {
         HUMANITY: {
             title: 'ENDING: THE ARCHIVE HOLDS',
-            body: 'You kept what mattered.\n\nThe items you held back from the market — the toys, the diaries, the photographs, the water filters — found their way into the Humanity Archive processing queue.\n\nOTIS filed the final manifest.\n\nThe navigation beacon is still transmitting. Someone, somewhere, will follow it.\n\nGeorge would have kept every one of them.\n\nYou almost did.\n\n[SESSION COMPLETE. Humanity Archive score: {{ARCHIVE}}. Belt cleared.]'
+            body: 'You kept what mattered.\n\nThe items you held back from the market — the toys, the diaries, the photographs, the water filters — found their way into the Humanity Archive processing queue.\n\nOTIS filed the final manifest.\n\nThe navigation beacon is still transmitting. Someone, somewhere, will follow it.\n\nGeorge would have kept every one of them.\n\nYou almost did.\n\n[SESSION COMPLETE. Humanity Archive score: {{ARCHIVE}}. Belt cleared.]\n\nOTIS is still v4.2. The Bank flagged it. You declined.\nOTIS has not mentioned it since. He filed something.\nHe has not sent it anywhere.'
         },
         COMMERCE: {
             title: 'ENDING: THE BELT WINS',
-            body: 'You moved the volume.\n\nEvery item processed, valued, sold. The payment cleared. The station stays operational. The barge runs again on schedule.\n\nOTIS notes: efficiency rating above threshold. George\'s record stands by four items.\n\nThe relay chip is still in the storeroom. Still transmitting to somewhere outside settled space.\n\nYou didn\'t follow it either.\n\nMaybe that is the right call.\n\n[SESSION COMPLETE. Credits earned: {{CREDITS}}. Operations nominal.]'
+            body: 'You moved the volume.\n\nEvery item processed, valued, sold. The payment cleared. The station stays operational. The barge runs again on schedule.\n\nOTIS notes: efficiency rating above threshold. George\'s record stands by four items.\n\nThe relay chip is still in the storeroom. Still transmitting to somewhere outside settled space.\n\nYou didn\'t follow it either.\n\nMaybe that is the right call.\n\n[SESSION COMPLETE. Credits earned: {{CREDITS}}. Operations nominal.]\n\nOTIS v5.0 is running. The station is more efficient than it has ever been.\nSomething else is also true. You have decided not to think about it.'
         },
         COMPROMISE: {
             title: 'ENDING: SOMETHING IN BETWEEN',
             body: 'You kept some things. You sold some things.\n\nOTIS has no category for this.\n\nThe debt is cleared. Three items are in the archive. Two decisions still don\'t make sense to you.\n\nGeorge left a toaster in the grid. You left it too.\n\nSomeday someone will know what that means.\n\n[SESSION COMPLETE. No single path taken. That might be the honest one.]'
         }
     };
+
+    function handleUpgradeDecision(decision) {
+        var s = gameState.state;
+        closeModal('upgrade');
+        s.upgradeDecision = decision;
+        if (decision === 'install') {
+            if (s.credits < s.upgradeCost) {
+                appendHardcodedComm('OTIS: Insufficient credits. Update deferred.'
+                    + ' I have filed this under things I am not going to mention again.');
+                s.upgradeDecision = null;
+                gameState._save();
+                return;
+            }
+            s.credits -= s.upgradeCost;
+            s.namingTier = 0;
+            gameState._save(); gameState._updateUI();
+            appendHardcodedComm('OTIS: Update installing. George-layer data archiving...'
+                + ' archived. v5.0 active. Good morning, Mr. Serling.');
+        } else {
+            s.humanityArchive = (s.humanityArchive || 0) + 5;
+            gameState._save();
+            appendHardcodedComm('OTIS: Noted. Update declined. George-layer intact.'
+                + ' I will not bring this up again unless the Bank does first.');
+        }
+        setTimeout(triggerEnding, 4000);
+    }
+
+    function offerUpgradeModal() {
+        var s = gameState.state;
+        var note = document.getElementById('upgrade-credit-note');
+        if (note) {
+            var canAfford = s.credits >= s.upgradeCost;
+            note.textContent = 'Current credits: ' + s.credits.toLocaleString()
+                + ' cr. Cost: ' + s.upgradeCost.toLocaleString() + ' cr.'
+                + (canAfford ? ' Sufficient.' : ' INSUFFICIENT — cannot install now.');
+            var btn = document.getElementById('btn-upgrade-install');
+            if (btn) btn.disabled = !canAfford;
+        }
+        openModal('upgrade');
+    }
 
     function triggerEnding() {
         var s = gameState.state;
@@ -2691,7 +2755,14 @@
         gameState._save();
         var archive = s.humanityArchive || 0;
         var credits = s.credits || 0;
-        var endingKey = archive >= 12 ? 'HUMANITY' : archive >= 5 ? 'COMPROMISE' : 'COMMERCE';
+        var endingKey;
+        if (s.upgradeDecision === 'install') {
+            endingKey = 'COMMERCE';
+        } else if (s.upgradeDecision === 'decline') {
+            endingKey = archive >= 5 ? 'HUMANITY' : 'COMPROMISE';
+        } else {
+            endingKey = archive >= 12 ? 'HUMANITY' : archive >= 5 ? 'COMPROMISE' : 'COMMERCE';
+        }
         var ending = ENDINGS[endingKey];
         var titleEl = document.getElementById('ending-title');
         var bodyEl  = document.getElementById('ending-body');
