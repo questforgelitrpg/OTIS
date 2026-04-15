@@ -3661,13 +3661,16 @@
         updateBeltUI('CLEAR');
         updateFatigueVisuals();
 
-        // Sound system — unlock on first user gesture and auto-start music after 60s
-        document.addEventListener('click', function unlockSound() {
-            if (window.OtisSound) OtisSound.init();
-        }, { once: true });
-        setTimeout(function() {
-            if (window.OtisSound) OtisSound.startMusic('music1');
-        }, 60000);
+        // Sound system — unlock on first user gesture and start music immediately.
+        // Also listen for keydown so keyboard-first users get audio too.
+        function _unlockAndStartMusic() {
+            if (window.OtisSound) {
+                OtisSound.init();
+                OtisSound.startMusic('music1');
+            }
+        }
+        document.addEventListener('click',   _unlockAndStartMusic, { once: true });
+        document.addEventListener('keydown', _unlockAndStartMusic, { once: true });
 
         // Timers — IDs stored on window to prevent duplicate intervals on hot reload
         if (!window._otisSessionIntervalId) {

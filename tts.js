@@ -7,7 +7,9 @@
     let _rate = 1.2;
     const PITCH = 1.0;
     const VOLUME = 1.0;
-    const MAX_QUEUE_DEPTH = 3; // prevent unbounded backup; keep spoken output close to current dialog
+    // Queue depth limit: set high enough to hold all intro narrative lines (~11 TTS utterances)
+    // plus a comfortable margin for rapid in-game bursts, without allowing unbounded growth.
+    const MAX_QUEUE_DEPTH = 15;
 
     let _muted = false;
     try { _muted = localStorage.getItem(STORAGE_KEY) === 'true'; } catch (e) { /* private browsing or storage disabled */ }
