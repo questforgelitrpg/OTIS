@@ -1285,7 +1285,7 @@
     var _origAppendOTIS = appendOTIS;
     appendOTIS = async function(userText, trigger) {
         _lastOtisActivity = Date.now();
-        return _origAppendOTIS(userText, trigger);
+        return await _origAppendOTIS(userText, trigger);
     };
     var _origAppendHardcoded = appendHardcodedComm;
     appendHardcodedComm = function(text) {
