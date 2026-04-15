@@ -7,11 +7,11 @@
     <!-- Redirect new players to the standalone intro page before the game renders. -->
     <script>
     (function () {
-        var STATE_KEY = 'otis_state_v3';
+        var STATE_KEY = 'otis_state_v3'; // must match stateManager STATE_KEY below
         try {
             var raw = localStorage.getItem(STATE_KEY);
-            var state = raw ? JSON.parse(raw) : null;
-            if (!state || (state.day === 1 && !state.introPlayed)) {
+            var state = raw != null ? JSON.parse(raw) : null;
+            if (state == null || (state.day === 1 && !state.introPlayed)) {
                 window.location.replace('intro.html');
             }
         } catch (e) {}
