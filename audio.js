@@ -24,4 +24,4 @@ class AudioManager {
     }
 }
 
-var audioManager = new AudioManager();
+window.audioManager = new AudioManager();
