@@ -4,7 +4,7 @@
 (function () {
     const STORAGE_KEY = 'otis_tts_muted';
     const PREFERRED_VOICE_NAME = 'Google UK English Male';
-    const RATE = 1.2;
+    let _rate = 1.2;
     const PITCH = 1.0;
     const VOLUME = 1.0;
 
@@ -59,7 +59,7 @@
         const utterance = new SpeechSynthesisUtterance(text);
         const voice = _resolveVoice();
         if (voice) utterance.voice = voice;
-        utterance.rate = RATE;
+        utterance.rate = _rate;
         utterance.pitch = PITCH;
         utterance.volume = VOLUME;
 
@@ -111,6 +111,10 @@
         }
     }
 
+    function setRate(rate) {
+        _rate = Number(rate) || 1.0;
+    }
+
     function interrupt(text) {
         if (window.speechSynthesis) window.speechSynthesis.cancel();
         _queue.length = 0;
@@ -118,5 +122,5 @@
         speak(text);
     }
 
-    window.OtisTTS = { speak, interrupt, isSupported, isMuted, toggleMute, setMuted };
+    window.OtisTTS = { speak, interrupt, isSupported, isMuted, toggleMute, setMuted, setRate };
 })();
