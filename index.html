@@ -1070,7 +1070,6 @@
                 humanityArchive: 0,
                 humanityLog: [],
                 endingTriggered: false,
-                missedPayments: 0,
                 scrapDispatchCount: 0,
                 avgScrapFillPct: 0,
                 lastDropFillPct: 0,
@@ -2324,7 +2323,7 @@
 
     function checkBeltJam() {
         var s = gameState.state;
-        if (!s.currentItem && !currentItem) return;
+        if (!currentItem) return;
         if ((s.manifestItems || []).length < 3) return;
         if (!s.itemDisplayedAt) return;
         if (Date.now() - s.itemDisplayedAt < 30000) return;
@@ -2969,8 +2968,12 @@
         }
         if (s.daysUntilPayment <= 0) {
             if (s.credits >= 650 && (s.outstandingDebt || 0) === 0) {
+                // Player has funds — auto-deduct the payment so the cycle resets fairly.
+                // handleMakePayment() is available for early voluntary payments.
+                s.credits -= 650;
+                s.debt = Math.max(0, s.debt - 650);
                 s.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
-                appendOTIS('Payment due. 650 credits. Make payment when ready.', 'DAY_TICK');
+                appendOTIS('Payment auto-processed. 650 credits deducted. Remaining balance: ' + s.debt.toLocaleString() + ' credits. Next payment in ' + TIMING.PAYMENT_CYCLE_DAYS + ' days.', 'PAYMENT');
             } else {
                 s.missedPayments = (s.missedPayments || 0) + 1;
                 s.outstandingDebt = (s.outstandingDebt || 0) + 650;
@@ -3099,7 +3102,7 @@
         } else if (arrears <= 0) {
             msg = '[BANK] Account current. No outstanding balance. Continue operations.';
         } else {
-            msg = '[BANK] Scheduled payment in ' + dup + ' days. Loan balance: ' + loanBalance.toLocaleString() + ' credits. No further action required at this time.';
+            msg = '[BANK] Scheduled payment in ' + dup + ' days. Loan balance: ' + loanBalance.toLocaleString() + ' credits. Outstanding arrears: ' + arrears + ' credits. Clear arrears before next payment cycle.';
         }
         otisLines.push({ role:'otis', text: msg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(msg);
@@ -3519,8 +3522,12 @@
             // Day 1: load 4 random starter items onto the belt before any barge drop.
             var s1 = gameState.state;
             if (s1.day === 1 && (s1.dropCount || 0) === 0 && !s1.dropActive && (!s1.manifestItems || s1.manifestItems.length === 0)) {
-                var day1Items = [];
-                for (var i = 0; i < 4; i++) day1Items.push(weightedPickItem());
+                var commonPool = MANIFEST_POOL.filter(function(i) { return i.rarity === 'Common'; });
+                for (var ci = commonPool.length - 1; ci > 0; ci--) {
+                    var cj = Math.floor(Math.random() * (ci + 1));
+                    var ct = commonPool[ci]; commonPool[ci] = commonPool[cj]; commonPool[cj] = ct;
+                }
+                var day1Items = commonPool.slice(0, 4).map(function(i) { return Object.assign({}, i, { condition: 'Used' }); });
                 s1.manifestItems = day1Items;
                 s1.dropActive = true;
                 s1.dropItemsRemaining = day1Items.length;
