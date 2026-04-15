@@ -2835,7 +2835,7 @@
     <script src="intro.js"></script>
 
     <script>
-    document.addEventListener('DOMContentLoaded', async function() {
+    (async function() {
         gameState.init();
         gameState._updateUI();
         renderItemQueue();
@@ -2919,7 +2919,7 @@
         } else {
             bootSequence();
         }
-    });
+    })();
     </script>
 </body>
 </html>
