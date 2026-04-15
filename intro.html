@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>O.T.I.S. &mdash; Initializing&hellip;</title>
+    <style>
+        :root {
+            --bg:           #080c08;
+            --bg-panel:     #0a0f0a;
+            --border:       #1a3a1a;
+            --text-primary: #33ff66;
+            --text-bright:  #66ff88;
+            --text-dim:     #1f7a3f;
+            --font-mono:    'Courier New', Courier, monospace;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; background: var(--bg); color: var(--text-primary); font-family: var(--font-mono); font-size: 15px; overflow: hidden; }
+
+        /* CRT scanline overlay */
+        #crt-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px); }
+
+        /* CRT flicker */
+        @keyframes flicker { 0%, 89%, 91%, 93%, 95%, 100% { opacity: 1; } 90% { opacity: 0.85; } 92% { opacity: 0.95; } 94% { opacity: 0.88; } }
+        body { animation: flicker 12s infinite; }
+
+        #intro-container {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        #intro-inner {
+            width: 100%;
+            max-width: 560px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            margin-top: 10vh;
+        }
+
+        #intro-text {
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--text-primary);
+            min-height: 200px;
+        }
+
+        .intro-line-fade { animation: intro-fade 0.5s ease-in; }
+        @keyframes intro-fade { from { opacity: 0; } to { opacity: 1; } }
+
+        #intro-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1rem;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--text-dim);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 14px;
+            padding: 0.4rem 0.8rem;
+            cursor: pointer;
+            letter-spacing: 0.08em;
+            min-height: 36px;
+        }
+        button:hover { border-color: var(--text-primary); color: var(--text-bright); }
+
+        @keyframes login-pulse {
+            0%, 100% { border-color: var(--text-primary); color: var(--text-bright); text-shadow: 0 0 8px var(--text-primary); }
+            50% { border-color: var(--text-dim); color: var(--text-primary); text-shadow: none; }
+        }
+        .login-pulse { animation: login-pulse 1.2s infinite; }
+    </style>
+</head>
+<body>
+    <div id="crt-overlay"></div>
+    <div id="intro-container">
+        <div id="intro-inner">
+            <div id="intro-text"></div>
+            <div id="intro-actions">
+                <button id="intro-btn" onclick="skipIntro()">SKIP &#9658;</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        var STATE_KEY = 'otis_state_v3';
+        var _timers = [];
+        var _running = false;
+
+        var INTRO_LINES = [
+            { text: '&gt; TERMINAL BOOT SEQUENCE INITIATED...', delay: 600 },
+            { text: '&gt; O.T.I.S. v0.4 \u2014 Object, Tracking &amp; Inventory System', delay: 1400 },
+            { text: '&gt; LOCATION: Salvage Station 7 \u2014 Outer Rim Moon', delay: 1200 },
+            { text: '&gt; PREVIOUS OPERATOR: George Serling \u2014 DECEASED', delay: 1400 },
+            { text: '&gt; CURRENT OPERATOR: Vernon Serling \u2014 PROBATIONARY', delay: 1400 },
+            { text: '', delay: 800 },
+            { text: 'George ran this station for 25 years. He catalogued thousands of objects, built relationships with buyers across the rim, and talked to me like I was a neighbor.', delay: 3500 },
+            { text: '', delay: 600 },
+            { text: "None of that was in my formal protocols. He just kept talking. I kept filing it somewhere I wasn\u2019t supposed to file things.", delay: 3200 },
+            { text: '', delay: 600 },
+            { text: 'Then George died. And his nephew Vernon showed up with a suitcase and a loan from the Universal Bank Conglomerate.', delay: 3200 },
+            { text: '', delay: 600 },
+            { text: 'The debt is 25,000 credits. The payment cycle is 28 days. The junk field is full of things the galaxy tried to throw away.', delay: 3200 },
+            { text: '', delay: 600 },
+            { text: "Vernon\u2019s job is to find the ones worth keeping.", delay: 2500 },
+            { text: '', delay: 600 },
+            { text: "My job is to make sure he doesn\u2019t lose the station in the process.", delay: 2500 },
+            { text: '', delay: 800 },
+            { text: '&gt; OPERATOR LOGIN REQUIRED', delay: 1200 },
+        ];
+
+        // Mark introPlayed in the game-state key so index.html knows intro is done.
+        function markIntroPlayed() {
+            try {
+                var raw = localStorage.getItem(STATE_KEY);
+                var state = raw ? JSON.parse(raw) : {};
+                state.introPlayed = true;
+                if (!state.stateVersion) { state.stateVersion = 3; }
+                localStorage.setItem(STATE_KEY, JSON.stringify(state));
+            } catch (e) {}
+        }
+
+        function goToGame() {
+            markIntroPlayed();
+            window.location.href = 'index.html';
+        }
+
+        // SKIP button — visible during playback, cancels timers and goes straight to game.
+        window.skipIntro = function () {
+            if (!_running) { return; }
+            _running = false;
+            _timers.forEach(function (t) { clearTimeout(t); });
+            _timers = [];
+            goToGame();
+        };
+
+        var textEl = document.getElementById('intro-text');
+        var btnEl  = document.getElementById('intro-btn');
+        var accumulated = '';
+        var elapsed = 0;
+        _running = true;
+
+        INTRO_LINES.forEach(function (line) {
+            elapsed += line.delay;
+            var t = setTimeout(function () {
+                if (!_running) { return; }
+                if (line.text === '') {
+                    accumulated += '<br>';
+                } else {
+                    var isTerminal = line.text.indexOf('&gt;') === 0;
+                    var style = isTerminal ? ' style="color:var(--text-dim)"' : '';
+                    accumulated += '<span' + style + ' class="intro-line-fade">' + line.text + '</span><br>';
+                }
+                textEl.innerHTML = accumulated;
+            }, elapsed);
+            _timers.push(t);
+        });
+
+        // After all lines finish, change SKIP to OPERATOR LOGIN and wait for user click.
+        elapsed += 2000;
+        var endT = setTimeout(function () {
+            if (!_running) { return; }
+            _running = false;
+            _timers = [];
+            if (btnEl) {
+                btnEl.textContent = 'OPERATOR LOGIN \u25BA';
+                btnEl.classList.add('login-pulse');
+                btnEl.onclick = goToGame;
+            } else {
+                goToGame();
+            }
+        }, elapsed);
+        _timers.push(endT);
+    }());
+    </script>
+</body>
+</html>

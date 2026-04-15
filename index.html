@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>O.T.I.S. &mdash; Object, Tracking &amp; Inventory System</title>
+    <!-- Redirect new players to the standalone intro page before the game renders. -->
+    <script>
+    (function () {
+        var STATE_KEY = 'otis_state_v3';
+        try {
+            var raw = localStorage.getItem(STATE_KEY);
+            var state = raw ? JSON.parse(raw) : null;
+            if (!state || (state.day === 1 && !state.introPlayed)) {
+                window.location.replace('intro.html');
+            }
+        } catch (e) {}
+    }());
+    </script>
     <style>
         :root {
             --bg:           #080c08;
@@ -144,10 +157,6 @@
         /* Login pulse animation */
         @keyframes login-pulse { 0%, 100% { border-color: var(--text-primary); color: var(--text-bright); text-shadow: 0 0 8px var(--text-primary); } 50% { border-color: var(--text-dim); color: var(--text-primary); text-shadow: none; } }
         .login-pulse { animation: login-pulse 1.2s infinite; }
-
-        /* Intro cinematic */
-        .intro-line-fade { animation: intro-fade 0.5s ease-in; }
-        @keyframes intro-fade { from { opacity: 0; } to { opacity: 1; } }
 
         /* Keep log */
         .keep-list { list-style: none; }
@@ -574,16 +583,6 @@
           <button onclick="handleEndingClose()">ACKNOWLEDGE AND LOG OFF</button>
         </div>
       </div>
-    </div>
-
-    <!-- INTRO CINEMATIC MODAL -->
-    <div id="modal-intro" class="modal" role="dialog" aria-label="Opening Cinematic" style="display:none">
-        <div class="modal-inner" style="max-width:560px;margin-top:10vh">
-            <div id="intro-text" style="font-size:14px;line-height:1.8;color:var(--text-primary);min-height:200px"></div>
-            <div class="modal-row" style="justify-content:flex-end;margin-top:1rem">
-                <button id="intro-skip-btn" onclick="skipIntro()">SKIP &#9658;</button>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -2484,8 +2483,8 @@
     // NOT trigger the toaster incident (Act 3 power-outage).  Use the TOASTER INC
     // debug button to test that separate plot event.
     function dbgForceToast() { gameState.state.toastFiredToday = false; gameState._save(); autoToast(); }
-    // Replay the opening intro on the next reload (debug only)
-    function dbgReplayIntro() { gameState.state.introPlayed = false; gameState._save(); location.reload(); }
+    // Replay the opening intro (debug only) — clears the flag and sends to intro.html.
+    function dbgReplayIntro() { gameState.state.introPlayed = false; gameState._save(); window.location.href = 'intro.html'; }
     function dbgFastMode() {
         TIMING.DEBUG_FAST_MODE = !TIMING.DEBUG_FAST_MODE;
         // Restart the canonical window-level day interval at the new speed.
@@ -2832,7 +2831,6 @@
     <script src="otis.js"></script>
     <script src="tts.js"></script>
     <script src="audio.js"></script>
-    <script src="intro.js"></script>
 
     <script>
     (async function() {
@@ -2866,7 +2864,6 @@
 
         var ttsBtn = document.getElementById('tts-btn');
         if (ttsBtn && window.OtisTTS) { if (!window.OtisTTS.isSupported()) ttsBtn.style.display = 'none'; else ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON'; }
-        var shouldShowIntro = gameState.state.day === 1 && !gameState.state.introPlayed;
         if (gameState.state.easterEggFired && !gameState.state.toasterIncidentFired) {
             var auxBtn = document.getElementById('module-btn-auxiliary');
             if (auxBtn) { auxBtn.style.display = ''; auxBtn.style.opacity = '1'; }
@@ -2892,29 +2889,7 @@
             }
         }
 
-        if (shouldShowIntro && typeof runIntroSequence === 'function') {
-            // NEW GAME SEQUENCE (Day 1, intro not yet played):
-            //   1. Resources loaded above (gameState.init, UI render).
-            //   2. runIntroSequence — Script Back Story module plays.
-            //   3. Intro pauses at "OPERATOR LOGIN REQUIRED"; intro-skip-btn pulses
-            //      and becomes "OPERATOR LOGIN ►" (handled in intro.js).
-            //   4. Operator clicks "OPERATOR LOGIN ►" → _doComplete() → callback:
-            //      a. appendOTIS LOGIN trigger — awaited so OTIS responds first.
-            //      b. autoToast() fires 500 ms after the OTIS login response.
-            //   5. Day 1 gameplay begins.
-            //
-            // Only mark introPlayed when the intro genuinely displayed so a failed
-            // render retries on the next load.
-            runIntroSequence(function(introShown) {
-                if (introShown !== false) {
-                    gameState.state.introPlayed = true;
-                    gameState._save();
-                }
-                bootSequence();
-            });
-        } else {
-            bootSequence();
-        }
+        bootSequence();
     })();
     </script>
 </body>
