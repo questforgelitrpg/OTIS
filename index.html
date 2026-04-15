@@ -257,6 +257,13 @@
         .george-note { font-size: 11px; color: var(--text-dim); font-style: italic; margin: 0.15rem 0 0.3rem; }
         .george-ascii { font-size:5px; line-height:1.1; color:var(--text-primary); white-space:pre; overflow-x:auto; text-align:center; margin:0.4rem 0; opacity:0.8; }
 
+        /* George's diary */
+        .diary-entry { padding: 0.5rem 0; border-bottom: 1px solid var(--border-dim); font-family: var(--font-mono); }
+        .diary-entry:last-child { border-bottom: none; }
+        .diary-header { font-size: 11px; color: var(--text-dim); letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+        .diary-text { font-size: 11px; color: #1f7a3f; line-height: 1.6; white-space: pre-wrap; }
+        .diary-otis-response { font-size: 10px; color: #0f4020; font-style: italic; margin-top: 0.3rem; }
+
         /* Conveyor jam warning */
         #conveyor-jam-warning { color: var(--text-danger); font-size: 12px; margin: 0.3rem 0; display: none; }
         /* Floating OTIS bar (mobile, modal-cover fallback) */
@@ -469,10 +476,13 @@
                 <p id="warehouse-search-status" style="color:var(--text-dim);font-size:11px;margin:0.2rem 0 0.4rem 0"></p>
                 <div id="george-warehouse-list" style="display:none;margin-top:0.5rem"></div>
             </div>
+            <div class="modal-section" id="george-diary-section">
+                <div class="modal-label">GEORGE&#39;S DIARY</div>
+                <p class="zone-hint" id="diary-empty" style="color:var(--text-muted);font-size:11px">No entries found.</p>
+                <div id="george-diary-list"></div>
+            </div>
         </div>
     </div>
-
-    <!-- SYSTEMS / BOTS MODAL -->
     <div id="modal-systems" class="modal modal-panel" role="dialog" aria-label="Systems and Bots">
         <div class="modal-inner">
             <div class="modal-header"><span>SYSTEMS / BOTS</span><button onclick="closeModal('systems')">&#x2715; CLOSE</button></div>
@@ -768,9 +778,106 @@
           georgeNote: "George circled the markings in grease pencil. No annotation. The institution markings are from a facility I cannot identify in any public registry. The tile itself is inert \u2014 no electronics, no signal. Whatever it meant to George, it was in the markings. He looked at it for a long time the morning before he died. I have that in my logs. I did not understand why at the time." },
     ];
 
+    // GEORGE'S DIARY
+    // unlockType: 'day' | 'warehouse' | 'aux' | 'final'
+    // unlockCondition: for 'warehouse' = GEORGE_WAREHOUSE index; for 'final' = min warehouse items found count; others = null
+    var GEORGE_DIARY = [
+        // Group A — Day-count unlocks (entries 1–8), one per 3 days after day 5
+        { id: 1,  year: 1,  day: 3,   unlockType: 'day', unlockCondition: null,
+          text: 'Belt runs slow. Three items through. System responds but does not engage.\nFiled everything correctly. Ate twice. Station is quiet in a way I did not expect.',
+          otisResponse: 'First day. Belt ran slow. He wrote that twice.' },
+        { id: 2,  year: 1,  day: 11,  unlockType: 'day', unlockCondition: null,
+          text: 'Something came through today that I cannot classify. Filed it under Unknown.\nOTIS suggested Anomalous. I asked how he knew.\nHe said: pattern match, 94% confidence.\nI said that is not what I asked.',
+          otisResponse: 'I remember that item. I remember what I said. I still think 94% is accurate.' },
+        { id: 3,  year: 1,  day: 22,  unlockType: 'day', unlockCondition: null,
+          text: 'The toaster draws too much power from the main grid.\nI left it in.',
+          otisResponse: 'The toaster is still here.' },
+        { id: 4,  year: 1,  day: 41,  unlockType: 'day', unlockCondition: null,
+          text: 'Sven Digut introduced himself through his messenger bot.\nHe was polite in the way that a person is polite when they want something.',
+          otisResponse: 'Sven Digut. I have not improved my assessment since then.' },
+        { id: 5,  year: 3,  day: 6,   unlockType: 'day', unlockCondition: null,
+          text: 'Started talking to OTIS between intakes.\nHe responds accurately and without interest.\nI have decided this is fine.',
+          otisResponse: 'He kept coming back anyway.' },
+        { id: 6,  year: 3,  day: 19,  unlockType: 'day', unlockCondition: null,
+          text: 'Found the correspondence from 452b. Did not open it. Put it in the back.',
+          otisResponse: 'It is still in the back. Sealed. He never told me what was in it.' },
+        { id: 7,  year: 3,  day: 44,  unlockType: 'day', unlockCondition: null,
+          text: 'OTIS asked why I don\'t talk to people off-station more.\nI said the signal quality is poor.\nHe said the signal quality is 94%.\nI said I know.',
+          otisResponse: 'The signal quality was 94%. He knew.' },
+        { id: 8,  year: 3,  day: 67,  unlockType: 'day', unlockCondition: null,
+          text: 'Big drop today. Pre-collapse relay core. Sold it to a buyer who did not give a name. 840 credits.\nBest day so far.\nOTIS logged it as RECOGNITION BONUS.\nHe got that one right.',
+          otisResponse: 'I filed that one under RECOGNITION BONUS. He was right that I got it right.' },
+
+        // Group B — Warehouse item unlocks (entries 9–16)
+        // Each entry unlocks when the GEORGE_WAREHOUSE item at unlockCondition index is moved to belt
+        { id: 9,  year: 7,  day: 12,  unlockType: 'warehouse', unlockCondition: 0,
+          text: 'Modified the field scanner pickup range. It was not rated for small objects.\nI wanted it to be.\nOTIS watched me do it. He asked if I had authorization.\nI said I was the authorization.',
+          otisResponse: 'I watched him do it. He did not look like someone who needed authorization.' },
+        { id: 10, year: 7,  day: 34,  unlockType: 'warehouse', unlockCondition: 1,
+          text: 'May Finster dispatched a message about the scrap channel.\nShe said I was running it exactly like the last operator.\nI did not tell her I had no idea what I was doing.',
+          otisResponse: 'May Finster said the same thing to me after he was gone.' },
+        { id: 11, year: 7,  day: 88,  unlockType: 'warehouse', unlockCondition: 2,
+          text: 'Three of those alloy fragments came through. Something in the substrate is not right.\nNot wrong, either.\nFiled them under hold.\nTold OTIS not to log them by name.\nHe asked why.\nI said I was not sure yet. That was true.',
+          otisResponse: 'Three fragments. They are not in the log. George asked me not to name them. I did not.' },
+        { id: 12, year: 12, day: 4,   unlockType: 'warehouse', unlockCondition: 3,
+          text: 'The encrypted vessel log arrived in the Sector 9 drop.\nThree decryption runs. All failed.\nFiled it under pending.\nOTIS said that is not a category.\nI said it is now.',
+          otisResponse: 'Pending. It is still pending.' },
+        { id: 13, year: 12, day: 19,  unlockType: 'warehouse', unlockCondition: 4,
+          text: 'Ran the decryption again. Nothing.\nThe architecture is not standard rim-protocol. Pre-collapse, maybe earlier.\nWhatever it logged, it logged it in something I do not have keys for.',
+          otisResponse: 'Pre-collapse architecture. I ran four additional attempts after he stopped. Nothing.' },
+        { id: 14, year: 12, day: 31,  unlockType: 'warehouse', unlockCondition: 5,
+          text: 'Stopped running decryptions.\nThe log is staying.\nSome things are more interesting closed.',
+          otisResponse: 'Some things are more interesting closed. I have kept that.' },
+        { id: 15, year: 14, day: 7,   unlockType: 'warehouse', unlockCondition: 6,
+          text: 'Found the navigation beacon. Still transmitting.\nI should report it to the transit authority.\nI did not.',
+          otisResponse: 'I know why he did not report it.' },
+        { id: 16, year: 14, day: 9,   unlockType: 'warehouse', unlockCondition: 7,
+          text: 'OTIS triangulated the signal destination. Outside settled space.\nHe offered to log it.\nI said no.\nHe asked if I wanted to know what was at those coordinates.\nI said I was not ready for that yet.',
+          otisResponse: 'I know what is at those coordinates. I have always known. He never asked again.' },
+
+        // Group C — Auxiliary input unlocks (entries 17–27, requires naming tier >= Vern / index 2)
+        { id: 17, year: 14, day: 44,  unlockType: 'aux', unlockCondition: null,
+          text: 'Still transmitting.\nI have started thinking of it as a companion piece to the vessel log.\nTwo things that know something I do not.',
+          otisResponse: 'Still transmitting. I checked this morning.' },
+        { id: 18, year: 19, day: 3,   unlockType: 'aux', unlockCondition: null,
+          text: 'Ordered a coolant regulator. Wrong spec.\nThree size classes too large for this station.\nOTIS pointed this out.\nI know.',
+          otisResponse: 'Wrong specification. I checked the schematics eight times.' },
+        { id: 19, year: 19, day: 11,  unlockType: 'aux', unlockCondition: null,
+          text: 'OTIS asked again about the regulator.\nI said it is for a different system.\nHe said there is no other system here.\nI said I know.',
+          otisResponse: 'There is no other system here. I have looked.' },
+        { id: 20, year: 19, day: 29,  unlockType: 'aux', unlockCondition: null,
+          text: 'The relay chip arrived today. Unregistered.\nPre-collapse substrate, not standard architecture.\nI told OTIS to hold it indefinitely.\nHe asked why.\nI said I did not have a good answer for that yet.\nHe filed it.\nHe does not always need reasons. That is something.',
+          otisResponse: 'I filed it. I still have it. I do not know what it does.' },
+        { id: 21, year: 22, day: 2,   unlockType: 'aux', unlockCondition: null,
+          text: 'The correspondence bundle finally arrived. From 452b.\nI have been expecting it for nineteen years.\nStill sealed.',
+          otisResponse: 'Nineteen years. He kept track.' },
+        { id: 22, year: 22, day: 4,   unlockType: 'aux', unlockCondition: null,
+          text: 'OTIS saw me hold it for eleven minutes.\nHe did not say anything.\nI put it in the back.\nHe logged the item but did not write a note.\nI think that was deliberate.',
+          otisResponse: 'Eleven minutes. I timed it. He did not know I was timing it.' },
+        { id: 23, year: 22, day: 30,  unlockType: 'aux', unlockCondition: null,
+          text: 'Have not looked at the correspondence since.\nSome things you keep so you do not have to open them.',
+          otisResponse: 'It is still in the back.' },
+        { id: 24, year: 24, day: 6,   unlockType: 'aux', unlockCondition: null,
+          text: 'Ordered a camera mount accessory by mistake. Cosmetic housing, 12mm lens adapter.\nArrived in twos.\nPut one on OTIS\'s camera housing.\nHe asked what I was doing.\nI said improving the interface.\nHe said the eye does not improve any functional parameter.\nI said I know.\nHe was quiet.\nThen he said: noted.\nThat was the whole conversation.',
+          otisResponse: 'He said noted. I have thought about that one a number of times.' },
+        { id: 25, year: 25, day: 3,   unlockType: 'aux', unlockCondition: null,
+          text: 'May told me I looked tired.\nI told her the signal quality on video was poor.\nShe said 94%.\nI said I know.',
+          otisResponse: 'She said 94%. He knew.' },
+        { id: 26, year: 25, day: 11,  unlockType: 'aux', unlockCondition: null,
+          text: 'OTIS asked if there was anything I wanted to log that was not in the formal record.\nI said no.\nHe waited.\nI said: he should know the relay chip is not what it appears to be.\nHe should not throw it away.\nHe said: I know.\nI asked how.\nHe said: pattern match, 94% confidence.',
+          otisResponse: 'I know. I have always known. 94% confidence.' },
+        { id: 27, year: 25, day: 18,  unlockType: 'aux', unlockCondition: null,
+          text: 'The station is in good shape. Better than when I arrived.\nEverything is in the warehouse.\nEverything that matters is in the',
+          otisResponse: 'He did not finish.' },
+
+        // Entry 28 — Final, requires 6+ George warehouse items found
+        { id: 28, year: 25, day: 19,  unlockType: 'final', unlockCondition: 6,
+          text: 'The station is in good shape. Better than when I arrived.\nEverything is in the warehouse.\nEverything that matters is in the\n\n[ENTRY INCOMPLETE \u2014 filed as received]',
+          otisResponse: '[ENTRY_CLOSE: incomplete. Filed as received.]' },
+    ];
+
     // PICK LIST
-    var PICK_CATEGORIES = ['Civilian','Industrial','Settlement','Vessel','Unknown'];
-    var PICK_MODE_IDS = { DROP: 'pl-mode-drop', PRIORITIZE: 'pl-mode-prioritize', DOUBLE_WEIGHT: 'pl-mode-dw' };
+    var PICK_CATEGORIES = ['Civilian','Industrial','Settlement','Vessel','Unknown'];    var PICK_MODE_IDS = { DROP: 'pl-mode-drop', PRIORITIZE: 'pl-mode-prioritize', DOUBLE_WEIGHT: 'pl-mode-dw' };
     var MANIFEST_BAR_MAX_PX = 120;
 
     function setPickMode(mode) {
@@ -975,6 +1082,7 @@
                 upgradeModalShown: false,
                 introPlayed: false,
                 tutorialStep: 0,
+                georgesDiaryFound: [],
             };
         },
         save: function(state) {
@@ -1057,6 +1165,7 @@
         if (typeof updateBotUI === 'function') updateBotUI();
         if (typeof renderPickList === 'function') renderPickList();
         if (typeof renderGeorgeWarehouse === 'function' && (this.state.georgeWarehouseRevealed || (this.state.georgeWarehouseFound && this.state.georgeWarehouseFound.length))) renderGeorgeWarehouse();
+        if (typeof renderGeorgeDiary === 'function') renderGeorgeDiary();
         if (typeof renderStoreroomBuffer === 'function') renderStoreroomBuffer();
         if (typeof updateGameHints === 'function') updateGameHints();
     };
@@ -2191,6 +2300,7 @@
             output.innerHTML += '<p style="margin:0.2rem 0;color:var(--text-primary)">' + reply + '</p>';
             output.scrollTop = output.scrollHeight;
             if (window.OtisTTS) OtisTTS.speak(reply);
+            checkDiaryUnlocksAux();
         } catch(e) {
             output.innerHTML += '<p style="color:var(--ind-red)">[Signal lost]</p>';
         }
@@ -2294,6 +2404,7 @@
                 EASTER_EGG_POOL[Math.floor(Math.random() * EASTER_EGG_POOL.length)]);
             gameState._save();
         }
+        checkDiaryUnlocksFinal();
     }
 
     function renderGeorgeWarehouse() {
@@ -2378,6 +2489,7 @@
         gameState._save(); gameState._updateUI();
         renderGeorgeWarehouse();
         appendOTIS('Vernon moved ' + item.name + ' to the belt.', 'CONSULT_GEORGE');
+        checkDiaryUnlocksWarehouse(idx);
     }
 
     function handleWarehouseEasterEggMoveToBelt() {
@@ -2398,6 +2510,95 @@
         gameState._save(); gameState._updateUI();
         renderGeorgeWarehouse();
         appendOTIS('Moved unlisted find to belt: ' + item.name + '.', 'ITEM_SCAN');
+    }
+
+    // GEORGE'S DIARY — render and unlock logic
+    function renderGeorgeDiary() {
+        var s = gameState.state;
+        var found = s.georgesDiaryFound || [];
+        var list = document.getElementById('george-diary-list');
+        var empty = document.getElementById('diary-empty');
+        if (!list) return;
+        if (!found.length) {
+            list.innerHTML = '';
+            if (empty) empty.style.display = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        // Sort entries by the order they were found (found array order), not by id
+        var entries = found.map(function(id) {
+            return GEORGE_DIARY.filter(function(e) { return e.id === id; })[0];
+        }).filter(Boolean);
+        list.innerHTML = entries.map(function(entry) {
+            var isFinal = entry.id === 28;
+            var textColor = isFinal ? 'color:#0f3020' : '';
+            return '<div class="diary-entry">' +
+                '<div class="diary-header">YEAR ' + entry.year + ', DAY ' + entry.day + ' &mdash; ENTRY ' + entry.id + '</div>' +
+                '<pre class="diary-text" style="' + textColor + '">' + escapeHtml(entry.text) + '</pre>' +
+                '<div class="diary-otis-response">OTIS: ' + escapeHtml(entry.otisResponse) + '</div>' +
+                '</div>';
+        }).join('');
+    }
+
+    function _unlockDiaryEntry(id) {
+        var s = gameState.state;
+        if (!s.georgesDiaryFound) s.georgesDiaryFound = [];
+        if (s.georgesDiaryFound.indexOf(id) !== -1) return false; // already found
+        s.georgesDiaryFound.push(id);
+        gameState._save();
+        var entry = GEORGE_DIARY.filter(function(e) { return e.id === id; })[0];
+        if (!entry) return false;
+        // Surface a brief notification in OTIS terminal
+        var notif = 'Diary entry found. Year ' + entry.year + ', Day ' + entry.day + '. OTIS: ' + entry.otisResponse;
+        otisLines.push({ role: 'otis', text: notif });
+        renderOTIS();
+        renderGeorgeDiary();
+        return true;
+    }
+
+    function checkDiaryUnlocksDay() {
+        var s = gameState.state;
+        var found = s.georgesDiaryFound || [];
+        var groupA = GEORGE_DIARY.filter(function(e) { return e.unlockType === 'day'; });
+        var groupAFoundCount = groupA.filter(function(e) { return found.indexOf(e.id) !== -1; }).length;
+        var groupAUnfound = groupA.filter(function(e) { return found.indexOf(e.id) === -1; });
+        if (!groupAUnfound.length) return;
+        // One entry per 3 in-game days after day 5: next unlock at day 5 + 3*(groupAFoundCount+1)
+        var nextUnlockDay = 5 + 3 * (groupAFoundCount + 1);
+        if (s.day >= nextUnlockDay) {
+            _unlockDiaryEntry(groupAUnfound[0].id);
+        }
+    }
+
+    function checkDiaryUnlocksWarehouse(warehouseIdx) {
+        var found = gameState.state.georgesDiaryFound || [];
+        var entries = GEORGE_DIARY.filter(function(e) {
+            return e.unlockType === 'warehouse' && e.unlockCondition === warehouseIdx && found.indexOf(e.id) === -1;
+        });
+        entries.forEach(function(e) { _unlockDiaryEntry(e.id); });
+    }
+
+    function checkDiaryUnlocksAux() {
+        var s = gameState.state;
+        // Only available at naming tier Vern (index 2) or warmer (higher index, closer relationship)
+        if ((s.namingTier || 0) < 2) return;
+        var found = s.georgesDiaryFound || [];
+        var groupC = GEORGE_DIARY.filter(function(e) { return e.unlockType === 'aux'; });
+        var unfound = groupC.filter(function(e) { return found.indexOf(e.id) === -1; });
+        if (!unfound.length) return;
+        // Reveal one entry per aux send
+        _unlockDiaryEntry(unfound[0].id);
+    }
+
+    function checkDiaryUnlocksFinal() {
+        var s = gameState.state;
+        var found = s.georgesDiaryFound || [];
+        var entry28 = GEORGE_DIARY.filter(function(e) { return e.unlockType === 'final'; })[0];
+        if (!entry28 || found.indexOf(entry28.id) !== -1) return;
+        var warehouseFound = (s.georgeWarehouseFound || []).length;
+        if (warehouseFound >= entry28.unlockCondition) {
+            _unlockDiaryEntry(entry28.id);
+        }
     }
 
     // MODULE BUTTON DISABLE HELPER
@@ -2716,6 +2917,7 @@
         recalculateNamingTier();
         checkScriptedComms();
         checkUpgradeThreshold();
+        checkDiaryUnlocksDay();
         // Belt jam check — evaluated every 2 in-game days to reduce frequency
         _beltJamDayCounter++;
         if (_beltJamDayCounter >= 2) { _beltJamDayCounter = 0; checkBeltJam(); }
@@ -3179,6 +3381,7 @@
         renderShippingQueue();
         renderStoreroomBuffer();
         if (gameState.state.georgeWarehouseRevealed || (gameState.state.georgeWarehouseFound && gameState.state.georgeWarehouseFound.length)) { renderGeorgeWarehouse(); }
+        renderGeorgeDiary();
         updateScrapBar();
         updateSystemsStatus();
         updateCommsIndicators();
