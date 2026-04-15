@@ -394,6 +394,10 @@
                     <button id="pl-mode-dw" class="picklist-btn" onclick="setPickMode('DOUBLE_WEIGHT')">DOUBLE-WEIGHT</button>
                 </div>
                 <div id="pick-category-btns" class="modal-row" style="flex-wrap:wrap;gap:0.3rem;margin-top:0.3rem"></div>
+                <div class="modal-row" style="margin-top:0.4rem">
+                    <button class="picklist-btn" onclick="handleConfirmPickList()" style="background:var(--accent-green,#3a5)">&#x2714; CONFIRM PICK LIST</button>
+                    <span class="zone-hint" id="picklist-confirmed-note" style="color:var(--text-dim);margin-left:0.5rem"></span>
+                </div>
                 <p class="zone-hint" id="pick-list-otis-note" style="color:var(--text-dim);margin-top:0.3rem"></p>
             </div>
             <div class="modal-section" id="manifest-summary-section">
@@ -820,13 +824,43 @@
             var rec = getOTISPickRecommendation();
             if (rec) {
                 var following = choice.mode === 'PRIORITIZE' && choice.category === rec.category;
-                note.textContent = following
-                    ? 'OTIS: Following trend. ' + rec.category.toUpperCase() + ' prioritized. ' + rec.keepCount + ' kept this run.'
-                    : 'OTIS RECOMMENDS: PRIORITIZE + ' + rec.category.toUpperCase() + ' \u2014 ' + rec.keepCount + ' kept, highest rate.';
+                var confirmed = s.confirmedPickChoice
+                    && s.confirmedPickChoice.category === rec.category
+                    && s.confirmedPickChoice.mode === 'PRIORITIZE';
+                if (confirmed)
+                    note.textContent = 'OTIS: Following trend. ' + rec.category.toUpperCase()
+                        + ' prioritized and confirmed. ' + rec.keepCount + ' kept this run.';
+                else if (following)
+                    note.textContent = 'OTIS: Good. ' + rec.category.toUpperCase()
+                        + ' matches your keep rate. Confirm to lock it in.';
+                else
+                    note.textContent = 'OTIS RECOMMENDS: PRIORITIZE + '
+                        + rec.category.toUpperCase() + ' \u2014 highest keep rate ('
+                        + rec.keepCount + ' items). Current choice diverges from pattern.';
             } else {
-                note.textContent = 'OTIS is learning your patterns. Check back after 3 drops.';
+                note.textContent = (s.dropCount || 0) < 3
+                    ? 'OTIS is building your pattern. Check back after 3 drops.'
+                    : 'OTIS has insufficient data. More drops needed.';
             }
         }
+    }
+
+    function handleConfirmPickList() {
+        var s = gameState.state;
+        s.confirmedPickChoice = Object.assign({}, s.pickListChoice);
+        gameState._save();
+        var note = document.getElementById('picklist-confirmed-note');
+        var choice = s.confirmedPickChoice;
+        var modeStr = choice.mode + (choice.category ? ' / ' + choice.category : '');
+        if (note) note.textContent = 'LOCKED: ' + modeStr;
+        var rec = getOTISPickRecommendation();
+        var following = rec && choice.mode === 'PRIORITIZE' && choice.category === rec.category;
+        var otisMsg = following
+            ? 'Pick list confirmed. ' + choice.category + ' prioritized. That matches the trend. Bots will weight accordingly.'
+            : 'Pick list confirmed. ' + modeStr + '. Bots will run this on next barge.'
+              + (rec && !following ? ' For context: your keep rate favors ' + rec.category + '.' : '');
+        otisLines.push({ role: 'otis', text: otisMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(otisMsg);
     }
 
     function buildManifestSummary(manifest) {
@@ -887,6 +921,7 @@
                 daysUntilNextDrop: 1, toastFiredToday: false, // 1 ensures first automatic drop fires on Day 2 via advanceDay→checkDropSchedule
                 scriptedCommsFired: { bank: false, sven: false, may: false },
                 pickListChoice: { mode: 'DROP', category: null },
+                confirmedPickChoice: null,
                 otisLearning: { keepByCategory: {}, scrapByCategory: {}, sellByRarity: {} },
                 bots: [
                     { id: 1, status: 'NOMINAL', degradation: 0 },
@@ -1340,7 +1375,8 @@
 
     function weightedPickItem() {
         if (_dropShuffleIndex >= _dropShuffledPool.length) {
-            shuffleDropPool(gameState.state.pickListChoice);
+            var s = gameState.state;
+            shuffleDropPool(s.confirmedPickChoice || s.pickListChoice || {});
         }
         if (!_dropShuffledPool.length) { return Object.assign({}, MANIFEST_POOL[Math.floor(Math.random() * MANIFEST_POOL.length)]); }
         var item = _dropShuffledPool[_dropShuffleIndex++];
@@ -1370,7 +1406,8 @@
             if (act === 1) count = TIMING.DROP_SIZE_ACT1;
             else if (act === 2) count = TIMING.DROP_SIZE_ACT2_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT2_MAX - TIMING.DROP_SIZE_ACT2_MIN + 1));
             else count = TIMING.DROP_SIZE_ACT3_MIN + Math.floor(Math.random() * (TIMING.DROP_SIZE_ACT3_MAX - TIMING.DROP_SIZE_ACT3_MIN + 1));
-            shuffleDropPool(gameState.state.pickListChoice);
+            var s2 = gameState.state;
+            shuffleDropPool(s2.confirmedPickChoice || s2.pickListChoice || {});
             for (var k = 0; k < count; k++) manifest.push(weightedPickItem());
             // 10% chance to append one easter egg item to the drop
             if (Math.random() < 0.10) {
@@ -2459,6 +2496,12 @@
         if (s.daysUntilNextDrop <= 0 && !s.dropActive) {
             s.daysUntilNextDrop = TIMING.DAYS_BETWEEN_DROPS + Math.floor(Math.random() * (TIMING.DROP_VARIANCE_DAYS * 2 + 1)) - TIMING.DROP_VARIANCE_DAYS;
             handleBargeArrival();
+        }
+        if (s.daysUntilNextDrop === 1 && !s.dropActive) {
+            var imminentNote = document.getElementById('picklist-confirmed-note');
+            if (!s.confirmedPickChoice && imminentNote)
+                imminentNote.textContent = '\u26a0 BARGE TOMORROW \u2014 CONFIRM PICK LIST';
+            setLight('light-belt', 'light-amber');
         }
         // Fire toast once per day — autoToast() checks toastFiredToday internally and
         // deducts credits synchronously, avoiding the race condition caused by the
