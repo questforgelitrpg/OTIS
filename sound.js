@@ -160,11 +160,15 @@
 
     // ── Music layer ───────────────────────────────────────────────────────────
 
+    // Flag set while background_buzz interlude is playing between music1 loops.
+    var _music1InterludeActive = false;
+
     function startMusic(track) {
         if (!_unlocked) {
             _pendingQueue.push(function () { startMusic(track); });
             return;
         }
+        _music1InterludeActive = false; // cancel any pending interlude restart
         if (_music2Timer) { clearTimeout(_music2Timer); _music2Timer = null; }
         if (track === 'music2') {
             // Auto-revert to music1 after one approximate loop duration
@@ -180,6 +184,7 @@
     function _onMusic1Ended() {
         if (!_musicCurrent || _musicCurrent.name !== 'music1') return;
         _musicCurrent = null;
+        _music1InterludeActive = true;
         // Keep _musicActive = true so the ambient buzz doesn't start during the interlude.
         var buzzEl = document.createElement('audio');
         buzzEl.crossOrigin = 'anonymous';
@@ -188,16 +193,25 @@
         buzzEl.preload = 'auto';
         var buzzGain = _wire(buzzEl);
         if (!buzzGain) {
+            _music1InterludeActive = false;
             _doStartMusic('music1');
             return;
         }
         buzzGain.gain.setValueAtTime(_muted ? 0 : VOLUMES['background_buzz'], (_getCtx() || {}).currentTime || 0);
         buzzEl.addEventListener('ended', function () {
-            if (!_musicCurrent) { _doStartMusic('music1'); }
+            buzzEl.src = ''; // release the element
+            if (_music1InterludeActive) {
+                _music1InterludeActive = false;
+                _doStartMusic('music1');
+            }
         });
         buzzEl.play().catch(function (e) {
             console.warn('OtisSound: buzz interlude failed:', e);
-            if (!_musicCurrent) { _doStartMusic('music1'); }
+            buzzEl.src = '';
+            if (_music1InterludeActive) {
+                _music1InterludeActive = false;
+                _doStartMusic('music1');
+            }
         });
     }
 
@@ -242,6 +256,7 @@
     }
 
     function stopMusic() {
+        _music1InterludeActive = false;
         if (!_musicCurrent) return;
         var outgoing = _musicCurrent;
         _musicCurrent = null;
