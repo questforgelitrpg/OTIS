@@ -1654,8 +1654,10 @@
     function shuffleDropPool(pickChoice) {
         var nonRare = MANIFEST_POOL.filter(function(i) { return i.rarity !== 'Rare'; });
         var rareItems = MANIFEST_POOL.filter(function(i) { return i.rarity === 'Rare'; });
+        // Include each Rare item with 25% probability to reduce their drop frequency.
         var rareReduced = rareItems.filter(function() { return Math.random() < 0.25; });
         var pool = nonRare.concat(rareReduced);
+        // Fallback: if all Rare items were filtered out and there are no non-Rare items, use full pool.
         if (!pool.length) pool = MANIFEST_POOL.slice();
         if (pickChoice && pickChoice.mode === 'DOUBLE_WEIGHT' && pickChoice.category) {
             var extras = MANIFEST_POOL.filter(function(i) { return i.category === pickChoice.category; });
