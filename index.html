@@ -88,6 +88,68 @@
         .otis-line { color: var(--text-primary); }
         .user-line { color: var(--text-muted); font-style: italic; }
 
+        /* Animation Window */
+        #anim-window {
+          height: 120px;
+          background: #000;
+          border-top: 1px solid var(--border-dim);
+          border-bottom: 1px solid var(--border-dim);
+          overflow: hidden;
+          position: relative;
+          flex-shrink: 0;
+        }
+        #anim-barge {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          left: 100%;
+          white-space: pre;
+          font-family: 'Courier New', monospace;
+          font-size: 9px;
+          line-height: 1.05;
+          color: #7dd3fc;
+          margin: 0;
+          padding: 0;
+          pointer-events: none;
+          will-change: left;
+        }
+        #anim-barge.running {
+          animation: anim-barge-rtl 4s linear forwards;
+        }
+        @keyframes anim-barge-rtl {
+          from { left: 100%; }
+          to   { left: -160%; }
+        }
+        #anim-bots-layer {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          overflow: hidden;
+        }
+        .anim-bot-row {
+          position: absolute;
+          white-space: nowrap;
+          font-family: 'Courier New', monospace;
+          font-size: 10px;
+          line-height: 1.2;
+          color: #55cc88;
+          text-shadow: 0 0 6px #55cc88;
+          will-change: transform;
+        }
+        .anim-bot-row.outbound {
+          animation: anim-bot-rtl linear infinite;
+        }
+        .anim-bot-row.returning {
+          animation: anim-bot-ltr linear infinite;
+        }
+        @keyframes anim-bot-rtl {
+          from { transform: translateX(100vw); }
+          to   { transform: translateX(-100%); }
+        }
+        @keyframes anim-bot-ltr {
+          from { transform: translateX(-100%); }
+          to   { transform: translateX(100vw); }
+        }
+
         /* Quick actions */
         #otis-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.3rem 0.8rem; border-top: 1px solid var(--border-dim); border-bottom: 1px solid var(--border-dim); flex-shrink: 0; }
 
@@ -308,6 +370,12 @@
             </header>
 
             <div id="otis-output" role="log" aria-live="polite" aria-label="OTIS conversation log"></div>
+
+            <!-- Animation Window -->
+            <div id="anim-window" aria-hidden="true">
+              <pre id="anim-barge"></pre>
+              <div id="anim-bots-layer"></div>
+            </div>
 
             <div id="otis-actions">
                 <button id="btn-login" onclick="handleLoginClick()">LOGIN</button>
@@ -1587,6 +1655,7 @@
             var daysLeft = (gameState.state.daysUntilNextDrop != null)
                 ? gameState.state.daysUntilNextDrop : TIMING.DAYS_BETWEEN_DROPS;
             narratorLine(DROP_COMPLETE_POOL, { DAYS: daysLeft });
+            AnimWindow.startBotsReturn();
             onDropCompleteBotDegradation();
             rollConveyorJam();
             checkEasterEgg();
@@ -1704,6 +1773,108 @@
         return Object.assign({}, item);
     }
 
+    // ── Animation Window ─────────────────────────────────────────────────────
+    var AnimWindow = (function() {
+      var BARGE_ART = '                                                               —                          \n                                                              ›—                          \n                                                             ›—{— ›                       \n                                                             ›—íz{í—                    › \n                                                           ›{{{íí———————{——›››          { \n                                                        ›{íí{ííííííííí› › ›››››{›››››—›\n                                                  {ííí› ———{——›———›—————————— —{  › ›› ›››\n                ›{ › —›—              —{Ï{—{   ——{{{————————————{————{—  ››—›››{ ››—›› ›››\n                        ›—›{—{›—›—{{›››—z{{ {í{—{—íí{{———››› ›› › ›› — ›       {      ›   \n   ››——››—›——í{——{—››—›››í{—{{{{{{{{{{{{{{{›{{{í——{{í——››› ›››  ››—›—{ ›      ›í— ›› ›  — \n           ———››› —  ›    ›{›{z{{Ï{íí{Ï{{z{ {—z—í——í{í——››{{——{—{{—{  ›      —››——  ›—  \n           ›   ›› —  ›  ›› {›{íí{{{íí{{ííí{—{——{›———{›—{››› —{ííííííz››› ›  ›››—››  —   \n                › ››——››› —› —              {› › —› › —        ›——{{{—         {››—— —    \n                   {{—                                         — ›—› ›     › ››           \n                    —                                          ›››››                      \n                                                               ›{›—                       \n                                                                ——›                       \n                                                                 ›                        ';
+
+      var BOT_FRAMES   = [' [o_o] >>-- ',' [o_o]-->>  ',' [^_^] >>-- ',' [-_-]-->>  ',' [o_o] >>=- ',' [*_*]-->>  '];
+      var CARRY_FRAMES = [' [o_o]>>[=] ',' [^_^]>>[=] ',' [-_-]>>[#] ',' [o_o]>>[~] '];
+      var LABELS       = ['BOT-01','BOT-02','BOT-03','UNIT-A','UNIT-B','UNIT-C','DRONE','FETCH'];
+
+      function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+      function randInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
+
+      function pickBotFrame(preferCarry) {
+        if (preferCarry && Math.random() < 0.65) { return rand(CARRY_FRAMES); }
+        if (Math.random() < 0.3) { return rand(CARRY_FRAMES); }
+        return rand(BOT_FRAMES);
+      }
+
+      function makeBotString(preferCarry) {
+        var parts = [];
+        var n = randInt(3, 5);
+        for (var i = 0; i < n; i++) {
+          parts.push(rand(LABELS) + ':' + pickBotFrame(preferCarry));
+        }
+        return parts.join('  ');
+      }
+
+      var _clearTimer = null;
+      var _botsOutboundTimer = null;
+
+      function _clearTimers() {
+        if (_clearTimer) { clearTimeout(_clearTimer); _clearTimer = null; }
+        if (_botsOutboundTimer) { clearTimeout(_botsOutboundTimer); _botsOutboundTimer = null; }
+      }
+
+      function _clearBots() {
+        var layer = document.getElementById('anim-bots-layer');
+        if (layer) layer.innerHTML = '';
+      }
+
+      function _buildBotRows(direction, preferCarry) {
+        var layer = document.getElementById('anim-bots-layer');
+        if (!layer) return;
+        layer.innerHTML = '';
+        var rowCount = 4;
+        for (var r = 0; r < rowCount; r++) {
+          var el = document.createElement('div');
+          el.className = 'anim-bot-row ' + direction;
+          var topPct = 5 + (r * 23) + randInt(0, 4);
+          el.style.top = topPct + '%';
+          var dur = randInt(5, 9);
+          var delay = -randInt(0, dur);
+          el.style.animationDuration = dur + 's';
+          el.style.animationDelay = delay + 's';
+          el.textContent = makeBotString(preferCarry);
+          layer.appendChild(el);
+          (function(rowEl, d) {
+            setInterval(function() { rowEl.textContent = makeBotString(preferCarry); }, d * 1000);
+          })(el, dur);
+        }
+      }
+
+      function startBargeSequence() {
+        _clearTimers();
+        var bargeEl = document.getElementById('anim-barge');
+        if (!bargeEl) return;
+        _clearBots();
+        bargeEl.textContent = BARGE_ART;
+        bargeEl.classList.remove('running');
+        void bargeEl.offsetWidth;
+        bargeEl.classList.add('running');
+
+        _botsOutboundTimer = setTimeout(function() {
+          bargeEl.classList.remove('running');
+          bargeEl.textContent = '';
+          _buildBotRows('outbound', false);
+          if (window.OtisSound) OtisSound.startAmbient('bots');
+        }, 3500);
+      }
+
+      function startBotsReturn() {
+        _clearTimers();
+        var bargeEl = document.getElementById('anim-barge');
+        if (bargeEl) { bargeEl.classList.remove('running'); bargeEl.textContent = ''; }
+        if (window.OtisSound) {
+          OtisSound.stopAmbient('bots');
+          OtisSound.playSFX('bots');
+        }
+        _buildBotRows('returning', true);
+        _clearTimer = setTimeout(function() { clear(); }, 8000);
+      }
+
+      function clear() {
+        _clearTimers();
+        _clearBots();
+        var bargeEl = document.getElementById('anim-barge');
+        if (bargeEl) { bargeEl.classList.remove('running'); bargeEl.textContent = ''; }
+        if (window.OtisSound) OtisSound.stopAmbient('bots');
+      }
+
+      return { startBargeSequence: startBargeSequence, startBotsReturn: startBotsReturn, clear: clear };
+    }());
+
     function handleBargeArrival() {
         if (gameState.state.dropActive) return;
         // Lock immediately to prevent double-firing during the staged delay windows
@@ -1747,6 +1918,7 @@
         // Stage 1 — wait 3 s, then play bargedrop sound + show OTIS manifest summary
         setTimeout(function() {
             if (window.OtisSound) OtisSound.playSFX('bargedrop');
+            AnimWindow.startBargeSequence();
             var bargeSummary = buildManifestSummary(manifest);
             // Append pick list status so OTIS can comment on whether Vernon confirmed it
             var confirmed = gameState.state.confirmedPickChoice;
