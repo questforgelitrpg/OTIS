@@ -7,7 +7,7 @@
     <!-- Redirect new players to the standalone intro page before the game renders. -->
     <script>
     (function () {
-        var STATE_KEY = 'otis_state_v3'; // must match stateManager STATE_KEY below
+        var STATE_KEY = 'otis_state_v4'; // must match stateManager STATE_KEY below
         try {
             var raw = localStorage.getItem(STATE_KEY);
             var state = raw != null ? JSON.parse(raw) : null;
@@ -465,9 +465,9 @@
                         <button class="consult-card btn-warn" onclick="handleSkip()">SKIP</button>
                     </div>
                     <div class="item-actions" id="item-declaration" style="display:none">
-                        <button onclick="handleDeclare('OTIS')">SELL &mdash; OTIS PRICE</button>
-                        <button id="btn-reserve" onclick="handleDeclare('RESERVE')" disabled>SELL &mdash; RESERVE</button>
-                        <button class="btn-warn" onclick="handleDeclare('NORESERVE')">SELL &mdash; NO RESERVE</button>
+                        <button id="btn-to-may" onclick="handleDeclare('MAY_BIN')" title="Civilian and Settlement items only">TO MAY BIN</button>
+                        <button id="btn-to-broker" onclick="handleDeclare('BROKER_BIN')" title="Industrial and Vessel items">TO BROKER BIN</button>
+                        <button id="btn-to-sven" onclick="handleDeclare('SVEN_BIN')" title="Rare and Anomalous only — Sven pays 65%" style="color:var(--text-warn);border-color:#3a2a00">TO SVEN BIN</button>
                         <button onclick="handleDeclare('KEEP')">KEEP</button>
                         <button class="btn-warn" onclick="handleDeclare('SCRAP')">SCRAP</button>
                     </div>
@@ -505,10 +505,10 @@
                 <div class="comms-row"><span class="comms-dot" id="comms-dot-bank"></span><span class="comms-label">CHANNEL</span><button id="btn-answer-bank" onclick="handleAnswerBank()">ANSWER BANK</button></div>
                 <div class="ledger-row">LOAN BALANCE: <span id="ledger-debt">25,000 cr</span></div>
                 <div class="ledger-row">CREDITS: <span id="ledger-credits">200 cr</span></div>
-                <div class="ledger-row">PAYMENT DUE: 650 cr in <span id="ledger-days">28</span>d</div>
+                <div class="ledger-row">NEXT INSTALLMENT: <span id="ledger-installment">850 cr</span> in <span id="ledger-days">7</span>d</div>
                 <div id="arrears-row" class="ledger-row" style="display:none">ARREARS: <span id="ledger-arrears">0 cr</span><button class="btn-danger" onclick="handleClearArrears()">CLEAR ARREARS</button></div>
                 <div class="debt-bar-track"><div class="debt-bar-fill" id="debt-bar-fill" style="width:0%"></div></div>
-                <div class="modal-row"><button onclick="handleMakePayment()">MAKE PAYMENT</button></div>
+                <div class="modal-row"><button onclick="handleMakePayment()">MAKE INSTALLMENT</button></div>
             </div>
             <div class="modal-section">
                 <div class="modal-label">SVEN DIGUT / DIGUT OPS</div>
@@ -519,9 +519,39 @@
                 <div class="comms-row"><span class="comms-dot" id="comms-dot-may"></span><span class="comms-label" id="may-scrap-readout">SCRAP: 0%</span><button onclick="handleAnswerMay()">ANSWER MAY</button><button onclick="handleDispatchMay()">DISPATCH SCRAP</button></div>
             </div>
             <div class="modal-section">
-                <div class="modal-label">PENDING SALES</div>
-                <div id="shipping-queue-list"></div>
-                <p class="zone-hint" id="shipping-queue-empty">No pending sales.</p>
+                <div class="modal-label">SHIPPING BINS</div>
+                <!-- MAY BIN -->
+                <div style="margin-bottom:0.5rem">
+                    <div class="modal-label" style="font-size:11px">
+                        MAY BIN — Civilian / Settlement
+                        <span id="may-bin-count" style="color:var(--text-primary)">0/12</span>
+                    </div>
+                    <div class="scrap-bar-track" style="height:4px">
+                        <div id="may-bin-bar" class="scrap-bar-fill" style="width:0%;height:4px"></div>
+                    </div>
+                    <div id="may-bin-list" style="font-size:11px;color:var(--text-dim);max-height:60px;overflow-y:auto"></div>
+                </div>
+                <!-- BROKER BIN -->
+                <div style="margin-bottom:0.5rem">
+                    <div class="modal-label" style="font-size:11px">
+                        BROKER BIN — Industrial / Vessel
+                        <span id="broker-bin-count" style="color:var(--text-primary)">0/10</span>
+                        <span id="broker-bin-rate" style="font-size:10px;color:var(--text-warn)"></span>
+                    </div>
+                    <div class="scrap-bar-track" style="height:4px">
+                        <div id="broker-bin-bar" class="scrap-bar-fill" style="width:0%;height:4px"></div>
+                    </div>
+                    <div id="broker-bin-list" style="font-size:11px;color:var(--text-dim);max-height:60px;overflow-y:auto"></div>
+                    <div class="modal-row"><button onclick="handleBrokerBinShip()">SHIP BROKER BIN</button></div>
+                </div>
+                <!-- SVEN BIN -->
+                <div style="margin-bottom:0.5rem">
+                    <div class="modal-label" style="font-size:11px;color:var(--text-warn)">
+                        SVEN BIN — Rare / Anomalous (65% value — auto-ships at 2)
+                        <span id="sven-bin-count" style="color:var(--text-warn)">0/3</span>
+                    </div>
+                    <div id="sven-bin-list" style="font-size:11px;color:var(--text-warn);max-height:40px;overflow-y:auto"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -709,11 +739,11 @@
         DROP_SIZE_ACT2_MAX:    22,
         DROP_SIZE_ACT3_MIN:    26,
         DROP_SIZE_ACT3_MAX:    32,
-        PAYMENT_CYCLE_DAYS:    28,
+        PAYMENT_CYCLE_DAYS:    7,
         RESERVE_RESOLVE_MIN:   120000,
         RESERVE_RESOLVE_MAX:   480000,
-        ANOMALOUS_RESERVE_MIN: 300,
-        ANOMALOUS_RESERVE_MAX: 1600,
+        ANOMALOUS_RESERVE_MIN: 400,
+        ANOMALOUS_RESERVE_MAX: 1800,
         DEBUG_FAST_MODE:       false,
         DEBUG_SPEED_MULTIPLIER: 10,
         OVERFLOW_THRESHOLD:    6,
@@ -722,66 +752,66 @@
 
     // MANIFEST POOL
     const MANIFEST_POOL = [
-        { name: 'Personal effects bundle \u2014 civilian origin',  category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 36 },
-        { name: 'Corroded fuel cell casing',                       category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 24 },
-        { name: 'Settlement cooking unit \u2014 communal',         category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 44 },
-        { name: 'Burned circuit board cluster',                    category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 20 },
-        { name: 'Bent structural strut',                           category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 22 },
-        { name: "Children's toy \u2014 unidentified origin",       category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 30 },
-        { name: 'Settlement water filter \u2014 ceramic',          category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 26 },
-        { name: 'Partial navigation array',                        category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 130 },
-        { name: 'Cracked coolant housing',                         category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 84 },
-        { name: 'Civilian medical kit \u2014 partial',             category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 96 },
-        { name: 'Coolant manifold \u2014 intact',                  category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 156 },
-        { name: 'Settlement community archive \u2014 partial',     category: 'Settlement', rarity: 'Uncommon',  condition: 'Used', otisValue: 110 },
-        { name: 'Pressure suit fragment \u2014 marked',            category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 100 },
-        { name: 'Decommissioned beacon housing',                   category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 144 },
-        { name: 'Pre-collapse data crystal',                       category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 530 },
-        { name: 'Fused relay core \u2014 pre-collapse',            category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 420 },
-        { name: 'Encrypted data slate',                            category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 350 },
-        { name: 'Autonomous drone chassis \u2014 inert',           category: 'Industrial', rarity: 'Rare',      condition: 'Used', otisValue: 280 },
+        { name: 'Personal effects bundle \u2014 civilian origin',  category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 108 },
+        { name: 'Corroded fuel cell casing',                       category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 72 },
+        { name: 'Settlement cooking unit \u2014 communal',         category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 132 },
+        { name: 'Burned circuit board cluster',                    category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 60 },
+        { name: 'Bent structural strut',                           category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 66 },
+        { name: "Children's toy \u2014 unidentified origin",       category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 90 },
+        { name: 'Settlement water filter \u2014 ceramic',          category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 78 },
+        { name: 'Partial navigation array',                        category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 325 },
+        { name: 'Cracked coolant housing',                         category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 210 },
+        { name: 'Civilian medical kit \u2014 partial',             category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 240 },
+        { name: 'Coolant manifold \u2014 intact',                  category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 390 },
+        { name: 'Settlement community archive \u2014 partial',     category: 'Settlement', rarity: 'Uncommon',  condition: 'Used', otisValue: 275 },
+        { name: 'Pressure suit fragment \u2014 marked',            category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 250 },
+        { name: 'Decommissioned beacon housing',                   category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 360 },
+        { name: 'Pre-collapse data crystal',                       category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 1060 },
+        { name: 'Fused relay core \u2014 pre-collapse',            category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 840 },
+        { name: 'Encrypted data slate',                            category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 700 },
+        { name: 'Autonomous drone chassis \u2014 inert',           category: 'Industrial', rarity: 'Rare',      condition: 'Used', otisValue: 560 },
         { name: 'Unidentified alloy fragment',                     category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
         { name: 'Pressurized canister \u2014 unknown contents',    category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
         { name: 'Ceramic figure \u2014 no catalogue match',        category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
         // Civilian Debris — Common
-        { name: 'Personal hygiene kit \u2014 travel size',         category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 20 },
-        { name: 'Handheld audio player \u2014 cracked casing',     category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 18 },
-        { name: 'Family photo cube \u2014 multi-panel',            category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 24 },
-        { name: 'Worn clothing bundle \u2014 vacuum sealed remnants', category: 'Civilian', rarity: 'Common',   condition: 'Used', otisValue: 14 },
-        { name: 'Nutrient snack pack \u2014 expired',              category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 10 },
-        { name: 'Child\u2019s learning tablet \u2014 nonfunctional', category: 'Civilian', rarity: 'Common',    condition: 'Used', otisValue: 18 },
+        { name: 'Personal hygiene kit \u2014 travel size',         category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 60 },
+        { name: 'Handheld audio player \u2014 cracked casing',     category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 54 },
+        { name: 'Family photo cube \u2014 multi-panel',            category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 72 },
+        { name: 'Worn clothing bundle \u2014 vacuum sealed remnants', category: 'Civilian', rarity: 'Common',   condition: 'Used', otisValue: 42 },
+        { name: 'Nutrient snack pack \u2014 expired',              category: 'Civilian',   rarity: 'Common',    condition: 'Used', otisValue: 30 },
+        { name: 'Child\u2019s learning tablet \u2014 nonfunctional', category: 'Civilian', rarity: 'Common',    condition: 'Used', otisValue: 54 },
         // Civilian Debris — Uncommon
-        { name: 'Compact holo-diary \u2014 intact',                category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 124 },
-        { name: 'Civilian comm device \u2014 clean condition',     category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 104 },
-        { name: 'Prescription lens visor \u2014 calibrated',       category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 96 },
-        { name: 'Portable heating unit \u2014 personal',           category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 80 },
+        { name: 'Compact holo-diary \u2014 intact',                category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 310 },
+        { name: 'Civilian comm device \u2014 clean condition',     category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 260 },
+        { name: 'Prescription lens visor \u2014 calibrated',       category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 240 },
+        { name: 'Portable heating unit \u2014 personal',           category: 'Civilian',   rarity: 'Uncommon',  condition: 'Used', otisValue: 200 },
         // Industrial Salvage — Common
-        { name: 'Fractured pipe junction',                         category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 20 },
-        { name: 'Burned-out power coupler',                        category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 16 },
-        { name: 'Worn actuator joint',                             category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 18 },
-        { name: 'Damaged sensor housing',                          category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 14 },
+        { name: 'Fractured pipe junction',                         category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 60 },
+        { name: 'Burned-out power coupler',                        category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 48 },
+        { name: 'Worn actuator joint',                             category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 54 },
+        { name: 'Damaged sensor housing',                          category: 'Industrial', rarity: 'Common',    condition: 'Used', otisValue: 42 },
         // Industrial Salvage — Uncommon
-        { name: 'Precision cutting module',                        category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 136 },
-        { name: 'Reinforced servo motor \u2014 intact',            category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 152 },
-        { name: 'Thermal regulator unit \u2014 calibrated',        category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 140 },
+        { name: 'Precision cutting module',                        category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 340 },
+        { name: 'Reinforced servo motor \u2014 intact',            category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 380 },
+        { name: 'Thermal regulator unit \u2014 calibrated',        category: 'Industrial', rarity: 'Uncommon',  condition: 'Used', otisValue: 350 },
         // Decommissioned Vessel — Uncommon
-        { name: 'Ship comm relay node',                            category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 120 },
-        { name: 'Cockpit interface panel \u2014 stripped',         category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 96 },
-        { name: 'Thruster nozzle fragment',                        category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 110 },
-        { name: 'Navigation gyroscope ring',                       category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 128 },
+        { name: 'Ship comm relay node',                            category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 300 },
+        { name: 'Cockpit interface panel \u2014 stripped',         category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 240 },
+        { name: 'Thruster nozzle fragment',                        category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 275 },
+        { name: 'Navigation gyroscope ring',                       category: 'Vessel',     rarity: 'Uncommon',  condition: 'Used', otisValue: 320 },
         // Decommissioned Vessel — Rare
-        { name: 'Micro jump-calculator core',                      category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 496 },
-        { name: 'Star chart projector \u2014 intact',              category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 450 },
-        { name: 'AI assistant module \u2014 dormant',              category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 560 },
+        { name: 'Micro jump-calculator core',                      category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 992 },
+        { name: 'Star chart projector \u2014 intact',              category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 900 },
+        { name: 'AI assistant module \u2014 dormant',              category: 'Vessel',     rarity: 'Rare',      condition: 'Used', otisValue: 1120 },
         // Abandoned Settlement — Common
-        { name: 'Settlement ration container \u2014 cracked',      category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 16 },
-        { name: 'Ceramic water jug \u2014 fractured',              category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 14 },
-        { name: 'Manual farming tool \u2014 rusted',               category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 12 },
-        { name: 'Communal utensil bundle \u2014 mismatched',       category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 14 },
+        { name: 'Settlement ration container \u2014 cracked',      category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 48 },
+        { name: 'Ceramic water jug \u2014 fractured',              category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 42 },
+        { name: 'Manual farming tool \u2014 rusted',               category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 36 },
+        { name: 'Communal utensil bundle \u2014 mismatched',       category: 'Settlement', rarity: 'Common',    condition: 'Used', otisValue: 42 },
         // Abandoned Settlement — Uncommon
-        { name: 'Settlement ID registry slab',                     category: 'Settlement', rarity: 'Uncommon',  condition: 'Used', otisValue: 116 },
-        { name: 'Portable weather monitor',                        category: 'Settlement', rarity: 'Uncommon',  condition: 'Used', otisValue: 100 },
-        { name: 'Community message recorder \u2014 intact',        category: 'Settlement', rarity: 'Uncommon',  condition: 'Used', otisValue: 124 },
+        { name: 'Settlement ID registry slab',                     category: 'Settlement', rarity: 'Uncommon',  condition: 'Used', otisValue: 290 },
+        { name: 'Portable weather monitor',                        category: 'Settlement', rarity: 'Uncommon',  condition: 'Used', otisValue: 250 },
+        { name: 'Community message recorder \u2014 intact',        category: 'Settlement', rarity: 'Uncommon',  condition: 'Used', otisValue: 310 },
         // Unknown Origin — Anomalous
         { name: 'Non-reactive energy shard',                       category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
         { name: 'Smooth black sphere \u2014 absorbs light',        category: 'Unknown',    rarity: 'Anomalous', condition: 'Used', otisValue: 0 },
@@ -1097,12 +1127,12 @@
     }
 
     // STATE MANAGER
-    const STATE_KEY = 'otis_state_v3';
+    const STATE_KEY = 'otis_state_v4';
     const stateManager = {
         _default: function() {
             return {
                 debt: 25000, credits: 200, day: 1,
-                paymentDue: 650, daysUntilPayment: 28,
+                paymentDue: 850, daysUntilPayment: 7,
                 sessionHours: 0, namingTier: 0, skipCount: 0, act: 1,
                 scrapFill: 0, keepLog: [], shippingQueue: [], recentEvents: [],
                 dropActive: false, bargeActive: false, dropItemsRemaining: 0,
@@ -1137,7 +1167,7 @@
                 declarationBatch: [],
                 declarationBatchCount: 0,
                 deliveryCount: 0,
-                stateVersion: 3,
+                stateVersion: 4,
                 svenIgnoreDays: 0,
                 svenInterferencePct: 20,
                 recentBotConflict: false,
@@ -1158,6 +1188,16 @@
                 introPlayed: false,
                 tutorialStep: 0,
                 georgesDiaryFound: [],
+                // --- BIN SYSTEM ---
+                mayBin: [],
+                brokerBin: [],
+                svenBin: [],
+                // --- PAYMENT ESCALATION ---
+                paymentCycle: 0,
+                currentInstallment: 850,
+                escalationFired: { tier1: false, tier2: false, tier3: false },
+                // --- SVEN STEAL TRACKING ---
+                svenStolenCount: 0,
             };
         },
         save: function(state) {
@@ -1169,8 +1209,8 @@
                 var raw = localStorage.getItem(STATE_KEY);
                 if (raw) {
                     var parsed = JSON.parse(raw);
-                    if (!parsed.stateVersion || parsed.stateVersion < 3) {
-                        console.log('Old save detected. Clearing for v3 economy.');
+                    if (!parsed.stateVersion || parsed.stateVersion < 4) {
+                        console.log('Old save detected. Clearing for v4 economy.');
                         this.clear();
                         return null;
                     }
@@ -1210,7 +1250,7 @@
         setEl('hdr-debt', 'LOAN: ' + s.debt.toLocaleString() + ' cr');
         setEl('hdr-naming', naming.toUpperCase());
         var payEl = document.getElementById('hdr-payment');
-        if (payEl) { payEl.textContent = 'PAY: ' + dup + 'd'; payEl.className = 'hdr-stat' + (dup <= 3 ? ' payment-crit' : dup <= 7 ? ' payment-warn' : ''); }
+        if (payEl) { payEl.textContent = 'INST: ' + (s.currentInstallment||850) + 'cr/' + dup + 'd'; payEl.className = 'hdr-stat' + (dup <= 3 ? ' payment-crit' : dup <= 7 ? ' payment-warn' : ''); }
         var daysUntilDrop = (s.daysUntilNextDrop != null) ? s.daysUntilNextDrop : TIMING.DAYS_BETWEEN_DROPS;
         var bargeEl = document.getElementById('hdr-barge');
         if (bargeEl) bargeEl.textContent = s.bargeActive ? 'BARGE: ACTIVE' : 'BARGE: ' + daysUntilDrop + 'd';
@@ -1219,6 +1259,9 @@
         setEl('ledger-debt', s.debt.toLocaleString() + ' cr');
         setEl('ledger-credits', s.credits.toLocaleString() + ' cr');
         setEl('ledger-days', String(dup));
+        var instEl = document.getElementById('ledger-installment');
+        if (instEl) instEl.textContent = (s.currentInstallment || 850).toLocaleString() + ' cr';
+
         var arrearsRow = document.getElementById('arrears-row');
         var arrearsEl  = document.getElementById('ledger-arrears');
         var arrears = s.outstandingDebt || 0;
@@ -1243,6 +1286,7 @@
         if (typeof renderGeorgeDiary === 'function') renderGeorgeDiary();
         if (typeof renderStoreroomBuffer === 'function') renderStoreroomBuffer();
         if (typeof updateGameHints === 'function') updateGameHints();
+        if (typeof renderBinPanel === 'function') renderBinPanel();
     };
     GameState.prototype._renderKeepLog = function() {
         var list  = document.getElementById('keep-log-list');
@@ -1463,7 +1507,7 @@
     var TUTORIAL_STEPS = [
         { target: 'module-btn-belt',    msg: 'Open the belt panel. An item is waiting.' },
         { target: 'cc-examine',         msg: 'Examine the item before declaring it. George always did.' },
-        { target: 'item-declaration',   msg: 'Sell at OTIS price to receive credit immediately. Reserve holds for a buyer.' },
+        { target: 'item-declaration',   msg: 'Sort to a bin: May takes Civilian/Settlement, Broker takes any, Sven takes Rare/Anomalous at 65%.' },
         { target: 'module-btn-comms',   msg: 'The Bank sent a message on Day 1. It is not friendly. It is also not optional.' },
         { target: 'module-btn-systems', msg: 'Check the bots occasionally. George did not. Eventually that mattered.' },
     ];
@@ -1581,7 +1625,7 @@
             text = '\u26a0 ARREARS ACTIVE \u2014 CLEAR IN COMMS';
             color = 'var(--text-danger)';
         } else if (dup <= 3) {
-            text = '\u26a0 PAYMENT DUE IN ' + dup + 'd \u2014 650 cr';
+            text = '\u26a0 INSTALLMENT DUE IN ' + dup + 'd \u2014 ' + ((gameState.state && gameState.state.currentInstallment) || 850) + ' cr';
             color = 'var(--text-danger)';
         } else if (scrapFill >= 90) {
             text = 'SCRAP CRITICAL \u2014 DISPATCH TO MAY';
@@ -1725,6 +1769,19 @@
                 'The moon does not care about your backlog.',
                 'Running nominal. Barely.',
                 'Station holding.',
+            ];
+        }
+        if ((s.brokerBin||[]).length >= 8) {
+            msgs = [
+                'Broker bin at ' + s.brokerBin.length + '. Ship now at 88% or wait for full.',
+                'Eight items. Two more and you get full value. Or ship now.',
+                'Broker bin getting heavy. Payment is in ' + dup + ' days.',
+            ];
+        }
+        if ((s.mayBin||[]).length >= 8) {
+            msgs = [
+                'May bin has ' + s.mayBin.length + ' items. Dispatch alongside scrap.',
+                'May bin is ready whenever you are. She pays full.',
             ];
         }
         var sideMsg = msgs[Math.floor(Math.random() * msgs.length)];
@@ -2083,7 +2140,6 @@
         var tagsEl  = document.getElementById('item-tags');
         var estEl   = document.getElementById('otis-estimate');
         var declEl  = document.getElementById('item-declaration');
-        var btnRes  = document.getElementById('btn-reserve');
         if (currentItem) {
             if (emptyEl) emptyEl.style.display = 'none';
             if (present) present.style.display = '';
@@ -2104,9 +2160,31 @@
             }
             var any = currentItem.consultedExamine || currentItem.consultedWorth || currentItem.consultedGeorge;
             if (declEl) declEl.style.display = any ? 'flex' : 'none';
-            if (btnRes) btnRes.disabled = !currentItem.consultedWorth;
             var cc = { 'cc-examine': 'consultedExamine', 'cc-george': 'consultedGeorge' };
             Object.keys(cc).forEach(function(id) { var b = document.getElementById(id); if (b) b.classList.toggle('consulted', !!currentItem[cc[id]]); });
+            // Bin button state management
+            if (currentItem) {
+                var itemCat = currentItem.category;
+                var itemRar = currentItem.rarity;
+                var s = gameState.state;
+                var mayBtn    = document.getElementById('btn-to-may');
+                var brokerBtn = document.getElementById('btn-to-broker');
+                var svenBtn   = document.getElementById('btn-to-sven');
+                if (mayBtn) {
+                    var mayOk = (itemCat === 'Civilian' || itemCat === 'Settlement');
+                    mayBtn.disabled = !mayOk || (s.mayBin||[]).length >= 12;
+                    mayBtn.title = mayOk ? 'May bin: ' + (s.mayBin||[]).length + '/12' : 'May only takes Civilian and Settlement';
+                }
+                if (brokerBtn) {
+                    brokerBtn.disabled = (s.brokerBin||[]).length >= 10;
+                    brokerBtn.title = 'Broker bin: ' + (s.brokerBin||[]).length + '/10';
+                }
+                if (svenBtn) {
+                    var svenOk = (itemRar === 'Rare' || itemRar === 'Anomalous');
+                    svenBtn.disabled = !svenOk || (s.svenBin||[]).length >= 3;
+                    svenBtn.title = svenOk ? 'Sven bin: ' + (s.svenBin||[]).length + '/3 \u2014 auto-ships at 2' : 'Sven only takes Rare and Anomalous';
+                }
+            }
         } else {
             if (emptyEl) emptyEl.style.display = '';
             if (present) present.style.display = 'none';
@@ -2137,7 +2215,6 @@
         gameState.state.itemDisplayedAt = null;
         gameState._save();
         var declEl = document.getElementById('item-declaration'); if (declEl) declEl.style.display = 'flex';
-        var btnRes = document.getElementById('btn-reserve');      if (btnRes) btnRes.disabled = true;
         var n = gameState.state.skipCount;
         var tierMsg = null;
         if (n === 7) tierMsg = SKIP_TIER_MSGS[7];
@@ -2156,7 +2233,7 @@
         if (!currentItem) return;
         var ctx = buildItemContext(currentItem);
         if (trigger === 'CONSULT_WHATIS') currentItem.consultedExamine = true;
-        if (trigger === 'CONSULT_WORTH')  { currentItem.consultedWorth = true; var b = document.getElementById('btn-reserve'); if (b) b.disabled = false; }
+        if (trigger === 'CONSULT_WORTH')  { currentItem.consultedWorth = true; }
         if (trigger === 'CONSULT_GEORGE') currentItem.consultedGeorge = true;
         renderItemQueue();
         if (trigger === 'CONSULT_GEORGE') {
@@ -2174,7 +2251,6 @@
         if (!currentItem) return;
         currentItem.consultedExamine = true;
         currentItem.consultedWorth = true;
-        var b = document.getElementById('btn-reserve'); if (b) b.disabled = false;
         renderItemQueue();
         if (gameState.state.tutorialStep === 2) tutorialAdvance();
 
@@ -2285,40 +2361,74 @@
         var jamClr  = document.getElementById('conveyor-jam-clear');
         if (jamWarn) jamWarn.style.display = 'none';
         if (jamClr)  jamClr.style.display  = 'none';
-        if (method === 'OTIS') {
-            gameState.state.credits += ev * eeMultiplier;
-            gameState._save();
-            trackOTISLearning('SELL', item);
-            if (item.rarity === 'Rare') {
-                gameState.state.humanityArchive = Math.max(0, (gameState.state.humanityArchive||0) - 1);
+        if (method === 'MAY_BIN') {
+            var allowed = (item.category === 'Civilian' || item.category === 'Settlement');
+            if (!allowed) {
+                var wrongMsg = item.name.substring(0,22) + ' \u2014 May only takes Civilian and Settlement.';
+                otisLines.push({ role:'otis', text: wrongMsg }); renderOTIS();
+                return;
             }
-            clearItemQueue();
-            trackDeclarationBatch(item.name, String(ev * eeMultiplier) + ' cr');
-        } else if (method === 'RESERVE') {
-            var rp;
-            if (item.rarity === 'Anomalous') rp = Math.floor(Math.random() * (TIMING.ANOMALOUS_RESERVE_MAX - TIMING.ANOMALOUS_RESERVE_MIN + 1)) + TIMING.ANOMALOUS_RESERVE_MIN;
-            else rp = Math.floor(ev * (RESERVE_MULTIPLIERS[item.rarity] || 1.10));
-            rp = Math.floor(rp * eeMultiplier);
-            var resolveAt = Date.now() + TIMING.RESERVE_RESOLVE_MIN + Math.floor(Math.random() * (TIMING.RESERVE_RESOLVE_MAX - TIMING.RESERVE_RESOLVE_MIN));
-            if (!gameState.state.shippingQueue) gameState.state.shippingQueue = [];
-            gameState.state.shippingQueue.push({ name: item.name, price: rp, otisValue: item.otisValue || 0, resolveAt: resolveAt });
-            gameState._save();
-            renderShippingQueue();
-            trackOTISLearning('SELL', item);
-            if (item.rarity === 'Rare') {
-                gameState.state.humanityArchive = Math.max(0, (gameState.state.humanityArchive||0) - 1);
+            var mayBin = gameState.state.mayBin || [];
+            if (mayBin.length >= 12) {
+                var fullMsg = 'May bin at capacity. Ship before sorting more.';
+                otisLines.push({ role:'otis', text: fullMsg }); renderOTIS();
+                return;
             }
-            clearItemQueue();
-            var reserveMsg = item.name.substring(0, 22) + '. Reserve: ' + rp + ' credits. Awaiting buyer.';
-            otisLines.push({ role: 'otis', text: reserveMsg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(reserveMsg);
-        } else if (method === 'NORESERVE') {
-            var earned = Math.floor(ev * 0.75 * eeMultiplier);
-            gameState.state.credits += earned;
+            mayBin.push({ name: item.name, category: item.category, rarity: item.rarity, condition: item.condition, otisValue: item.otisValue, addedDay: gameState.state.day });
+            gameState.state.mayBin = mayBin;
             gameState._save();
             trackOTISLearning('SELL', item);
             clearItemQueue();
-            trackDeclarationBatch(item.name, String(earned) + ' cr');
+            renderBinPanel();
+            var binMsg = item.name.substring(0,22) + ' to May bin. ' + mayBin.length + '/12.';
+            otisLines.push({ role:'otis', text: binMsg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(binMsg);
+        } else if (method === 'BROKER_BIN') {
+            var brokerBin = gameState.state.brokerBin || [];
+            if (brokerBin.length >= 10) {
+                var bfMsg = 'Broker bin at capacity. Ship before sorting more.';
+                otisLines.push({ role:'otis', text: bfMsg }); renderOTIS();
+                return;
+            }
+            brokerBin.push({ name: item.name, category: item.category, rarity: item.rarity, condition: item.condition, otisValue: item.otisValue, addedDay: gameState.state.day, eeMultiplier: item.easterEgg ? 3 : 1 });
+            gameState.state.brokerBin = brokerBin;
+            gameState._save();
+            trackOTISLearning('SELL', item);
+            clearItemQueue();
+            renderBinPanel();
+            var bbMsg = item.name.substring(0,22) + ' to broker. ' + brokerBin.length + '/10.';
+            otisLines.push({ role:'otis', text: bbMsg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(bbMsg);
+        } else if (method === 'SVEN_BIN') {
+            var allowedSven = (item.rarity === 'Rare' || item.rarity === 'Anomalous');
+            if (!allowedSven) {
+                var swMsg = 'Sven only takes Rare and Anomalous. This is ' + item.rarity + '.';
+                otisLines.push({ role:'otis', text: swMsg }); renderOTIS();
+                return;
+            }
+            var svenBin = gameState.state.svenBin || [];
+            if (svenBin.length >= 3) {
+                var sfMsg = 'Sven bin full. He pays when it hits 2 \u2014 it should have shipped.';
+                otisLines.push({ role:'otis', text: sfMsg }); renderOTIS();
+                return;
+            }
+            var svenValue = Math.floor(getEffectiveValue(item) * 0.65);
+            if (item.rarity === 'Anomalous') {
+                svenValue = Math.floor((Math.random() * (TIMING.ANOMALOUS_RESERVE_MAX - TIMING.ANOMALOUS_RESERVE_MIN) + TIMING.ANOMALOUS_RESERVE_MIN) * 0.65);
+            }
+            svenBin.push({ name: item.name, category: item.category, rarity: item.rarity, condition: item.condition, otisValue: item.otisValue, svenValue: svenValue, addedDay: gameState.state.day });
+            gameState.state.svenBin = svenBin;
+            gameState._save();
+            trackOTISLearning('SELL', item);
+            clearItemQueue();
+            renderBinPanel();
+            var svMsg = item.name.substring(0,22) + ' to Sven. His offer: ' + svenValue + ' cr. Bin: ' + svenBin.length + '/3.';
+            otisLines.push({ role:'otis', text: svMsg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(svMsg);
+            // Auto-pay when bin reaches 2 items
+            if (svenBin.length >= 2) {
+                setTimeout(handleSvenBinShip, 1500);
+            }
         } else if (method === 'KEEP') {
             gameState.state.keepLog.push({ name: item.name, day: gameState.state.day, keepDay: gameState.state.day, condition: item.condition, otisValue: item.otisValue, baseValue: item.otisValue });
             gameState.state.keepLog = gameState.state.keepLog.slice(0, 12);
@@ -2384,6 +2494,32 @@
         }
         gameState._save();
     }
+
+    // PAYMENT ESCALATION
+    var PAYMENT_ESCALATION_EVENTS = [
+      {
+        tier: 1, cycle: 5, amount: 1000,
+        bankMsg: "[BANK] Account VRN-001. Performance review complete. Station operational revenue has increased above minimum threshold. Installment adjusted to 1,000 credits per cycle effective immediately. This is a standard contractual provision. — UBC Automated Systems",
+        otisMsg: "Installment increased. The bank noticed you making money. This is how that works."
+      },
+      {
+        tier: 2, cycle: 10, amount: 1200,
+        bankMsg: "[BANK] Account VRN-001. Revenue trajectory remains above threshold for second consecutive review period. Installment adjusted to 1,200 credits per cycle. Debt reduction schedule remains on track. — UBC Automated Systems",
+        otisMsg: "Second adjustment. They recalibrate every time you look stable. George said it would happen."
+      },
+      {
+        tier: 3, cycle: 18, amount: 1500,
+        bankMsg: "[BANK] Account VRN-001. Final tier adjustment per contract Schedule C. Installment: 1,500 credits per cycle. At current trajectory, loan resolution within 3-4 payment cycles. UBC notes improved operational efficiency since the station changed hands. — UBC Automated Systems",
+        otisMsg: "Final tier. 1,500 credits a week. You are close enough that they want it faster. That is either good news or bad news depending on the week."
+      }
+    ];
+    var INSTALLMENT_DUE_POOL = [
+      "Installment due. {AMT} credits. Seven days.",
+      "Weekly installment: {AMT} cr. Clock is running.",
+      "Bank cycle complete. Next installment: {AMT} cr in 7 days.",
+      "Payment window reset. {AMT} cr due in 7 days.",
+      "{AMT} cr due. Debt at {DEBT} cr.",
+    ];
 
     // TOAST
     var TOAST_COMMENTS = [
@@ -2524,14 +2660,17 @@
     // PAYMENT
     function handleMakePayment() {
         if ((gameState.state.outstandingDebt || 0) > 0) { var pf1 = 'Cannot process. Arrears outstanding. Clear arrears first.'; otisLines.push({ role: 'otis', text: pf1 }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(pf1); return; }
-        if (gameState.state.credits < 650) { var pf2 = 'Insufficient credits. Need 650 cr, have ' + gameState.state.credits + ' credits.'; otisLines.push({ role: 'otis', text: pf2 }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(pf2); return; }
-        gameState.state.credits -= 650;
-        gameState.state.debt = Math.max(0, gameState.state.debt - 650);
+        var installment = gameState.state.currentInstallment || 850;
+        if (gameState.state.credits < installment) { var pf2 = 'Insufficient credits. Need ' + installment + ' cr, have ' + gameState.state.credits + ' credits.'; otisLines.push({ role: 'otis', text: pf2 }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(pf2); return; }
+        gameState.state.credits -= installment;
+        gameState.state.debt = Math.max(0, gameState.state.debt - installment);
         // Reset the full cycle from the payment date, whether early or on time.
         gameState.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
+        gameState.state.paymentCycle = (gameState.state.paymentCycle || 0) + 1;
+        checkPaymentEscalation();
         gameState._save(); gameState._updateUI();
         recalculateNamingTier();
-        var mpMsg = 'Payment processed. 650 credits. Balance: ' + gameState.state.debt.toLocaleString() + ' credits.';
+        var mpMsg = 'Payment processed. ' + installment + ' credits. Balance: ' + gameState.state.debt.toLocaleString() + ' credits.';
         otisLines.push({ role: 'otis', text: mpMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(mpMsg);
     }
@@ -2562,6 +2701,59 @@
         var sdMsg = 'Scrap dispatched. ' + prevFill + '% fill. +' + earned + ' cr from May.';
         otisLines.push({ role: 'otis', text: sdMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(sdMsg);
+        shipMayBin();
+    }
+
+    function shipMayBin() {
+        var s = gameState.state;
+        var bin = s.mayBin || [];
+        if (!bin.length) return;
+        var total = bin.reduce(function(sum, item) {
+            return sum + Math.floor(getEffectiveValue(item));
+        }, 0);
+        s.credits += total;
+        s.mayBin = [];
+        gameState._save(); gameState._updateUI();
+        renderBinPanel();
+        var mMsg = 'May bin shipped. ' + bin.length + ' items. +' + total + ' cr.';
+        otisLines.push({ role:'otis', text: mMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(mMsg);
+    }
+    function handleBrokerBinShip() {
+        var s = gameState.state;
+        var bin = s.brokerBin || [];
+        if (!bin.length) {
+            otisLines.push({ role:'otis', text: 'Broker bin is empty.' }); renderOTIS(); return;
+        }
+        var fillPct = bin.length / 10;
+        var mult = fillPct >= 1.0 ? 1.0 : fillPct >= 0.75 ? 0.88 : 0.75;
+        var total = bin.reduce(function(sum, item) {
+            return sum + Math.floor(getEffectiveValue(item) * (item.eeMultiplier||1) * mult);
+        }, 0);
+        s.credits += total;
+        s.brokerBin = [];
+        gameState._save(); gameState._updateUI();
+        renderBinPanel();
+        var pctStr = Math.round(fillPct * 100) + '% fill';
+        var multStr = mult < 1.0 ? ' (' + Math.round(mult*100) + '% value)' : '';
+        var bMsg = 'Broker bin shipped. ' + bin.length + ' items. ' + pctStr + multStr + '. +' + total + ' cr.';
+        otisLines.push({ role:'otis', text: bMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(bMsg);
+    }
+    function handleSvenBinShip() {
+        var s = gameState.state;
+        var bin = s.svenBin || [];
+        if (bin.length < 2) return;
+        var total = bin.reduce(function(sum, item) { return sum + (item.svenValue || 0); }, 0);
+        s.credits += total;
+        s.svenBin = [];
+        gameState._save(); gameState._updateUI();
+        renderBinPanel();
+        var svMsg = '[SVEN] Items received. Credits transferred. ' + total + ' cr. \u2014 Digut';
+        otisLines.push({ role:'otis', text: svMsg }); renderOTIS();
+        var dot = document.getElementById('comms-dot-sven');
+        if (dot) dot.className = 'comms-dot dot-on';
+        if (window.OtisTTS) OtisTTS.speak(svMsg);
     }
 
     function handleRouteToStoreroom() {
@@ -2580,6 +2772,45 @@
         var rsMsg = 'Routing ' + TIMING.BUFFER_ROUTE_COUNT + ' items to buffer. ' + s.storeroomBuffer.length + ' held.';
         otisLines.push({ role: 'otis', text: rsMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(rsMsg);
+    }
+
+    function renderBinPanel() {
+        var s = gameState.state;
+        var may = s.mayBin || [];
+        var broker = s.brokerBin || [];
+        var sven = s.svenBin || [];
+        // May bin
+        setEl('may-bin-count', may.length + '/12');
+        var mayBar = document.getElementById('may-bin-bar');
+        if (mayBar) mayBar.style.width = Math.round(may.length/12*100) + '%';
+        var mayList = document.getElementById('may-bin-list');
+        if (mayList) mayList.innerHTML = may.map(function(i){
+            return '<div>' + escapeHtml(i.name.substring(0,28)) + '</div>';
+        }).join('');
+        // Broker bin
+        setEl('broker-bin-count', broker.length + '/10');
+        var brokerBar = document.getElementById('broker-bin-bar');
+        if (brokerBar) {
+            var bPct = Math.round(broker.length/10*100);
+            brokerBar.style.width = bPct + '%';
+            brokerBar.className = 'scrap-bar-fill' + (bPct >= 100 ? '' : bPct >= 75 ? ' scrap-amber' : ' scrap-red');
+        }
+        var rateEl = document.getElementById('broker-bin-rate');
+        if (rateEl) {
+            var fp = broker.length / 10;
+            rateEl.textContent = fp >= 1.0 ? ' 100%' : fp >= 0.75 ? ' 88%' : fp > 0 ? ' 75%' : '';
+        }
+        var brokerList = document.getElementById('broker-bin-list');
+        if (brokerList) brokerList.innerHTML = broker.map(function(i){
+            return '<div>' + escapeHtml(i.name.substring(0,28)) + ' \u2014 ' + getEffectiveValue(i) + ' cr</div>';
+        }).join('');
+        // Sven bin
+        setEl('sven-bin-count', sven.length + '/3');
+        var svenList = document.getElementById('sven-bin-list');
+        if (svenList) svenList.innerHTML = sven.map(function(i){
+            return '<div>' + escapeHtml(i.name.substring(0,28)) + ' \u2014 Sven: ' + (i.svenValue||0) + ' cr</div>';
+        }).join('');
+        updateModuleLights();
     }
 
     function renderStoreroomBuffer() {
@@ -3261,7 +3492,11 @@
         var scrap = s.scrapFill || 0;
         var keep = s.keepLog.length;
         setLight('light-belt',    s.dropActive ? 'light-on' : currentItem ? 'light-amber' : '');
-        setLight('light-comms',   (arrears > 0 || dup <= 3) ? 'light-red' : (dup <= 7 || scrap >= 75) ? 'light-amber' : '');
+        var brokerFull = (s.brokerBin||[]).length >= 8;
+        var mayFull = (s.mayBin||[]).length >= 10;
+        setLight('light-comms',
+            (arrears > 0 || dup <= 3 || brokerFull) ? 'light-red' :
+            (dup <= 7 || scrap >= 75 || mayFull) ? 'light-amber' : '');
         var bufLen = (s.storeroomBuffer || []).length;
         setLight('light-store',   scrap >= 90 || bufLen >= 4 ? 'light-red' : (scrap >= 75 || bufLen > 0 || keep >= 10) ? 'light-amber' : '');
         setLight('light-systems', (s.missedPayments > 0 || arrears > 2000) ? 'light-red' : '');
@@ -3402,29 +3637,62 @@
     }
     function toggleDebug() { var p = document.getElementById('debug-panel'); if (p) p.style.display = p.style.display !== 'block' ? 'block' : 'none'; }
 
+    function checkPaymentEscalation() {
+      var s = gameState.state;
+      if (!s.escalationFired) s.escalationFired = { tier1: false, tier2: false, tier3: false };
+      PAYMENT_ESCALATION_EVENTS.forEach(function(event) {
+        var tierKey = "tier" + event.tier;
+        if (s.paymentCycle >= event.cycle && !s.escalationFired[tierKey]) {
+          s.escalationFired[tierKey] = true;
+          s.currentInstallment = event.amount;
+          gameState._save();
+          appendHardcodedComm(event.bankMsg);
+          var dot = document.getElementById("comms-dot-bank");
+          if (dot) dot.className = "comms-dot dot-on";
+          setTimeout(function() {
+            otisLines.push({ role: "otis", text: event.otisMsg });
+            renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(event.otisMsg);
+          }, 3000);
+        }
+      });
+    }
+
     function advanceDay() {
         var s = gameState.state;
         s.day = (s.day || 1) + 1;
-        s.daysUntilPayment = Math.max(0, (s.daysUntilPayment || 28) - 1);
+        s.daysUntilPayment = Math.max(0, (s.daysUntilPayment || 7) - 1);
         s.daysUntilNextDrop = Math.max(0, (s.daysUntilNextDrop || 7) - 1);
         if (s.outstandingDebt > 0) {
             s.outstandingDebt = Math.ceil(s.outstandingDebt * 1.05);
             if (s.outstandingDebt > 2000) { var awMsg = 'Arrears: ' + s.outstandingDebt.toLocaleString() + ' credits. Compounding at 5% per day.'; otisLines.push({ role: 'otis', text: awMsg }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(awMsg); }
         }
         if (s.daysUntilPayment <= 0) {
-            if (s.credits >= 650 && (s.outstandingDebt || 0) === 0) {
+            var installment = s.currentInstallment || 850;
+            if (s.credits >= installment && (s.outstandingDebt || 0) === 0) {
                 // Player has funds — auto-deduct the payment so the cycle resets fairly.
                 // handleMakePayment() is available for early voluntary payments.
-                s.credits -= 650;
-                s.debt = Math.max(0, s.debt - 650);
+                s.credits -= installment;
+                s.debt = Math.max(0, s.debt - installment);
                 s.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
-                var payMsg = 'Payment logged. 650 credits. Balance: ' + s.debt.toLocaleString() + ' credits.';
+                // Increment payment cycle counter and check escalations
+                s.paymentCycle = (s.paymentCycle || 0) + 1;
+                checkPaymentEscalation();
+                var payMsg = 'Payment logged. ' + installment + ' credits. Balance: ' + s.debt.toLocaleString() + ' credits.';
                 otisLines.push({ role: 'otis', text: payMsg }); renderOTIS();
                 if (window.OtisTTS) OtisTTS.speak(payMsg);
+                // Notify next installment due
+                var instMsg = INSTALLMENT_DUE_POOL[Math.floor(Math.random() * INSTALLMENT_DUE_POOL.length)]
+                  .replace('{AMT}', (s.currentInstallment || 850).toLocaleString())
+                  .replace('{DEBT}', (s.debt || 0).toLocaleString());
+                setTimeout(function() { otisLines.push({ role: 'otis', text: instMsg }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(instMsg); }, 2000);
             } else {
                 s.missedPayments = (s.missedPayments || 0) + 1;
-                s.outstandingDebt = (s.outstandingDebt || 0) + 650;
+                s.outstandingDebt = (s.outstandingDebt || 0) + (s.currentInstallment || 850);
                 s.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
+                // Increment cycle even on miss
+                s.paymentCycle = (s.paymentCycle || 0) + 1;
+                checkPaymentEscalation();
                 appendOTIS('Payment missed. Arrears: ' + s.outstandingDebt + ' credits. Compound rate: 5% per day.', 'PAYMENT_MISSED');
                 if (s.missedPayments >= 3) triggerForeclosure();
             }
@@ -3656,6 +3924,27 @@
         var pct = s.svenInterferencePct || 20;
         if (Math.random() * 100 > pct) return;
         s.recentBotConflict = true;
+        // --- NEW: STEAL FROM BROKER BIN ---
+        var broker = s.brokerBin || [];
+        if (broker.length > 0) {
+            var stealIdx = Math.floor(Math.random() * broker.length);
+            var stolen = broker.splice(stealIdx, 1)[0];
+            var svenPaid = Math.floor(getEffectiveValue(stolen) * 0.65);
+            s.credits += svenPaid;
+            s.brokerBin = broker;
+            s.svenStolenCount = (s.svenStolenCount || 0) + 1;
+            gameState._save();
+            renderBinPanel();
+            var stealMsg = '[SVEN INTERFERENCE] ' + stolen.name.substring(0,22) + ' removed from broker bin. Credited at Sven rate: ' + svenPaid + ' cr. Interference probability: ' + pct + '%.';
+            otisLines.push({ role:'otis', text: stealMsg }); renderOTIS();
+            var dot = document.getElementById('comms-dot-sven');
+            if (dot) dot.className = 'comms-dot dot-amber';
+            setLight('light-comms', 'light-amber');
+            var svenEl = document.getElementById('sys-sven');
+            if (svenEl) { svenEl.textContent = 'INTERFERENCE'; svenEl.className = 'status-warn'; }
+            return;  // Steal replaces the bot degradation this interference event
+        }
+        // --- EXISTING: BOT DEGRADATION (only if broker bin was empty) ---
         // Degrade one bot faster
         var bots = s.bots || [];
         if (bots.length > 0) {
@@ -3932,6 +4221,7 @@
         renderItemQueue();
         renderShippingQueue();
         renderStoreroomBuffer();
+        renderBinPanel();
         if (gameState.state.georgeWarehouseRevealed || (gameState.state.georgeWarehouseFound && gameState.state.georgeWarehouseFound.length)) { renderGeorgeWarehouse(); }
         renderGeorgeDiary();
         updateScrapBar();
