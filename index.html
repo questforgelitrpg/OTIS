@@ -1784,13 +1784,17 @@
       function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
       function randInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
 
+      function pickBotFrame(preferCarry) {
+        if (preferCarry && Math.random() < 0.65) { return rand(CARRY_FRAMES); }
+        if (Math.random() < 0.3) { return rand(CARRY_FRAMES); }
+        return rand(BOT_FRAMES);
+      }
+
       function makeBotString(preferCarry) {
         var parts = [];
         var n = randInt(3, 5);
         for (var i = 0; i < n; i++) {
-          var frame = (preferCarry && Math.random() < 0.65) ? rand(CARRY_FRAMES)
-                    : Math.random() < 0.3 ? rand(CARRY_FRAMES) : rand(BOT_FRAMES);
-          parts.push(rand(LABELS) + ':' + frame);
+          parts.push(rand(LABELS) + ':' + pickBotFrame(preferCarry));
         }
         return parts.join('  ');
       }
