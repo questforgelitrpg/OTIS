@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            background: transparent;
+            overflow: hidden;
+            height: 100%;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        #bot-stage {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .bot-row {
+            position: absolute;
+            white-space: nowrap;
+            font-size: 11px;
+            line-height: 1.2;
+            color: #55cc88;
+            text-shadow: 0 0 6px #55cc88;
+            animation: roll-left linear infinite;
+            will-change: transform;
+        }
+        @keyframes roll-left {
+            from { transform: translateX(100vw); }
+            to   { transform: translateX(-100%); }
+        }
+    </style>
+</head>
+<body>
+<div id="bot-stage"></div>
+<script>
+    var BOT_FRAMES = [
+        ' [o_o] >>-- ',
+        ' [o_o]-->>  ',
+        ' [^_^] >>-- ',
+        ' [-_-]-->>  ',
+        ' [o_o] >>=- ',
+        ' [*_*]-->>  ',
+    ];
+
+    var CARRY_FRAMES = [
+        ' [o_o]>>[=] ',
+        ' [^_^]>>[=] ',
+        ' [-_-]>>[#] ',
+        ' [o_o]>>[~] ',
+    ];
+
+    var LABELS = [
+        'BOT-01', 'BOT-02', 'BOT-03',
+        'UNIT-A', 'UNIT-B', 'UNIT-C',
+        'DRONE', 'FETCH',
+    ];
+
+    function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function randInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
+
+    function makeBotString() {
+        var parts = [];
+        var n = randInt(3, 7);
+        for (var i = 0; i < n; i++) {
+            var frame = Math.random() < 0.3 ? rand(CARRY_FRAMES) : rand(BOT_FRAMES);
+            parts.push(rand(LABELS) + ':' + frame);
+        }
+        return parts.join('  ');
+    }
+
+    var stage = document.getElementById('bot-stage');
+    var rowCount = 6;
+    var rows = [];
+
+    for (var r = 0; r < rowCount; r++) {
+        var el = document.createElement('div');
+        el.className = 'bot-row';
+        var topPct = (r * (100 / rowCount)) + randInt(2, 8);
+        el.style.top = topPct + '%';
+        var dur = randInt(6, 12);
+        var delay = -randInt(0, dur);
+        el.style.animationDuration = dur + 's';
+        el.style.animationDelay = delay + 's';
+        el.textContent = makeBotString();
+        stage.appendChild(el);
+        rows.push({ el: el, dur: dur });
+    }
+
+    // Refresh row content each loop so bots look dynamic
+    rows.forEach(function(row) {
+        setInterval(function() {
+            row.el.textContent = makeBotString();
+        }, row.dur * 1000);
+    });
+</script>
+</body>
+</html>
