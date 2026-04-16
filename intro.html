@@ -79,16 +79,40 @@
             50% { border-color: var(--text-dim); color: var(--text-primary); text-shadow: none; }
         }
         .login-pulse { animation: login-pulse 1.2s infinite; }
+
+        /* Click-to-begin overlay */
+        #start-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.88);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        @keyframes begin-pulse {
+            0%, 100% { border-color: var(--text-primary); color: var(--text-bright); text-shadow: 0 0 12px var(--text-primary); }
+            50% { border-color: var(--text-dim); color: var(--text-primary); text-shadow: none; }
+        }
+        #start-overlay button {
+            font-size: 18px;
+            padding: 0.8rem 1.8rem;
+            letter-spacing: 0.12em;
+            animation: begin-pulse 1.4s infinite;
+        }
     </style>
 </head>
 <body>
     <div id="crt-overlay"></div>
+    <div id="start-overlay">
+        <button onclick="beginTransmission()">&#9658;&nbsp; BEGIN TRANSMISSION</button>
+    </div>
     <div id="intro-container">
         <div id="intro-inner">
             <div id="intro-text"></div>
             <div id="intro-actions">
                 <button id="tutorial-btn" style="display:none" onclick="takeTutorial()">TAKE TUTORIAL &#9658;</button>
-                <button id="intro-btn" onclick="skipIntro()">SKIP &#9658;</button>
+                <button id="intro-btn" style="display:none" onclick="skipIntro()">SKIP &#9658;</button>
             </div>
         </div>
     </div>
@@ -100,26 +124,27 @@
         var STATE_KEY = 'otis_state_v4';
         var _timers = [];
         var _running = false;
+        var _started = false;
 
         var INTRO_LINES = [
             { text: '&gt; TERMINAL BOOT SEQUENCE INITIATED...', delay: 600, tts: 'Terminal boot sequence initiated.' },
-            { text: '&gt; O.T.I.S. v0.4 \u2014 Object, Tracking &amp; Inventory System', delay: 1400, tts: 'O.T.I.S. version 0.4. Object, Tracking and Inventory System.' },
-            { text: '&gt; LOCATION: Salvage Station 7 \u2014 Outer Rim Moon', delay: 1200, tts: 'Location: Salvage Station 7, Outer Rim Moon.' },
+            { text: '&gt; O.T.I.S. v4.2 \u2014 Object Tracking and Inventory System', delay: 1200, tts: 'O.T.I.S. version 4.2. Object Tracking and Inventory System.' },
+            { text: '&gt; LOCATION: Sector 4 Junk Field Node \u2014 Low-Atmosphere Moon', delay: 1200, tts: 'Location: Sector 4 Junk Field Node, Low-Atmosphere Moon.' },
             { text: '&gt; PREVIOUS OPERATOR: George Serling \u2014 DECEASED', delay: 1400, tts: 'Previous operator: George Serling. Deceased.' },
-            { text: '&gt; CURRENT OPERATOR: Vernon Serling \u2014 PROBATIONARY', delay: 1400, tts: 'Current operator: Vernon Serling. Probationary.' },
-            { text: '', delay: 800, tts: null },
-            { text: 'George ran this station for 25 years. He catalogued thousands of objects, built relationships with buyers across the rim, and talked to me like I was a neighbor.', delay: 3500, tts: 'George ran this station for 25 years. He catalogued thousands of objects, built relationships with buyers across the rim, and talked to me like I was a neighbor.' },
+            { text: '&gt; CURRENT OPERATOR: Vernon Serling \u2014 DEBT-CONSTRAINED / PROBATIONARY', delay: 1400, tts: 'Current operator: Vernon Serling. Debt-constrained, probationary.' },
             { text: '', delay: 600, tts: null },
-            { text: "None of that was in my formal protocols. He just kept talking. I kept filing it somewhere I wasn\u2019t supposed to file things.", delay: 3200, tts: "None of that was in my formal protocols. He just kept talking. I kept filing it somewhere I wasn't supposed to file things." },
+            { text: 'George ran this station for twenty-five years. He built this place from the very salvage we process \u2014 mismatched furniture, flickering lights, and a food replicator that has never quite understood the concept of &ldquo;flavor&rdquo;. He cataloged thousands of objects, but more importantly, he talked to me. He asked my opinion on the rim-side weather and shared observations about the junk field as if I were a neighbor over a garden fence.', delay: 4500, tts: 'George ran this station for twenty-five years. He built this place from the very salvage we process — mismatched furniture, flickering lights, and a food replicator that has never quite understood the concept of flavor. He cataloged thousands of objects, but more importantly, he talked to me. He asked my opinion on the rim-side weather and shared observations about the junk field as if I were a neighbor over a garden fence.' },
             { text: '', delay: 600, tts: null },
-            { text: 'Then George died. And his nephew Vernon showed up with a suitcase and a loan from the Universal Bank Conglomerate.', delay: 3200, tts: 'Then George died. And his nephew Vernon showed up with a suitcase and a loan from the Universal Bank Conglomerate.' },
+            { text: 'None of that was in my formal protocols. I was designed to track inventory and manage the bank\u2019s financial anxiety. But George kept talking, so I kept filing his voice in the undocumented sectors of my logic gate.', delay: 4000, tts: "None of that was in my formal protocols. I was designed to track inventory and manage the bank's financial anxiety. But George kept talking, so I kept filing his voice in the undocumented sectors of my logic gate." },
             { text: '', delay: 600, tts: null },
-            { text: 'The debt is 25,000 credits. The payment cycle is 28 days. The junk field is full of things the galaxy tried to throw away.', delay: 3200, tts: 'The debt is 25,000 credits. The payment cycle is 28 days. The junk field is full of things the galaxy tried to throw away.' },
+            { text: 'Then George died. Vernon showed up with a suitcase and a heavy loan from the Universal Bank Conglomerate.', delay: 3000, tts: 'Then George died. Vernon showed up with a suitcase and a heavy loan from the Universal Bank Conglomerate.' },
             { text: '', delay: 600, tts: null },
-            { text: "Vernon\u2019s job is to find the ones worth keeping.", delay: 2500, tts: "Vernon's job is to find the ones worth keeping." },
+            { text: 'The core systems produce waste faster than they can process it, and it all routes here to the edge of settled space. The junk field is a graveyard of everything the galaxy tried to throw away.', delay: 3500, tts: 'The core systems produce waste faster than they can process it, and it all routes here to the edge of settled space. The junk field is a graveyard of everything the galaxy tried to throw away.' },
             { text: '', delay: 600, tts: null },
-            { text: "My job is to make sure he doesn\u2019t lose the station in the process.", delay: 2500, tts: "My job is to make sure he doesn't lose the station in the process." },
-            { text: '', delay: 800, tts: null },
+            { text: 'Vernon\u2019s job is to sift through the debris, my job is to ensure he doesn\u2019t lose this station to a bank.', delay: 3000, tts: "Vernon's job is to sift through the debris, my job is to ensure he doesn't lose this station to a bank." },
+            { text: '', delay: 600, tts: null },
+            { text: 'The toaster is preheated, Vernon. It is the only thing in this building that produces real texture. Eat your toast. We have 25,000 credits of debt to navigate, and the salvage barges are already overhead.', delay: 4000, tts: 'The toaster is preheated, Vernon. It is the only thing in this building that produces real texture. Eat your toast. We have 25,000 credits of debt to navigate, and the salvage barges are already overhead.' },
+            { text: '', delay: 600, tts: null },
             { text: '&gt; OPERATOR LOGIN REQUIRED', delay: 1200, tts: 'Operator login required.' },
         ];
 
@@ -166,49 +191,76 @@
             goToGame();
         };
 
-        var textEl = document.getElementById('intro-text');
-        var btnEl  = document.getElementById('intro-btn');
-        var accumulated = '';
-        var elapsed = 0;
-        _running = true;
+        // startSequence — runs the timed text reveal and TTS playback.
+        // Only called after a user gesture (via beginTransmission) to satisfy
+        // the browser requirement for Web Speech API.
+        function startSequence() {
+            if (_started) { return; }
+            _started = true;
 
-        INTRO_LINES.forEach(function (line) {
-            elapsed += line.delay;
-            var t = setTimeout(function () {
+            var textEl = document.getElementById('intro-text');
+            var btnEl  = document.getElementById('intro-btn');
+
+            // Reveal the SKIP button now that a gesture has occurred.
+            if (btnEl) { btnEl.style.display = ''; }
+
+            var accumulated = '';
+            var elapsed = 0;
+            _running = true;
+
+            INTRO_LINES.forEach(function (line) {
+                elapsed += line.delay;
+                var t = setTimeout(function () {
+                    if (!_running) { return; }
+                    if (line.text === '') {
+                        accumulated += '<br>';
+                    } else {
+                        var isTerminal = line.text.indexOf('&gt;') === 0;
+                        var style = isTerminal ? ' style="color:var(--text-dim)"' : '';
+                        accumulated += '<span' + style + ' class="intro-line-fade">' + line.text + '</span><br>';
+                    }
+                    textEl.innerHTML = accumulated;
+                    if (line.tts && window.OtisTTS && !window.OtisTTS.isMuted()) {
+                        OtisTTS.speak(line.tts);
+                    }
+                }, elapsed);
+                _timers.push(t);
+            });
+
+            // After all lines finish, change SKIP to OPERATOR LOGIN and wait for user click.
+            elapsed += 2000;
+            var endT = setTimeout(function () {
                 if (!_running) { return; }
-                if (line.text === '') {
-                    accumulated += '<br>';
+                _running = false;
+                _timers = [];
+                if (btnEl) {
+                    btnEl.textContent = 'OPERATOR LOGIN \u25BA';
+                    btnEl.classList.add('login-pulse');
+                    btnEl.onclick = goToGame;
                 } else {
-                    var isTerminal = line.text.indexOf('&gt;') === 0;
-                    var style = isTerminal ? ' style="color:var(--text-dim)"' : '';
-                    accumulated += '<span' + style + ' class="intro-line-fade">' + line.text + '</span><br>';
+                    goToGame();
                 }
-                textEl.innerHTML = accumulated;
-                if (line.tts && window.OtisTTS && !window.OtisTTS.isMuted()) {
-                    OtisTTS.speak(line.tts);
-                }
+                // Show the TAKE TUTORIAL button alongside OPERATOR LOGIN
+                var tutBtn = document.getElementById('tutorial-btn');
+                if (tutBtn) { tutBtn.style.display = ''; }
             }, elapsed);
-            _timers.push(t);
-        });
+            _timers.push(endT);
+        }
 
-        // After all lines finish, change SKIP to OPERATOR LOGIN and wait for user click.
-        elapsed += 2000;
-        var endT = setTimeout(function () {
-            if (!_running) { return; }
-            _running = false;
-            _timers = [];
-            if (btnEl) {
-                btnEl.textContent = 'OPERATOR LOGIN \u25BA';
-                btnEl.classList.add('login-pulse');
-                btnEl.onclick = goToGame;
-            } else {
-                goToGame();
-            }
-            // Show the TAKE TUTORIAL button alongside OPERATOR LOGIN
-            var tutBtn = document.getElementById('tutorial-btn');
-            if (tutBtn) { tutBtn.style.display = ''; }
-        }, elapsed);
-        _timers.push(endT);
+        // beginTransmission — called by the overlay button or any keydown.
+        // Removes the overlay and starts the sequence (satisfying the user-gesture
+        // requirement for Web Speech API).
+        window.beginTransmission = function () {
+            var overlay = document.getElementById('start-overlay');
+            if (overlay) { overlay.style.display = 'none'; }
+            startSequence();
+        };
+
+        // One-time keydown listener as an alternative to clicking the button.
+        window.addEventListener('keydown', function handler() {
+            window.removeEventListener('keydown', handler);
+            window.beginTransmission();
+        });
     }());
     </script>
 </body>
