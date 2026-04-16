@@ -91,7 +91,7 @@
         /* Animation Window */
         #anim-window {
           height: 120px;
-          background: #000;
+          background: radial-gradient(ellipse at center, #040d04 0%, #020502 100%);
           border-top: 1px solid var(--border-dim);
           border-bottom: 1px solid var(--border-dim);
           overflow: hidden;
@@ -1777,26 +1777,31 @@
     var AnimWindow = (function() {
       var BARGE_ART = '                                                               —                          \n                                                              ›—                          \n                                                             ›—{— ›                       \n                                                             ›—íz{í—                    › \n                                                           ›{{{íí———————{——›››          { \n                                                        ›{íí{ííííííííí› › ›››››{›››››—›\n                                                  {ííí› ———{——›———›—————————— —{  › ›› ›››\n                ›{ › —›—              —{Ï{—{   ——{{{————————————{————{—  ››—›››{ ››—›› ›››\n                        ›—›{—{›—›—{{›››—z{{ {í{—{—íí{{———››› ›› › ›› — ›       {      ›   \n   ››——››—›——í{——{—››—›››í{—{{{{{{{{{{{{{{{›{{{í——{{í——››› ›››  ››—›—{ ›      ›í— ›› ›  — \n           ———››› —  ›    ›{›{z{{Ï{íí{Ï{{z{ {—z—í——í{í——››{{——{—{{—{  ›      —››——  ›—  \n           ›   ›› —  ›  ›› {›{íí{{{íí{{ííí{—{——{›———{›—{››› —{ííííííz››› ›  ›››—››  —   \n                › ››——››› —› —              {› › —› › —        ›——{{{—         {››—— —    \n                   {{—                                         — ›—› ›     › ››           \n                    —                                          ›››››                      \n                                                               ›{›—                       \n                                                                ——›                       \n                                                                 ›                        ';
 
-      var BOT_FRAMES   = [' [o_o] >>-- ',' [o_o]-->>  ',' [^_^] >>-- ',' [-_-]-->>  ',' [o_o] >>=- ',' [*_*]-->>  '];
-      var CARRY_FRAMES = [' [o_o]>>[=] ',' [^_^]>>[=] ',' [-_-]>>[#] ',' [o_o]>>[~] '];
-      var LABELS       = ['BOT-01','BOT-02','BOT-03','UNIT-A','UNIT-B','UNIT-C','DRONE','FETCH'];
+      var BOT_ART = '                             .#@@@@@@@@@@@@@-                                             \n                              :%+  .=-  .*#=@=                                             \n                              .%+.#@+*@=.**=%=                                             \n                              .%+:## .@*.**=%=                                             \n                              :%=  +%%:  *#=%=                                             \n                              :%%********%@%@=                                             \n                                ....%@+@=....                                              \n                                    %@-%-                                                  \n                                    %@-%:                                                  \n                                    %@-%-                                          .       \n     --                             %@*@=                                       .*@%%-     \n     .*%=                        :#%*=-+#%=                  *%%%%%%%%+       .*@*.:#@%-   \n :.    :#@-                     :%+      -%+                .#*     .#*     :*%+ :#@+=%@%= \n +@+.    #@                :%@%@@@@%%%@@@@@@@@@@@%%@@@@%%%@@@@@@%@@@@@@@@@@@@*.:#%=-#%=.+@#\n   *%+. :@%                -@-  .:.                :-:                     =%+#%==%%- -#%= \n    :+#%#*@*.              -@= +%#%%:            -%#+%%          :%@@@@@%. =@%==%%- -#%-   \n           *@+             -@=-@* -@+          .=%@+.*@#-        .++****+. =@*%%- -#%-     \n            :*%=           +@@%+*%#=        :*%%=::+*+:-*@*-      :::::::  =@#- =%%-       \n              :#%-      :*%@@=          .=#@#-.           -#%*-::.         =%--%%-         \n                -%%: :*%#- -@=.    ..:+%@*=:.   ....   .... .*@#+@*.....   =@@#:           \n                  =@@#-    .#####%@@@%#####################@@@@- *@@@%######*:             \n                    .     .=#-:+%@*:               =#-. .+%%=.-##*::+%%+. .=*-             \n                      -+%@#+%*%@%*-           =+%@#***%@@%=          .+@@@#*#*%@#==        \n                     :@@-       =@%:         :@@=       =@%.         =@@:       +@@.       \n                    .@*    -=:   .#%        :@*    -=:    *#:       -%+    -=:    %%       \n                    *%:  -%#-#%:  -@+       #@   :%#=%@   :@+      .*%.  :@#=#%:  .@+      \n                    #%:  -@+.*%:  :%*      .%@   -@+:#@.  -@+      .#%:  :@*:#%.  :@*      \n                    .@+    +#+.   *@.       -@+   .+*=   .*%:       -@=    +*=    #@:      \n                     -@%-       =@@.         =@%:       :@%-         -@%.       =@@.       \n                      +#@@*=*=*@@#=           *#@@*=++#@@#=           +#@@*=+=#@@*+        \n                          :+@*:                   :*@=.                   :+%+:            ';
+      var BOT_ART_LINES  = BOT_ART.split('\n');
+      var BOT_SPINNER    = ['|','/','-','\\'];
+      var BOT_SPIN_SET   = {'=':1,'-':1,'*':1,'+':1,':':1,'/':1,'\\':1};
+      var BOT_LINE_HEIGHT  = 1.05;
+      var BOT_SPIN_START   = 22; // lines 0-21 are head/body; legs start at line 22
 
-      function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
       function randInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
 
-      function pickBotFrame(preferCarry) {
-        if (preferCarry && Math.random() < 0.65) { return rand(CARRY_FRAMES); }
-        if (Math.random() < 0.3) { return rand(CARRY_FRAMES); }
-        return rand(BOT_FRAMES);
-      }
+      var _spinFrame = 0;
+      var _spinTimer = null;
+      var _botEls    = [];
 
-      function makeBotString(preferCarry) {
-        var parts = [];
-        var n = randInt(3, 5);
-        for (var i = 0; i < n; i++) {
-          parts.push(rand(LABELS) + ':' + pickBotFrame(preferCarry));
-        }
-        return parts.join('  ');
+      function _spinBots() {
+        _spinFrame++;
+        var spinChar = BOT_SPINNER[_spinFrame % 4];
+        var spun = BOT_ART_LINES.map(function(line, i) {
+          if (i < BOT_SPIN_START) return line;
+          var out = '';
+          for (var c = 0; c < line.length; c++) {
+            out += BOT_SPIN_SET[line[c]] ? spinChar : line[c];
+          }
+          return out;
+        }).join('\n');
+        for (var b = 0; b < _botEls.length; b++) { _botEls[b].textContent = spun; }
       }
 
       var _clearTimer = null;
@@ -1808,30 +1813,38 @@
       }
 
       function _clearBots() {
+        if (_spinTimer) { clearInterval(_spinTimer); _spinTimer = null; }
+        _botEls = [];
         var layer = document.getElementById('anim-bots-layer');
         if (layer) layer.innerHTML = '';
       }
 
-      function _buildBotRows(direction, preferCarry) {
+      function _buildBotRows(direction) {
         var layer = document.getElementById('anim-bots-layer');
         if (!layer) return;
-        layer.innerHTML = '';
-        var rowCount = 4;
-        for (var r = 0; r < rowCount; r++) {
-          var el = document.createElement('div');
+        _clearBots();
+        var lineCount = BOT_ART_LINES.length;
+        var windowH   = layer.offsetHeight || 120;
+        var fontSize  = Math.max(2, windowH / (lineCount * BOT_LINE_HEIGHT));
+        var botCount  = 3;
+        var animDur   = 14;
+        for (var r = 0; r < botCount; r++) {
+          var el = document.createElement('pre');
           el.className = 'anim-bot-row ' + direction;
-          var topPct = 5 + (r * 23) + randInt(0, 4);
-          el.style.top = topPct + '%';
-          var dur = randInt(5, 9);
-          var delay = -randInt(0, dur);
-          el.style.animationDuration = dur + 's';
-          el.style.animationDelay = delay + 's';
-          el.textContent = makeBotString(preferCarry);
+          el.style.top        = '0';
+          el.style.fontSize   = fontSize + 'px';
+          el.style.lineHeight = BOT_LINE_HEIGHT.toString();
+          el.style.margin     = '0';
+          el.style.padding    = '0';
+          el.style.animationDuration = animDur + 's';
+          el.style.animationDelay   = (-r * (animDur / botCount)) + 's';
+          el.textContent = BOT_ART;
           layer.appendChild(el);
-          (function(rowEl, d) {
-            setInterval(function() { rowEl.textContent = makeBotString(preferCarry); }, d * 1000);
-          })(el, dur);
+          _botEls.push(el);
         }
+        _spinFrame = 0;
+        _spinBots();
+        _spinTimer = setInterval(_spinBots, 100);
       }
 
       function startBargeSequence() {
@@ -1847,7 +1860,7 @@
         _botsOutboundTimer = setTimeout(function() {
           bargeEl.classList.remove('running');
           bargeEl.textContent = '';
-          _buildBotRows('outbound', false);
+          _buildBotRows('outbound');
           if (window.OtisSound) OtisSound.startAmbient('bots');
         }, 3500);
       }
@@ -1860,7 +1873,7 @@
           OtisSound.stopAmbient('bots');
           OtisSound.playSFX('bots');
         }
-        _buildBotRows('returning', true);
+        _buildBotRows('returning');
         _clearTimer = setTimeout(function() { clear(); }, 8000);
       }
 
