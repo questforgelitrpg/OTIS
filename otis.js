@@ -43,7 +43,7 @@ function formatStateBlock(day, debt, naming, fatigue, paymentIn) {
 const OTIS_SEED_HISTORY = [
     {
         role: 'user',
-        content: `[TRIGGER: LOGIN] ${formatStateBlock(1, 25000, 'Mr. Serling', 'NONE', 28)}\nOperator logging in.`,
+        content: `[TRIGGER: LOGIN] ${formatStateBlock(1, 25000, 'Mr. Serling', 'NONE', 7)}\nOperator logging in.`,
     },
     {
         role: 'assistant',
@@ -51,7 +51,7 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: `[TRIGGER: CONSULT_GEORGE] ${formatStateBlock(5, 24500, 'Vern', 'LOW', 28)}\nItem: Unidentified alloy fragment. Category: Unknown. Rarity: Anomalous. Condition: Used. OTIS estimate: ERROR — NO COMPARABLE.`,
+        content: `[TRIGGER: CONSULT_GEORGE] ${formatStateBlock(5, 24500, 'Vern', 'LOW', 7)}\nItem: Unidentified alloy fragment. Category: Unknown. Rarity: Anomalous. Condition: Used. OTIS estimate: ERROR — NO COMPARABLE.`,
     },
     {
         role: 'assistant',
@@ -59,7 +59,7 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: `[TRIGGER: BARGE_IMMINENT] ${formatStateBlock(5, 24000, 'Mr. Serling', 'NONE', 28)}\nBarge inbound. Manifest: 5 items. Categories: Industrial, Vessel, Unknown. Notable: Pre-collapse data crystal.`,
+        content: `[TRIGGER: BARGE_IMMINENT] ${formatStateBlock(5, 24000, 'Mr. Serling', 'NONE', 7)}\nBarge inbound. Manifest: 5 items. Categories: Industrial, Vessel, Unknown. Notable: Pre-collapse data crystal.`,
     },
     {
         role: 'assistant',

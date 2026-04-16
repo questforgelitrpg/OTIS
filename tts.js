@@ -19,6 +19,7 @@
     const _queue = [];
     let _speaking = false;
     let _utteranceStartedAt = 0; // timestamp when current utterance began
+    let _expectedDuration = 12000; // estimated ms for current utterance, updated per-speak
     let _watchdogTimer = null;
 
     function _resolveVoice() {
@@ -56,18 +57,22 @@
 
     // Watchdog: Chrome can silently stall or pause synthesis (onend never fires).
     // First try resume() in case Chrome merely paused (common when tab loses focus).
-    // If still stuck after a longer wait, cancel and advance to the next queued item.
+    // If still stuck beyond the expected utterance duration, cancel and advance the queue.
+    // Thresholds scale with _expectedDuration so long narrative paragraphs are not
+    // cancelled prematurely (a fixed 12 s was too short for ~60-word intro passages).
     function _startWatchdog() {
         _stopWatchdog();
         _watchdogTimer = setInterval(function () {
             if (!_speaking) return;
             const elapsed = Date.now() - _utteranceStartedAt;
-            // After 10 s attempt a resume in case Chrome silently paused synthesis.
-            if (elapsed > 10000) {
+            // Attempt resume if we are past expected duration (Chrome may have paused).
+            const resumeAt = Math.max(10000, _expectedDuration - 2000);
+            // Give up and advance the queue if synthesis is clearly stuck.
+            const cancelAt = _expectedDuration + 5000;
+            if (elapsed > resumeAt) {
                 if (window.speechSynthesis) window.speechSynthesis.resume();
             }
-            // After 12 s give up, cancel, and advance the queue.
-            if (elapsed > 12000) {
+            if (elapsed > cancelAt) {
                 if (window.speechSynthesis) window.speechSynthesis.cancel();
                 _speaking = false;
                 _speakNext();
@@ -87,6 +92,11 @@
         _speaking = true;
         _utteranceStartedAt = Date.now();
         const text = _queue.shift();
+        // Estimate duration: ~150 wpm at rate 1.0, scaled by _rate.
+        // Add 3 s start/end buffer; floor at 12 s so short utterances still get a
+        // reasonable watchdog window.
+        const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+        _expectedDuration = Math.max(12000, Math.ceil(wordCount * 60000 / (150 * _rate)) + 3000);
         const utterance = new SpeechSynthesisUtterance(text);
         const voice = _resolveVoice();
         if (voice) utterance.voice = voice;
