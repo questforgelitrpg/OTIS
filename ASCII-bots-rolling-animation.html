@@ -1,99 +1,288 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
-            background: transparent;
-            overflow: hidden;
-            height: 100%;
-            font-family: 'Courier New', Courier, monospace;
-        }
-        #bot-stage {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-        .bot-row {
-            position: absolute;
-            white-space: nowrap;
-            font-size: 11px;
-            line-height: 1.2;
-            color: #55cc88;
-            text-shadow: 0 0 6px #55cc88;
-            animation: roll-left linear infinite;
-            will-change: transform;
-        }
-        @keyframes roll-left {
-            from { transform: translateX(100vw); }
-            to   { transform: translateX(-100%); }
-        }
-    </style>
+<!-- Playables SDK -->
+<script>// Playables SDK v1.0.0
+// Game lifecycle bridge: rAF-based game-ready detection + event communication
+(function() {
+  'use strict';
+
+  // Idempotency: skip if already initialized (e.g., server-side injection
+  // followed by client-side inject-javascript via the Bloks webview component).
+  if (window.playablesSDK) return;
+
+  var HANDLER_NAME = 'playablesGameEventHandler';
+  var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
+  var RAF_FRAME_THRESHOLD = 3;
+
+  var gameReadySent = false;
+  var firstInteractionSent = false;
+  var errorSent = false;
+  var frameCount = 0;
+  var originalRAF = window.requestAnimationFrame;
+
+  // --- Transport Layer ---
+
+  function hasIOSBridge() {
+    return !!(window.webkit &&
+              window.webkit.messageHandlers &&
+              window.webkit.messageHandlers[HANDLER_NAME]);
+  }
+
+  function hasAndroidBridge() {
+    return !!(window[ANDROID_BRIDGE_NAME] &&
+              typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');
+  }
+
+  function isInIframe() {
+    return !!(window.parent && window.parent !== window);
+  }
+
+  function sendEvent(eventName, payload) {
+    var message = {
+      type: eventName,
+      payload: payload || {},
+      timestamp: Date.now()
+    };
+
+    if (hasIOSBridge()) {
+      try {
+        window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);
+      } catch (e) { /* ignore */ }
+      return;
+    }
+
+    if (hasAndroidBridge()) {
+    try {
+      var p = payload || {};
+      p.__secureToken = window.__fbAndroidBridgeAuthToken || '';
+      window[ANDROID_BRIDGE_NAME].postEvent(
+        eventName,
+        JSON.stringify(p)
+      );
+    } catch (e) { /* ignore */ }
+    return;
+  }
+
+    if (isInIframe()) {
+      try {
+        window.parent.postMessage(message, '*');
+      } catch (e) { /* ignore */ }
+      return;
+    }
+  }
+
+  // --- rAF Game-Ready Detection ---
+
+  function onFrame() {
+    if (gameReadySent) return;
+
+    frameCount++;
+    if (frameCount >= RAF_FRAME_THRESHOLD) {
+      gameReadySent = true;
+      sendEvent('game_ready', {
+        frame_count: frameCount,
+        detected_at: Date.now()
+      });
+      return;
+    }
+
+    originalRAF.call(window, onFrame);
+  }
+
+  if (originalRAF) {
+    window.requestAnimationFrame = function(callback) {
+      if (!gameReadySent) {
+        return originalRAF.call(window, function(timestamp) {
+          frameCount++;
+          if (frameCount >= RAF_FRAME_THRESHOLD && !gameReadySent) {
+            gameReadySent = true;
+            sendEvent('game_ready', {
+              frame_count: frameCount,
+              detected_at: Date.now()
+            });
+          }
+          callback(timestamp);
+        });
+      }
+      return originalRAF.call(window, callback);
+    };
+  }
+
+  // --- First User Interaction Detection ---
+
+  function setupFirstInteractionDetection() {
+    var events = ['touchstart', 'mousedown', 'keydown'];
+
+    function onFirstInteraction() {
+      if (firstInteractionSent) return;
+      firstInteractionSent = true;
+      sendEvent('user_interaction_start', null);
+
+      for (var i = 0; i < events.length; i++) {
+        document.removeEventListener(events[i], onFirstInteraction, true);
+      }
+    }
+
+    for (var i = 0; i < events.length; i++) {
+      document.addEventListener(events[i], onFirstInteraction, true);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);
+  } else {
+    setupFirstInteractionDetection();
+  }
+
+  // --- Auto Error Capture ---
+
+  window.addEventListener('error', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    sendEvent('error', {
+      message: event.message || 'Unknown error',
+      source: event.filename || '',
+      lineno: event.lineno || 0,
+      colno: event.colno || 0,
+      auto_captured: true
+    });
+  });
+
+  window.addEventListener('unhandledrejection', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    var reason = event.reason;
+    sendEvent('error', {
+      message: (reason instanceof Error) ? reason.message : String(reason),
+      type: 'unhandled_promise_rejection',
+      auto_captured: true
+    });
+  });
+
+  // --- Public API ---
+
+  window.playablesSDK = {
+    complete: function(score) {
+      sendEvent('game_ended', {
+        score: score,
+        completed: true
+      });
+    },
+
+    error: function(message) {
+      if (errorSent) return;
+      errorSent = true;
+      sendEvent('error', {
+        message: message || 'Unknown error',
+        auto_captured: false
+      });
+    },
+
+    sendEvent: function(eventName, payload) {
+      if (!eventName || typeof eventName !== 'string') return;
+      sendEvent(eventName, payload);
+    }
+  };
+
+  // Kick off rAF detection in case no game code calls rAF immediately
+  if (originalRAF) {
+    originalRAF.call(window, onFrame);
+  }
+})();</script>
+<script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html, body { height:100%; }
+body { margin:0; background:#000; overflow:hidden; }
+.bot {
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  white-space:pre;
+  font-family:'Courier New', monospace;
+  line-height:1;
+  color:#00ff00;
+  left:120vw;
+  animation: moveRTL 24s linear infinite;
+  user-select:none;
+  pointer-events:none;
+}
+.bot1 { animation-delay:0s; }
+.bot2 { animation-delay:8s; }
+.bot3 { animation-delay:16s; }
+@keyframes moveRTL { from { left:120vw; } to { left:-120vw; } }
+</style>
 </head>
 <body>
-<div id="bot-stage"></div>
+<pre class="bot bot1"></pre>
+<pre class="bot bot2"></pre>
+<pre class="bot bot3"></pre>
 <script>
-    var BOT_FRAMES = [
-        ' [o_o] >>-- ',
-        ' [o_o]-->>  ',
-        ' [^_^] >>-- ',
-        ' [-_-]-->>  ',
-        ' [o_o] >>=- ',
-        ' [*_*]-->>  ',
-    ];
+const baseArt = `                             .#@@@@@@@@@@@@@-                                             
+                             :%+  .=-  .*#=@=                                             
+                             .%+.#@+*@=.**=%=                                             
+                             .%+:## .@*.**=%=                                             
+                             :%=  +%%:  *#=%=                                             
+                             :%%********%@%@=                                             
+                               ....%@+@=....                                              
+                                   %@-%-                                                  
+                                   %@-%:                                                  
+                                   %@-%-                                          .       
+    --                             %@*@=                                       .*@%%-     
+    .*%=                        :#%*=-+#%=                  *%%%%%%%%+       .*@*.:#@%-   
+:.    :#@-                     :%+      -%+                .#*     .#*     :*%+ :#@+=%@%= 
++@+.    #@                :%@%@@@@%%%@@@@@@@@@@@%%@@@@%%%@@@@@@%@@@@@@@@@@@@*.:#%=-#%=.+@#
+  *%+. :@%                -@-  .:.                :-:                     =%+#%==%%- -#%= 
+   :+#%#*@*.              -@= +%#%%:            -%#+%%          :%@@@@@%. =@%==%%- -#%-   
+          *@+             -@=-@* -@+          .=%@+.*@#-        .++****+. =@*%%- -#%-     
+           :*%=           +@@%+*%#=        :*%%=::+*+:-*@*-      :::::::  =@#- =%%-       
+             :#%-      :*%@@=          .=#@#-.           -#%*-::.         =%--%%-         
+               -%%: :*%#- -@=.    ..:+%@*=:.   ....   .... .*@#+@*.....   =@@#:           
+                 =@@#-    .#####%@@@%#####################@@@@- *@@@%######*:             
+                   .     .=#-:+%@*:               =#-. .+%%=.-##*::+%%+. .=*-             
+                     -+%@#+%*%@%*-           =+%@#***%@@%=          .+@@@#*#*%@#==        
+                    :@@-       =@%:         :@@=       =@%.         =@@:       +@@.       
+                   .@*    -=:   .#%        :@*    -=:    *#:       -%+    -=:    %%       
+                   *%:  -%#-#%:  -@+       #@   :%#=%@   :@+      .*%.  :@#=#%:  .@+      
+                   #%:  -@+.*%:  :%*      .%@   -@+:#@.  -@+      .#%:  :@*:#%.  :@*      
+                   .@+    +#+.   *@.       -@+   .+*=   .*%:       -@=    +*=    #@:      
+                    -@%-       =@@.         =@%:       :@%-         -@%.       =@@.       
+                     +#@@*=*=*@@#=           *#@@*=++#@@#=           +#@@*=+=#@@*+        
+                         :+@*:                   :*@=.                   :+%+:            `;
 
-    var CARRY_FRAMES = [
-        ' [o_o]>>[=] ',
-        ' [^_^]>>[=] ',
-        ' [-_-]>>[#] ',
-        ' [o_o]>>[~] ',
-    ];
+const lines = baseArt.split('\n');
+const bots = document.querySelectorAll('.bot');
+const spinner = ['|','/','-','\\'];
+const spinSet = new Set(['=','-','*','+',':','/','\\']);
+let frame = 0;
 
-    var LABELS = [
-        'BOT-01', 'BOT-02', 'BOT-03',
-        'UNIT-A', 'UNIT-B', 'UNIT-C',
-        'DRONE', 'FETCH',
-    ];
-
-    function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-    function randInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
-
-    function makeBotString() {
-        var parts = [];
-        var n = randInt(3, 7);
-        for (var i = 0; i < n; i++) {
-            var frame = Math.random() < 0.3 ? rand(CARRY_FRAMES) : rand(BOT_FRAMES);
-            parts.push(rand(LABELS) + ':' + frame);
-        }
-        return parts.join('  ');
+function update() {
+  frame++;
+  const spinChar = spinner[frame % 4];
+  const spun = lines.map((line, i) => {
+    if (i < 22) return line; // top 22 lines are the bot head/body — only animate the legs below
+    let out = '';
+    for (let c = 0; c < line.length; c++) {
+      const ch = line[c];
+      out += spinSet.has(ch) ? spinChar : ch;
     }
+    return out;
+  }).join('\n');
+  bots.forEach(b => b.textContent = spun);
+}
 
-    var stage = document.getElementById('bot-stage');
-    var rowCount = 6;
-    var rows = [];
+function scaleBots() {
+  const lineCount = lines.length;
+  const sz = window.innerHeight / lineCount;
+  bots.forEach(b => b.style.fontSize = sz + 'px');
+}
 
-    for (var r = 0; r < rowCount; r++) {
-        var el = document.createElement('div');
-        el.className = 'bot-row';
-        var topPct = (r * (100 / rowCount)) + randInt(2, 8);
-        el.style.top = topPct + '%';
-        var dur = randInt(6, 12);
-        var delay = -randInt(0, dur);
-        el.style.animationDuration = dur + 's';
-        el.style.animationDelay = delay + 's';
-        el.textContent = makeBotString();
-        stage.appendChild(el);
-        rows.push({ el: el, dur: dur });
-    }
-
-    // Refresh row content each loop so bots look dynamic
-    rows.forEach(function(row) {
-        setInterval(function() {
-            row.el.textContent = makeBotString();
-        }, row.dur * 1000);
-    });
+update();
+scaleBots();
+setInterval(update, 100);
+window.addEventListener('resize', scaleBots);
 </script>
 </body>
 </html>
