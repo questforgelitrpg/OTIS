@@ -43,10 +43,10 @@
         #crt-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 9998;
             background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px); }
 
-        /* Bot animation overlay — shown during bot deploy/docking sequences */
-        #bot-anim-overlay { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 180px;
-            z-index: 101; background: rgba(0,0,0,0.72); border-top: 1px solid #1a3a1a; pointer-events: none; }
-        #bot-anim-overlay iframe { width: 100%; height: 100%; border: none; background: transparent; }
+        /* Bot animation — sidebar strip shown during bot deploy/docking sequences */
+        #arm-bot-anim { display: none; width: 100%; margin-top: 0.6rem; border-top: 1px solid var(--border); padding-top: 0.4rem; overflow: hidden; position: relative; height: 80px; }
+        #arm-bot-anim .bot-row { position: absolute; white-space: nowrap; font-size: 8px; line-height: 1.3; color: #55cc88; text-shadow: 0 0 4px #55cc88; font-family: 'Courier New', Courier, monospace; animation: arm-bot-roll linear infinite; will-change: transform; }
+        @keyframes arm-bot-roll { from { transform: translateX(140px); } to { transform: translateX(-100%); } }
 
         /* CRT flicker */
         @keyframes flicker { 0%, 89%, 91%, 93%, 95%, 100% { opacity: 1; } 90% { opacity: 0.85; } 92% { opacity: 0.95; } 94% { opacity: 0.88; } }
@@ -277,7 +277,6 @@
 </head>
 <body>
     <div id="crt-overlay" aria-hidden="true"></div>
-    <div id="bot-anim-overlay" aria-hidden="true"><iframe src="ASCII-bots-rolling-animation.html" title="Bot animation"></iframe></div>
     <div id="fatigue-overlay" aria-hidden="true"></div>
     <div id="fatigue-noise" aria-hidden="true"></div>
     <div id="otis-float" aria-live="polite"></div>
@@ -288,6 +287,7 @@
             <img id="arm-art" src="images/otis_sprite/idle.png" alt="OTIS">
             <div id="arm-status">NOMINAL</div>
             <div id="arm-hint"></div>
+            <div id="arm-bot-anim" aria-hidden="true"></div>
         </aside>
 
         <div id="terminal">
@@ -1805,11 +1805,48 @@
     }
 
     function showBotAnimation(durationMs) {
-        var overlay = document.getElementById('bot-anim-overlay');
-        if (!overlay) return;
-        overlay.style.display = '';
-        setTimeout(function() { overlay.style.display = 'none'; }, durationMs);
+        var panel = document.getElementById('arm-bot-anim');
+        if (!panel) return;
+        panel.style.display = '';
+        setTimeout(function() { panel.style.display = 'none'; }, durationMs);
     }
+
+    // Populate sidebar bot animation rows (inline — no iframe needed)
+    (function() {
+        var BOT_FRAMES = [' [o_o]>', ' [^_^]>', ' [-_-]>', ' [*_*]>'];
+        var CARRY_FRAMES = [' [o_o]>[=]', ' [^_^]>[#]', ' [-_-]>[~]'];
+        var LABELS = ['BOT-1', 'BOT-2', 'UNIT-A', 'UNIT-B', 'DRONE'];
+        var ROW_SPACING_PCT = 20;
+        function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function randInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
+        function makeBotStr() {
+            var n = randInt(2, 4);
+            var parts = [];
+            for (var i = 0; i < n; i++) {
+                var frame = Math.random() < 0.25 ? rand(CARRY_FRAMES) : rand(BOT_FRAMES);
+                parts.push(rand(LABELS) + ':' + frame + '  ');
+            }
+            return parts.join('');
+        }
+        var container = document.getElementById('arm-bot-anim');
+        if (!container) return;
+        var rows = [];
+        for (var r = 0; r < 5; r++) {
+            var el = document.createElement('div');
+            el.className = 'bot-row';
+            el.style.top = (r * ROW_SPACING_PCT + randInt(1, 4)) + '%';
+            var dur = randInt(4, 8);
+            el.style.animationDuration = dur + 's';
+            el.style.animationDelay = (-randInt(0, dur)) + 's';
+            el.textContent = makeBotStr();
+            container.appendChild(el);
+            rows.push({ el: el, dur: dur, timer: null });
+        }
+        rows.forEach(function(row) {
+            row.timer = setInterval(function() { row.el.textContent = makeBotStr(); }, row.dur * 1000);
+        });
+        container._botTimers = rows.map(function(row) { return row.timer; });
+    }());
 
     function updateBeltUI(status) {
         var track  = document.getElementById('belt-bar-track');
@@ -3763,6 +3800,7 @@
             if (loginBtn && loginBtn.disabled) return; // guard against double-click
             bootSequence();
         }
+        window.handleLoginClick = handleLoginClick;
 
         function showLoginGate() {
             var loginBtn = document.getElementById('btn-login');
