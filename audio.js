@@ -24,4 +24,4 @@ class AudioManager {
     }
 }
 
-const audioManager = new AudioManager();
+window.audioManager = new AudioManager();
