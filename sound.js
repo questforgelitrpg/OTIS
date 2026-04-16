@@ -10,7 +10,8 @@
         conveyor:        0.20,
         bots:            0.20,
         background_buzz: 0.05,
-        comms:           0.50
+        comms:           0.50,
+        autotoast:       0.50
     };
 
     var PATHS = {
@@ -22,7 +23,8 @@
         conveyor:        'sounds/conveyer.mp3',
         bots:            'sounds/bots.mp3',
         background_buzz: 'sounds/background_buzz.mp3',
-        comms:           'sounds/comms.mp3'
+        comms:           'sounds/comms.mp3',
+        autotoast:       'sounds/autotoast.mp3'
     };
 
     var _unlocked = false;
@@ -158,11 +160,15 @@
 
     // ── Music layer ───────────────────────────────────────────────────────────
 
+    // Flag set while background_buzz interlude is playing between music1 loops.
+    var _music1InterludeActive = false;
+
     function startMusic(track) {
         if (!_unlocked) {
             _pendingQueue.push(function () { startMusic(track); });
             return;
         }
+        _music1InterludeActive = false; // cancel any pending interlude restart
         if (_music2Timer) { clearTimeout(_music2Timer); _music2Timer = null; }
         if (track === 'music2') {
             // Auto-revert to music1 after one approximate loop duration
@@ -172,6 +178,41 @@
             }, MUSIC2_DURATION_MS);
         }
         _doStartMusic(track);
+    }
+
+    // Plays background_buzz.mp3 once as an interlude, then restarts music1.
+    function _onMusic1Ended() {
+        if (!_musicCurrent || _musicCurrent.name !== 'music1') return;
+        _musicCurrent = null;
+        _music1InterludeActive = true;
+        // Keep _musicActive = true so the ambient buzz doesn't start during the interlude.
+        var buzzEl = document.createElement('audio');
+        buzzEl.crossOrigin = 'anonymous';
+        buzzEl.src    = PATHS['background_buzz'];
+        buzzEl.loop   = false;
+        buzzEl.preload = 'auto';
+        var buzzGain = _wire(buzzEl);
+        if (!buzzGain) {
+            _music1InterludeActive = false;
+            _doStartMusic('music1');
+            return;
+        }
+        buzzGain.gain.setValueAtTime(_muted ? 0 : VOLUMES['background_buzz'], (_getCtx() || {}).currentTime || 0);
+        buzzEl.addEventListener('ended', function () {
+            buzzEl.src = ''; // release the element
+            if (_music1InterludeActive) {
+                _music1InterludeActive = false;
+                _doStartMusic('music1');
+            }
+        });
+        buzzEl.play().catch(function (e) {
+            console.warn('OtisSound: buzz interlude failed:', e);
+            buzzEl.src = '';
+            if (_music1InterludeActive) {
+                _music1InterludeActive = false;
+                _doStartMusic('music1');
+            }
+        });
     }
 
     function _doStartMusic(name) {
@@ -184,12 +225,16 @@
             var el = document.createElement('audio');
             el.crossOrigin = 'anonymous';
             el.src     = PATHS[name];
-            el.loop    = true;
+            // music1 uses manual loop management to insert a background_buzz interlude
+            el.loop    = (name !== 'music1');
             el.preload = 'auto';
             var gainNode = _wire(el);
             if (!gainNode) { _setMusicActive(false); return; }
             _musicCurrent = { name: name, el: el, gainNode: gainNode };
             _fadeIn(gainNode, targetVol);
+            if (name === 'music1') {
+                el.addEventListener('ended', _onMusic1Ended);
+            }
             el.play().catch(function (e) {
                 console.warn('OtisSound: could not play music ' + name + ':', e);
             });
@@ -211,6 +256,7 @@
     }
 
     function stopMusic() {
+        _music1InterludeActive = false;
         if (!_musicCurrent) return;
         var outgoing = _musicCurrent;
         _musicCurrent = null;
