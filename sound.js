@@ -10,7 +10,8 @@
         conveyor:        0.20,
         bots:            0.20,
         background_buzz: 0.05,
-        comms:           0.50
+        comms:           0.50,
+        autotoast:       0.50
     };
 
     var PATHS = {
@@ -22,7 +23,8 @@
         conveyor:        'sounds/conveyer.mp3',
         bots:            'sounds/bots.mp3',
         background_buzz: 'sounds/background_buzz.mp3',
-        comms:           'sounds/comms.mp3'
+        comms:           'sounds/comms.mp3',
+        autotoast:       'sounds/autotoast.mp3'
     };
 
     var _unlocked = false;
@@ -174,6 +176,31 @@
         _doStartMusic(track);
     }
 
+    // Plays background_buzz.mp3 once as an interlude, then restarts music1.
+    function _onMusic1Ended() {
+        if (!_musicCurrent || _musicCurrent.name !== 'music1') return;
+        _musicCurrent = null;
+        // Keep _musicActive = true so the ambient buzz doesn't start during the interlude.
+        var buzzEl = document.createElement('audio');
+        buzzEl.crossOrigin = 'anonymous';
+        buzzEl.src    = PATHS['background_buzz'];
+        buzzEl.loop   = false;
+        buzzEl.preload = 'auto';
+        var buzzGain = _wire(buzzEl);
+        if (!buzzGain) {
+            _doStartMusic('music1');
+            return;
+        }
+        buzzGain.gain.setValueAtTime(_muted ? 0 : VOLUMES['background_buzz'], (_getCtx() || {}).currentTime || 0);
+        buzzEl.addEventListener('ended', function () {
+            if (!_musicCurrent) { _doStartMusic('music1'); }
+        });
+        buzzEl.play().catch(function (e) {
+            console.warn('OtisSound: buzz interlude failed:', e);
+            if (!_musicCurrent) { _doStartMusic('music1'); }
+        });
+    }
+
     function _doStartMusic(name) {
         // Guard: same track already playing
         if (_musicCurrent && _musicCurrent.name === name && !_musicCurrent.el.paused) return;
@@ -184,12 +211,16 @@
             var el = document.createElement('audio');
             el.crossOrigin = 'anonymous';
             el.src     = PATHS[name];
-            el.loop    = true;
+            // music1 uses manual loop management to insert a background_buzz interlude
+            el.loop    = (name !== 'music1');
             el.preload = 'auto';
             var gainNode = _wire(el);
             if (!gainNode) { _setMusicActive(false); return; }
             _musicCurrent = { name: name, el: el, gainNode: gainNode };
             _fadeIn(gainNode, targetVol);
+            if (name === 'music1') {
+                el.addEventListener('ended', _onMusic1Ended);
+            }
             el.play().catch(function (e) {
                 console.warn('OtisSound: could not play music ' + name + ':', e);
             });
