@@ -45,7 +45,7 @@
 
         /* Bot animation overlay — shown during bot deploy/docking sequences */
         #bot-anim-overlay { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 180px;
-            z-index: 50; background: rgba(0,0,0,0.72); border-top: 1px solid #1a3a1a; pointer-events: none; }
+            z-index: 101; background: rgba(0,0,0,0.72); border-top: 1px solid #1a3a1a; pointer-events: none; }
         #bot-anim-overlay iframe { width: 100%; height: 100%; border: none; background: transparent; }
 
         /* CRT flicker */
@@ -310,7 +310,7 @@
             <div id="otis-output" role="log" aria-live="polite" aria-label="OTIS conversation log"></div>
 
             <div id="otis-actions">
-                <button id="btn-login" onclick="appendOTIS('Operator logging in.','LOGIN')">LOGIN</button>
+                <button id="btn-login" onclick="handleLoginClick()">LOGIN</button>
                 <button onclick="appendOTIS('What is the current status?','CONSULT_STATUS')">STATUS</button>
                 <button onclick="appendOTIS('How bad is the debt?','CONSULT_DEBT')">DEBT</button>
                 <button onclick="handleLogoff()">LOGOFF</button>
@@ -1266,10 +1266,15 @@
     var CONDITION_MULTIPLIERS = { Broken: 0.2, Poor: 0.5, Used: 1.0, Excellent: 1.5 };
     var RESERVE_MULTIPLIERS   = { Common: 1.10, Uncommon: 1.20, Rare: 1.35 };
     var RESERVE_SALE_SUCCESS_RATE = 0.70;
+    // Per-rarity caps on the effective credit value of a single item (before Easter egg multiplier).
+    // Prevents condition stacking from generating runaway credit awards.
+    var RARITY_CREDIT_CAPS = { Common: 80, Uncommon: 250, Rare: 1200 };
 
     function getEffectiveValue(item) {
         if (item.rarity === 'Anomalous') return 0;
-        return Math.floor((item.otisValue || 0) * (CONDITION_MULTIPLIERS[item.condition] || 1.0));
+        var raw = Math.floor((item.otisValue || 0) * (CONDITION_MULTIPLIERS[item.condition] || 1.0));
+        var cap = RARITY_CREDIT_CAPS[item.rarity];
+        return (cap != null) ? Math.min(raw, cap) : raw;
     }
 
     function getAppraisedValue(keepItem) {
@@ -3750,6 +3755,27 @@
             setLight('light-auxiliary', 'light-amber');
         }
 
+        function handleLoginClick() {
+            var loginBtn = document.getElementById('btn-login');
+            if (loginBtn && loginBtn.disabled) return; // guard against double-click
+            bootSequence();
+        }
+
+        function showLoginGate() {
+            var loginBtn = document.getElementById('btn-login');
+            if (loginBtn) {
+                loginBtn.classList.add('login-pulse');
+                loginBtn.disabled = false;
+                loginBtn.style.display = '';
+            }
+            // Show a startup message so the user knows to click LOGIN
+            var msg = (gameState.state.day > 1)
+                ? 'Session data loaded. Day ' + gameState.state.day + '. Click LOGIN to resume.'
+                : 'System initialized. Click LOGIN to begin.';
+            otisLines.push({ role: 'otis', text: msg });
+            renderOTIS();
+        }
+
         async function bootSequence() {
             var loginBtn = document.getElementById('btn-login');
             if (loginBtn) {
@@ -3796,7 +3822,7 @@
             }
         }
 
-        bootSequence();
+        showLoginGate();
     })();
     </script>
 </body>
