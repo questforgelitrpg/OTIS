@@ -1,0 +1,2602 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=windows-1252">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice 4.1.16  (Win32)">
+	<META NAME="AUTHOR" CONTENT="Un-named">
+	<META NAME="CREATED" CONTENT="20260416;21172237">
+	<META NAME="CHANGEDBY" CONTENT="Un-named">
+	<META NAME="CHANGED" CONTENT="20260416;21172237">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { margin: 0.75in }
+		P { margin-bottom: 0.08in }
+		A:link { color: #0563c1; so-language: zxx }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" LINK="#0563c1" DIR="LTR">
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.04in"><FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=6 STYLE="font-size: 28pt"><B>O.T.I.S.</B></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.03in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 11pt"><SPAN STYLE="font-weight: normal">Bins
++ Sven Villain + Payment Escalation &mdash; Agent Implementation
+Guide</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.17in"><FONT COLOR="#445544"><FONT FACE="Arial, serif"><FONT SIZE=2 STYLE="font-size: 9pt"><SPAN STYLE="font-weight: normal">8
+steps. Do them in order. State version bump to v4 in Step 1 clears
+saves.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.35in; margin-bottom: 0.14in; border-top: 1px solid #e94560; border-bottom: 1px solid #222233; border-left: none; border-right: none; padding: 0in">
+<FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=4><B>CONFIRMED
+DESIGN NUMBERS</B></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=2 STYLE="font-size: 9pt"><SPAN STYLE="font-weight: normal">These
+are the locked values from the economy analysis. Every step in this
+guide implements exactly these numbers.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<TABLE WIDTH=613 BORDER=1 BORDERCOLOR="#1a3a1a" CELLPADDING=7 CELLSPACING=0>
+	<COL WIDTH=132>
+	<COL WIDTH=79>
+	<COL WIDTH=79>
+	<COL WIDTH=265>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#1a1a2a">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>CONSTANT</B></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#1a1a2a">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>OLD
+			VALUE</B></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#1a1a2a">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>NEW
+			VALUE</B></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#1a1a2a">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>WHY</B></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">PAYMENT_CYCLE_DAYS</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">28</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">7</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Weekly
+			installments = rhythm and pressure</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Initial
+			installment</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">650
+			cr</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">850
+			cr</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Covers
+			~1 good drop. Tight but achievable.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Cycle
+			5 escalation</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3">&mdash;</FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">1,000
+			cr</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Bank
+			notices station is profitable</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Cycle
+			10 escalation</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3">&mdash;</FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">1,200
+			cr</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Second
+			tier &mdash; real pressure mid-game</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Cycle
+			18 escalation</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3">&mdash;</FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">1,500
+			cr</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Final
+			tier &mdash; endgame sprint</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Common
+			item values</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">10&ndash;44
+			cr</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">30&ndash;132
+			cr (3&times; all)</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Commons
+			must feel worth processing</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Uncommon
+			item values</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">80&ndash;156
+			cr</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">200&ndash;390
+			cr (2.5&times;)</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Uncommon
+			= good find, not great</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Rare
+			item values</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">280&ndash;560
+			cr</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">560&ndash;1120
+			cr (2&times;)</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Rare
+			= meaningful but not game-breaking</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">DROP_SIZE_ACT1</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">10</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">10</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Correct.
+			Keep.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">DAYS_BETWEEN_DROPS</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">2</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">2</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Correct.
+			Keep.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">BELT_DELIVERY_MS</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">45000</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">45000</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Correct.
+			Keep.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">May
+			bin capacity</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3">&mdash;</FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">12
+			items</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Civilian+Settlement.
+			Ships with May dispatch.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Broker
+			bin capacity</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3">&mdash;</FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">10
+			items</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Industrial+Vessel.
+			Ship at 50/75/100%.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Sven
+			bin capacity</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3">&mdash;</FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">3
+			items</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Rare+Anomalous
+			only. Instant pay at 65%.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Broker
+			partial at 50%</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3">&mdash;</FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">75%
+			of value</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Forces
+			a real wait-vs-ship decision</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Broker
+			partial at 75%+</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3">&mdash;</FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">88%
+			of value</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Good-enough
+			option near payment day</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Sven
+			pay rate</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">65%
+			(existing)</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">65%
+			of OTIS value</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Keep.
+			Speed vs money tradeoff.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Anomalous
+			reserve range</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">300&ndash;1600
+			cr</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">300&ndash;1600
+			cr</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Fine.
+			Keep.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">STATE_KEY</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">otis_state_v3</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=79 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">otis_state_v4</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=265 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Bins
+			+ economy are breaking state changes</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-top: 0.14in; margin-bottom: 0.14in; border-top: none; border-bottom: 1px solid #1a2a1a; border-left: none; border-right: none; padding: 0in">
+<BR><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.06in; border-top: 1px solid #e94560; border-bottom: 1px solid #333333; border-left: none; border-right: none; padding: 0in; page-break-before: always">
+<FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=4><B>STEP
+01  </B></FONT></FONT></FONT><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=3><B>STATE
+VERSION BUMP AND NEW STATE FIELDS</B></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.11in"><FONT COLOR="#445544"><FONT FACE="Arial, serif"><FONT SIZE=2 STYLE="font-size: 9pt"><SPAN STYLE="font-weight: normal">Add
+all new bin fields to state and bump to v4. Old saves clear
+automatically. No gameplay changes yet &mdash; just the data
+structure.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>AGENT
+PROMPT</B></FONT></FONT></FONT></P>
+<TABLE WIDTH=648 BORDER=1 BORDERCOLOR="#1a3a1a" CELLPADDING=7 CELLSPACING=0>
+	<COL WIDTH=632>
+	<TR>
+		<TD WIDTH=632 VALIGN=TOP BGCOLOR="#010901">
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Working
+			in index.html.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">1.
+			Change STATE_KEY from &quot;otis_state_v3&quot; to
+			&quot;otis_state_v4&quot;.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">2.
+			In stateManager.load(), update the version check:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(!parsed.stateVersion || parsed.stateVersion &lt; 4) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">localStorage.removeItem(STATE_KEY);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">return
+			null;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">3.
+			In stateManager._default(), change stateVersion to 4.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">4.
+			In stateManager._default(), ADD these new fields:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			--- BIN SYSTEM ---</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">mayBin:
+			[],          // items sorted to May route (Civilian + Settlement)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">brokerBin:
+			[],       // items sorted to broker route (Industrial + Vessel)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">svenBin:
+			[],         // items routed to Sven (Rare + Anomalous only)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			--- PAYMENT ESCALATION ---</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">paymentCycle:
+			0,         // how many 7-day cycles completed</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">currentInstallment:
+			850, // starts at 850, escalates</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">escalationFired:
+			{ tier1: false, tier2: false, tier3: false },</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			--- SVEN STEAL TRACKING ---</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">svenStolenCount:
+			0,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">5.
+			Change daysUntilPayment initial value from 28 to 7.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">(It
+			is currently hardcoded as daysUntilPayment: 28 in _default().)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Change
+			to: daysUntilPayment: 7,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">6.
+			Change paymentDue initial value from 650 to 850.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Change
+			to: paymentDue: 850,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">7.
+			Change TIMING.PAYMENT_CYCLE_DAYS from 28 to 7.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">DONE.
+			Push. Verify clear save triggers and new game starts fresh.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Verify
+			header shows PAY: 7d on new game.</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-top: 0.14in; margin-bottom: 0.14in; border-top: none; border-bottom: 1px solid #1a2a1a; border-left: none; border-right: none; padding: 0in">
+<BR><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.06in; border-top: 1px solid #e94560; border-bottom: 1px solid #333333; border-left: none; border-right: none; padding: 0in; page-break-before: always">
+<FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=4><B>STEP
+02  </B></FONT></FONT></FONT><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=3><B>ITEM
+VALUE MULTIPLIER &mdash; UPDATE MANIFEST_POOL</B></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.11in"><FONT COLOR="#445544"><FONT FACE="Arial, serif"><FONT SIZE=2 STYLE="font-size: 9pt"><SPAN STYLE="font-weight: normal">Multiply
+all item base values. Commons x3, Uncommons x2.5, Rares x2. Find
+every otisValue field in MANIFEST_POOL and multiply. Do not touch
+Easter egg items, George warehouse items, or Anomalous items (they
+stay at 0).</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>AGENT
+PROMPT</B></FONT></FONT></FONT></P>
+<TABLE WIDTH=648 BORDER=1 BORDERCOLOR="#1a3a1a" CELLPADDING=7 CELLSPACING=0>
+	<COL WIDTH=632>
+	<TR>
+		<TD WIDTH=632 VALIGN=TOP BGCOLOR="#010901">
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Working
+			in index.html, MANIFEST_POOL array only.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Do
+			NOT change GEORGE_WAREHOUSE values.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Do
+			NOT change EASTER_EGG_POOL values.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Do
+			NOT change any otisValue: 0 entries (Anomalous items stay 0).</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">APPLY
+			THESE EXACT MULTIPLIERS:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Common
+			items: multiply every otisValue by 3</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Uncommon
+			items: multiply every otisValue by 2.5 (round to nearest integer)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Rare
+			items: multiply every otisValue by 2</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">RESULTING
+			VALUES (verify these after change):</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Personal
+			effects bundle (Common 36): -&gt; 108</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Corroded
+			fuel cell casing (Common 24): -&gt; 72</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Settlement
+			cooking unit (Common 44): -&gt; 132</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Burned
+			circuit board cluster (Common 20): -&gt; 60</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Bent
+			structural strut (Common 22): -&gt; 66</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Childrens
+			toy (Common 30): -&gt; 90</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Settlement
+			water filter (Common 26): -&gt; 78</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Personal
+			hygiene kit (Common 20): -&gt; 60</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Handheld
+			audio player (Common 18): -&gt; 54</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Family
+			photo cube (Common 24): -&gt; 72</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Worn
+			clothing bundle (Common 14): -&gt; 42</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Nutrient
+			snack pack (Common 10): -&gt; 30</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Child
+			learning tablet (Common 18): -&gt; 54</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Fractured
+			pipe junction (Common 20): -&gt; 60</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Burned-out
+			power coupler (Common 16): -&gt; 48</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Worn
+			actuator joint (Common 18): -&gt; 54</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Damaged
+			sensor housing (Common 14): -&gt; 42</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Settlement
+			ration container (Common 16): -&gt; 48</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Ceramic
+			water jug (Common 14): -&gt; 42</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Manual
+			farming tool (Common 12): -&gt; 36</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Communal
+			utensil bundle (Common 14): -&gt; 42</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Partial
+			navigation array (Uncommon 130): -&gt; 325</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Cracked
+			coolant housing (Uncommon 84): -&gt; 210</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Civilian
+			medical kit (Uncommon 96): -&gt; 240</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Coolant
+			manifold (Uncommon 156): -&gt; 390</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Settlement
+			community archive (Uncommon 110): -&gt; 275</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Pressure
+			suit fragment (Uncommon 100): -&gt; 250</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Decommissioned
+			beacon housing (Uncommon 144): -&gt; 360</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Compact
+			holo-diary (Uncommon 124): -&gt; 310</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Civilian
+			comm device (Uncommon 104): -&gt; 260</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Prescription
+			lens visor (Uncommon 96): -&gt; 240</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Portable
+			heating unit (Uncommon 80): -&gt; 200</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Precision
+			cutting module (Uncommon 136): -&gt; 340</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Reinforced
+			servo motor (Uncommon 152): -&gt; 380</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Thermal
+			regulator unit (Uncommon 140): -&gt; 350</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Ship
+			comm relay node (Uncommon 120): -&gt; 300</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Cockpit
+			interface panel (Uncommon 96): -&gt; 240</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Thruster
+			nozzle fragment (Uncommon 110): -&gt; 275</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Navigation
+			gyroscope ring (Uncommon 128): -&gt; 320</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Settlement
+			ID registry slab (Uncommon 116): -&gt; 290</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Portable
+			weather monitor (Uncommon 100): -&gt; 250</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Community
+			message recorder (Uncommon 124): -&gt; 310</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Pre-collapse
+			data crystal (Rare 530): -&gt; 1060</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Fused
+			relay core (Rare 420): -&gt; 840</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Encrypted
+			data slate (Rare 350): -&gt; 700</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Autonomous
+			drone chassis (Rare 280): -&gt; 560</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Micro
+			jump-calculator core (Rare 496): -&gt; 992</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Star
+			chart projector (Rare 450): -&gt; 900</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">AI
+			assistant module (Rare 560): -&gt; 1120</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">ALSO
+			update ANOMALOUS_RESERVE_MIN and ANOMALOUS_RESERVE_MAX:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">ANOMALOUS_RESERVE_MIN:
+			400   (was 300)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">ANOMALOUS_RESERVE_MAX:
+			1800  (was 1600)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">DONE.
+			Push. Test: EXAMINE a Common item. Verify OTIS shows ~50-130 cr.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Examine
+			a Rare item. Verify ~560-1120 cr range.</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-top: 0.14in; margin-bottom: 0.14in; border-top: none; border-bottom: 1px solid #1a2a1a; border-left: none; border-right: none; padding: 0in">
+<BR><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.06in; border-top: 1px solid #e94560; border-bottom: 1px solid #333333; border-left: none; border-right: none; padding: 0in; page-break-before: always">
+<FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=4><B>STEP
+03  </B></FONT></FONT></FONT><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=3><B>PAYMENT
+ESCALATION SYSTEM</B></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.11in"><FONT COLOR="#445544"><FONT FACE="Arial, serif"><FONT SIZE=2 STYLE="font-size: 9pt"><SPAN STYLE="font-weight: normal">Change
+payment cycle to 7 days. Add escalation tracking. Write all bank and
+OTIS scripted messages. Wire the escalation check into advanceDay.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>SCRIPTED
+MESSAGES &mdash; ADD THESE ARRAYS TO index.html</B></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=2 STYLE="font-size: 9pt"><SPAN STYLE="font-weight: normal">Add
+directly below the TOAST_COMMENTS array or near other scripted pools:</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<TABLE WIDTH=648 BORDER=1 BORDERCOLOR="#1a3a1a" CELLPADDING=7 CELLSPACING=0>
+	<COL WIDTH=632>
+	<TR>
+		<TD WIDTH=632 VALIGN=TOP BGCOLOR="#010901">
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			&#9472;&#9472; PAYMENT ESCALATION SCRIPTS
+			&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			PAYMENT_ESCALATION_EVENTS = [</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">{</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">tier:
+			1, cycle: 5, amount: 1000,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">bankMsg:
+			&quot;[BANK] Account VRN-001. Performance review complete. Station
+			operational&quot; +</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			     <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;
+			revenue has increased above minimum threshold. Installment
+			adjusted to 1,000&quot; +</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			     <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;
+			credits per cycle effective immediately. This is a standard
+			contractual provision.&quot; +</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			     <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;
+			&mdash; UBC Automated Systems&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisMsg:
+			&quot;Installment increased. The bank noticed you making money.
+			This is how that works.&quot;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">},</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">{</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">tier:
+			2, cycle: 10, amount: 1200,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">bankMsg:
+			&quot;[BANK] Account VRN-001. Revenue trajectory remains above
+			threshold for second&quot; +</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			     <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;
+			consecutive review period. Installment adjusted to 1,200 credits
+			per cycle.&quot; +</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			     <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;
+			Debt reduction schedule remains on track. &mdash; UBC Automated
+			Systems&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisMsg:
+			&quot;Second adjustment. They recalibrate every time you look
+			stable. George said it would happen.&quot;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">},</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">{</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">tier:
+			3, cycle: 18, amount: 1500,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">bankMsg:
+			&quot;[BANK] Account VRN-001. Final tier adjustment per contract
+			Schedule C.&quot; +</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			     <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;
+			Installment: 1,500 credits per cycle. At current trajectory, loan
+			resolution&quot; +</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			     <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;
+			within 3-4 payment cycles. UBC notes improved operational
+			efficiency since&quot; +</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			     <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;
+			the station changed hands. &mdash; UBC Automated Systems&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisMsg:
+			&quot;Final tier. 1,500 credits a week. You are close enough that
+			they want it&quot; +</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			     <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;
+			faster. That is either good news or bad news depending on the
+			week.&quot;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			INSTALLMENT_DUE_POOL = [</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;Installment
+			due. {AMT} credits. Seven days.&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;Weekly
+			installment: {AMT} cr. Clock is running.&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;Bank
+			cycle complete. Next installment: {AMT} cr in 7 days.&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;Payment
+			window reset. {AMT} cr due in 7 days.&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;{AMT}
+			cr due. Debt at {DEBT} cr.&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			&#9472;&#9472; END PAYMENT ESCALATION SCRIPTS
+			&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>WIRE
+INTO advanceDay()</B></FONT></FONT></FONT></P>
+<TABLE WIDTH=648 BORDER=1 BORDERCOLOR="#1a3a1a" CELLPADDING=7 CELLSPACING=0>
+	<COL WIDTH=632>
+	<TR>
+		<TD WIDTH=632 VALIGN=TOP BGCOLOR="#010901">
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Working
+			in index.html, advanceDay() function.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">1.
+			In the checkPaymentDue block, find where payment is processed and
+			the</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">daysUntilPayment
+			resets. After the reset, add:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			Increment payment cycle counter and check escalations</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">s.paymentCycle
+			= (s.paymentCycle || 0) + 1;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">checkPaymentEscalation();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">2.
+			ADD checkPaymentEscalation() function:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">function
+			checkPaymentEscalation() {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			s = gameState.state;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(!s.escalationFired) s.escalationFired = { tier1: false, tier2:
+			false, tier3: false };</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">PAYMENT_ESCALATION_EVENTS.forEach(function(event)
+			{</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			tierKey = &quot;tier&quot; + event.tier;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(s.paymentCycle &gt;= event.cycle &amp;&amp;
+			!s.escalationFired[tierKey]) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">s.escalationFired[tierKey]
+			= true;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">s.currentInstallment
+			= event.amount;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">gameState._save();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			Show bank message then OTIS response</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">appendHardcodedComm(event.bankMsg);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			dot = document.getElementById(&quot;comms-dot-bank&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(dot) dot.className = &quot;comms-dot dot-on&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">setTimeout(function()
+			{</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			          <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role: &quot;otis&quot;, text: event.otisMsg });</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			          <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			          <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(window.OtisTTS) OtisTTS.speak(event.otisMsg);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">},
+			3000);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">});</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">3.
+			UPDATE the payment-due OTIS message to use INSTALLMENT_DUE_POOL:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Find:
+			appendOTIS(&quot;Payment due. 650 credits. Make payment when
+			ready.&quot;, &quot;PAYMENT&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">OR
+			any variant that says &quot;Payment due&quot;.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Replace
+			ALL such messages with:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			instMsg = INSTALLMENT_DUE_POOL[Math.floor(Math.random() *
+			INSTALLMENT_DUE_POOL.length)]</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">.replace(&quot;{AMT}&quot;,
+			(s.currentInstallment || 850).toLocaleString())</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">.replace(&quot;{DEBT}&quot;,
+			(s.debt || 0).toLocaleString());</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role: &quot;otis&quot;, text: instMsg }); renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(window.OtisTTS) OtisTTS.speak(instMsg);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">4.
+			UPDATE handleMakePayment() to deduct currentInstallment not
+			hardcoded 650:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Replace
+			every reference to 650 in handleMakePayment() with:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			installment = gameState.state.currentInstallment || 850;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Then
+			use installment instead of 650.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">5.
+			UPDATE the missed payment logic to use currentInstallment
+			similarly.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Find:
+			s.outstandingDebt = (s.outstandingDebt || 0) + 650;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Replace:
+			s.outstandingDebt = (s.outstandingDebt || 0) +
+			(s.currentInstallment || 850);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">DONE.
+			Push. Verify: new game shows 850 cr due in 7 days.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Debug
+			+WEEK 5 times. Verify escalation bank message fires at cycle 5.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Verify
+			OTIS responds 3 seconds after bank message.</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>UPDATE
+PAYMENT DISPLAY LANGUAGE</B></FONT></FONT></FONT></P>
+<TABLE WIDTH=648 BORDER=1 BORDERCOLOR="#1a3a1a" CELLPADDING=7 CELLSPACING=0>
+	<COL WIDTH=632>
+	<TR>
+		<TD WIDTH=632 VALIGN=TOP BGCOLOR="#010901">
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Working
+			in index.html &mdash; fix all &quot;PAYMENT DUE&quot; display text
+			to say &quot;INSTALLMENT&quot;.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">1.
+			Find in COMMS modal HTML:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;ledger-row&quot;&gt;PAYMENT DUE: 650 cr in &lt;span
+			id=&quot;ledger-days&quot;&gt;28&lt;/span&gt;d&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Replace
+			with:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;ledger-row&quot;&gt;LOAN BALANCE: &lt;span
+			id=&quot;ledger-debt-2&quot;&gt;25,000 cr&lt;/span&gt;&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;ledger-row&quot;&gt;NEXT INSTALLMENT: &lt;span
+			id=&quot;ledger-installment&quot;&gt;850 cr&lt;/span&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">in
+			&lt;span id=&quot;ledger-days&quot;&gt;7&lt;/span&gt;d&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">2.
+			Add ledger-installment update to gameState._updateUI():</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			instEl = document.getElementById(&quot;ledger-installment&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(instEl) instEl.textContent = (s.currentInstallment ||
+			850).toLocaleString() + &quot; cr&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">3.
+			Update hdr-payment display in _updateUI():</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Find:
+			payEl.textContent = &quot;PAY: &quot; + dup + &quot;d&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Replace:
+			payEl.textContent = &quot;INST: &quot; +
+			(s.currentInstallment||850) + &quot;cr/&quot; + dup + &quot;d&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">4.
+			Find any string &quot;Payment due&quot; in OTIS messages and
+			change to &quot;Installment due&quot;.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Find
+			any string &quot;Payment missed&quot; and keep as-is (missed
+			installment = missed payment).</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Find
+			any string &quot;Make payment&quot; in button labels &mdash;
+			change to &quot;MAKE INSTALLMENT&quot;.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">DONE.
+			Push. Confirm header shows: &quot;INST: 850cr/7d&quot; on new
+			game.</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-top: 0.14in; margin-bottom: 0.14in; border-top: none; border-bottom: 1px solid #1a2a1a; border-left: none; border-right: none; padding: 0in">
+<BR><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.06in; border-top: 1px solid #e94560; border-bottom: 1px solid #333333; border-left: none; border-right: none; padding: 0in; page-break-before: always">
+<FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=4><B>STEP
+04  </B></FONT></FONT></FONT><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=3><B>BIN
+SYSTEM &mdash; DECLARATION BUTTONS AND HTML</B></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.11in"><FONT COLOR="#445544"><FONT FACE="Arial, serif"><FONT SIZE=2 STYLE="font-size: 9pt"><SPAN STYLE="font-weight: normal">Replace
+the current 5-button declaration row (SELL OTIS / RESERVE / NO
+RESERVE / KEEP / SCRAP) with 5 bin-routing buttons. The player
+consciously chooses where each item goes.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>DECLARATION
+BUTTON REDESIGN</B></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=2 STYLE="font-size: 9pt"><SPAN STYLE="font-weight: normal">The
+new buttons map to physical destinations, not abstract prices. This
+is the Papers Please sorting feeling.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<TABLE WIDTH=613 BORDER=1 BORDERCOLOR="#1a3a1a" CELLPADDING=7 CELLSPACING=0>
+	<COL WIDTH=132>
+	<COL WIDTH=133>
+	<COL WIDTH=93>
+	<COL WIDTH=198>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#1a1a2a">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>NEW
+			BUTTON</B></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=133 BGCOLOR="#1a1a2a">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>REPLACES</B></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=93 BGCOLOR="#1a1a2a">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>WHO
+			CAN USE IT</B></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=198 BGCOLOR="#1a1a2a">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>WHAT
+			HAPPENS</B></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">TO
+			MAY BIN</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=133 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">SELL
+			&mdash; OTIS PRICE for Civilian/Settlement</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=93 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Civilian
+			or Settlement items only</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=198 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Item
+			goes to mayBin array. No credit yet.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">TO
+			BROKER BIN</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=133 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">SELL
+			&mdash; OTIS PRICE for Industrial/Vessel</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=93 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Industrial
+			or Vessel items</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=198 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Item
+			goes to brokerBin array. No credit yet.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">TO
+			SVEN BIN</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=133 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">SELL
+			&mdash; RESERVE (risky fast route)</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=93 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Rare
+			or Anomalous only</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=198 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Item
+			goes to svenBin. Sven pays when bin hits 2 items.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">KEEP</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=133 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">KEEP</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=93 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Any
+			item</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=198 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Unchanged.
+			Goes to keepLog.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=132 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">SCRAP</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=133 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">SCRAP</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=93 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Any
+			item</SPAN></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=198 BGCOLOR="#0c0c18">
+			<P STYLE="margin-top: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Unchanged.
+			Adds to scrapFill.</SPAN></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.05in; margin-bottom: 0.05in">
+<FONT COLOR="#445544"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">NOTE:
+RESERVE at lower price option is removed. The broker bin with
+partial-ship is the new reserve mechanic. Players who want to hold
+for better price keep the item or put it in broker bin and wait.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>AGENT
+PROMPT &mdash; HTML CHANGES</B></FONT></FONT></FONT></P>
+<TABLE WIDTH=648 BORDER=1 BORDERCOLOR="#1a3a1a" CELLPADDING=7 CELLSPACING=0>
+	<COL WIDTH=632>
+	<TR>
+		<TD WIDTH=632 VALIGN=TOP BGCOLOR="#010901">
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Working
+			in index.html, item-declaration div (id=&quot;item-declaration&quot;).</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">FIND
+			this block:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;item-actions&quot; id=&quot;item-declaration&quot;
+			style=&quot;display:none&quot;&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;button
+			onclick=&quot;handleDeclare('OTIS')&quot;&gt;SELL &mdash; OTIS
+			PRICE&lt;/button&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;button
+			id=&quot;btn-reserve&quot; onclick=&quot;handleDeclare('RESERVE')&quot;
+			disabled&gt;SELL &mdash; RESERVE&lt;/button&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;button
+			class=&quot;btn-warn&quot;
+			onclick=&quot;handleDeclare('NORESERVE')&quot;&gt;SELL &mdash; NO
+			RESERVE&lt;/button&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;button
+			onclick=&quot;handleDeclare('KEEP')&quot;&gt;KEEP&lt;/button&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;button
+			class=&quot;btn-warn&quot;
+			onclick=&quot;handleDeclare('SCRAP')&quot;&gt;SCRAP&lt;/button&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">REPLACE
+			WITH:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;item-actions&quot; id=&quot;item-declaration&quot;
+			style=&quot;display:none&quot;&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;button
+			id=&quot;btn-to-may&quot; onclick=&quot;handleDeclare('MAY_BIN')&quot;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">title=&quot;Civilian
+			and Settlement items only&quot;&gt;TO MAY BIN&lt;/button&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;button
+			id=&quot;btn-to-broker&quot; onclick=&quot;handleDeclare('BROKER_BIN')&quot;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">title=&quot;Industrial
+			and Vessel items&quot;&gt;TO BROKER BIN&lt;/button&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;button
+			id=&quot;btn-to-sven&quot; onclick=&quot;handleDeclare('SVEN_BIN')&quot;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">title=&quot;Rare
+			and Anomalous only &mdash; Sven pays 65%&quot;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">style=&quot;color:var(--text-warn);border-color:#3a2a00&quot;&gt;TO
+			SVEN BIN&lt;/button&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;button
+			onclick=&quot;handleDeclare('KEEP')&quot;&gt;KEEP&lt;/button&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;button
+			class=&quot;btn-warn&quot;
+			onclick=&quot;handleDeclare('SCRAP')&quot;&gt;SCRAP&lt;/button&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">NOTE:
+			btn-reserve is removed. The consulted-worth check that enabled
+			btn-reserve</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">should
+			now enable btn-to-sven instead (only if item is Rare or
+			Anomalous).</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-top: 0.14in; margin-bottom: 0.14in; border-top: none; border-bottom: 1px solid #1a2a1a; border-left: none; border-right: none; padding: 0in">
+<BR><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.06in; border-top: 1px solid #e94560; border-bottom: 1px solid #333333; border-left: none; border-right: none; padding: 0in; page-break-before: always">
+<FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=4><B>STEP
+05  </B></FONT></FONT></FONT><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=3><B>BIN
+SYSTEM &mdash; handleDeclare() AND BIN LOGIC</B></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.11in"><FONT COLOR="#445544"><FONT FACE="Arial, serif"><FONT SIZE=2 STYLE="font-size: 9pt"><SPAN STYLE="font-weight: normal">Rewrite
+the declaration handler for the three new bin routes. Add bin
+rendering in the comms modal. Wire bin capacity and partial-ship
+logic.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>AGENT
+PROMPT &mdash; handleDeclare() REWRITE</B></FONT></FONT></FONT></P>
+<TABLE WIDTH=648 BORDER=1 BORDERCOLOR="#1a3a1a" CELLPADDING=7 CELLSPACING=0>
+	<COL WIDTH=632>
+	<TR>
+		<TD WIDTH=632 VALIGN=TOP BGCOLOR="#010901">
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Working
+			in index.html, handleDeclare() function.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">REPLACE
+			the &quot;OTIS&quot; and &quot;RESERVE&quot; and &quot;NORESERVE&quot;
+			method branches</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">with
+			three new branches: MAY_BIN, BROKER_BIN, SVEN_BIN.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">ADD
+			THESE THREE BRANCHES (keep KEEP and SCRAP branches unchanged):</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}
+			else if (method === &quot;MAY_BIN&quot;) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			Civilian or Settlement items only</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			allowed = (item.category === &quot;Civilian&quot; || item.category
+			=== &quot;Settlement&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(!allowed) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			wrongMsg = item.name.substring(0,22) + &quot; &mdash; May only
+			takes Civilian and Settlement.&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role:&quot;otis&quot;, text: wrongMsg }); renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">return;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			mayBin = gameState.state.mayBin || [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(mayBin.length &gt;= 12) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			fullMsg = &quot;May bin at capacity. Ship before sorting more.&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role:&quot;otis&quot;, text: fullMsg }); renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">return;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">mayBin.push({
+			name: item.name, category: item.category, rarity: item.rarity,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">condition:
+			item.condition, otisValue: item.otisValue, addedDay:
+			gameState.state.day });</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">gameState.state.mayBin
+			= mayBin;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">gameState._save();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">trackOTISLearning(&quot;SELL&quot;,
+			item);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">clearItemQueue();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">renderBinPanel();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			binMsg = item.name.substring(0,22) + &quot; to May bin. &quot; +
+			mayBin.length + &quot;/12.&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role:&quot;otis&quot;, text: binMsg }); renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(window.OtisTTS) OtisTTS.speak(binMsg);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}
+			else if (method === &quot;BROKER_BIN&quot;) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			Industrial or Vessel items (Unknown/Anomalous go here too if not
+			Sven)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			brokerBin = gameState.state.brokerBin || [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(brokerBin.length &gt;= 10) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			bfMsg = &quot;Broker bin at capacity. Ship before sorting more.&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role:&quot;otis&quot;, text: bfMsg }); renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">return;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">brokerBin.push({
+			name: item.name, category: item.category, rarity: item.rarity,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">condition:
+			item.condition, otisValue: item.otisValue, addedDay:
+			gameState.state.day,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">eeMultiplier:
+			item.easterEgg ? 3 : 1 });</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">gameState.state.brokerBin
+			= brokerBin;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">gameState._save();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">trackOTISLearning(&quot;SELL&quot;,
+			item);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">clearItemQueue();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">renderBinPanel();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			bbMsg = item.name.substring(0,22) + &quot; to broker. &quot; +
+			brokerBin.length + &quot;/10.&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role:&quot;otis&quot;, text: bbMsg }); renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(window.OtisTTS) OtisTTS.speak(bbMsg);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}
+			else if (method === &quot;SVEN_BIN&quot;) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			allowedSven = (item.rarity === &quot;Rare&quot; || item.rarity ===
+			&quot;Anomalous&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(!allowedSven) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			swMsg = &quot;Sven only takes Rare and Anomalous. This is &quot; +
+			item.rarity + &quot;.&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role:&quot;otis&quot;, text: swMsg }); renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">return;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			svenBin = gameState.state.svenBin || [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(svenBin.length &gt;= 3) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			sfMsg = &quot;Sven bin full. He pays when it hits 2 &mdash; it
+			should have shipped.&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role:&quot;otis&quot;, text: sfMsg }); renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">return;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			svenValue = Math.floor(getEffectiveValue(item) * 0.65);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(item.rarity === &quot;Anomalous&quot;) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">svenValue
+			= Math.floor((Math.random() * (TIMING.ANOMALOUS_RESERVE_MAX -
+			TIMING.ANOMALOUS_RESERVE_MIN) + TIMING.ANOMALOUS_RESERVE_MIN) *
+			0.65);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">svenBin.push({
+			name: item.name, category: item.category, rarity: item.rarity,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">condition:
+			item.condition, otisValue: item.otisValue, svenValue: svenValue,
+			addedDay: gameState.state.day });</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">gameState.state.svenBin
+			= svenBin;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">gameState._save();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">trackOTISLearning(&quot;SELL&quot;,
+			item);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">clearItemQueue();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">renderBinPanel();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			svMsg = item.name.substring(0,22) + &quot; to Sven. His offer: &quot;
+			+ svenValue + &quot; cr. Bin: &quot; + svenBin.length + &quot;/3.&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role:&quot;otis&quot;, text: svMsg }); renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(window.OtisTTS) OtisTTS.speak(svMsg);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			Auto-pay when bin reaches 2 items</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(svenBin.length &gt;= 2) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">setTimeout(handleSvenBinShip,
+			1500);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>AGENT
+PROMPT &mdash; BIN SHIPPING FUNCTIONS</B></FONT></FONT></FONT></P>
+<TABLE WIDTH=648 BORDER=1 BORDERCOLOR="#1a3a1a" CELLPADDING=7 CELLSPACING=0>
+	<COL WIDTH=632>
+	<TR>
+		<TD WIDTH=632 VALIGN=TOP BGCOLOR="#010901">
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Working
+			in index.html. Add these functions near handleDispatchMay().</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			Ship the May bin &mdash; called from DISPATCH TO MAY button
+			(alongside scrap)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">function
+			shipMayBin() {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			s = gameState.state;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			bin = s.mayBin || [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(!bin.length) return;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			total = bin.reduce(function(sum, item) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">return
+			sum + Math.floor(getEffectiveValue(item));</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">},
+			0);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">s.credits
+			+= total;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">s.mayBin
+			= [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">gameState._save();
+			gameState._updateUI();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">renderBinPanel();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			mMsg = &quot;May bin shipped. &quot; + bin.length + &quot; items.
+			+&quot; + total + &quot; cr.&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role:&quot;otis&quot;, text: mMsg }); renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(window.OtisTTS) OtisTTS.speak(mMsg);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			Ship the broker bin &mdash; called by SHIP BROKER BIN button with
+			fill-rate discount</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">function
+			handleBrokerBinShip() {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			s = gameState.state;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			bin = s.brokerBin || [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(!bin.length) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role:&quot;otis&quot;, text: &quot;Broker bin is empty.&quot; });
+			renderOTIS(); return;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			fillPct = bin.length / 10;  // 10 = broker bin capacity</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			mult = fillPct &gt;= 1.0 ? 1.0 : fillPct &gt;= 0.75 ? 0.88 : 0.75;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			total = bin.reduce(function(sum, item) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">return
+			sum + Math.floor(getEffectiveValue(item) * (item.eeMultiplier||1)
+			* mult);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">},
+			0);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">s.credits
+			+= total;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">s.brokerBin
+			= [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">gameState._save();
+			gameState._updateUI();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">renderBinPanel();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			pctStr = Math.round(fillPct * 100) + &quot;% fill&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			multStr = mult &lt; 1.0 ? &quot; (&quot; + Math.round(mult*100) +
+			&quot;% value)&quot; : &quot;&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			bMsg = &quot;Broker bin shipped. &quot; + bin.length + &quot;
+			items. &quot; + pctStr + multStr + &quot;. +&quot; + total + &quot;
+			cr.&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role:&quot;otis&quot;, text: bMsg }); renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(window.OtisTTS) OtisTTS.speak(bMsg);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			Sven auto-pays when his bin hits 2 items</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">function
+			handleSvenBinShip() {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			s = gameState.state;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			bin = s.svenBin || [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(bin.length &lt; 2) return;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			total = bin.reduce(function(sum, item) { return sum +
+			(item.svenValue || 0); }, 0);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">s.credits
+			+= total;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">s.svenBin
+			= [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">gameState._save();
+			gameState._updateUI();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">renderBinPanel();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			svMsg = &quot;[SVEN] Items received. Credits transferred. &quot; +
+			total + &quot; cr. &mdash; Digut&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role:&quot;otis&quot;, text: svMsg }); renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			dot = document.getElementById(&quot;comms-dot-sven&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(dot) dot.className = &quot;comms-dot dot-on&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(window.OtisTTS) OtisTTS.speak(svMsg);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-top: 0.14in; margin-bottom: 0.14in; border-top: none; border-bottom: 1px solid #1a2a1a; border-left: none; border-right: none; padding: 0in">
+<BR><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.06in; border-top: 1px solid #e94560; border-bottom: 1px solid #333333; border-left: none; border-right: none; padding: 0in; page-break-before: always">
+<FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=4><B>STEP
+06  </B></FONT></FONT></FONT><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=3><B>BIN
+PANEL UI &mdash; DISPLAY BINS IN COMMS MODAL</B></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.11in"><FONT COLOR="#445544"><FONT FACE="Arial, serif"><FONT SIZE=2 STYLE="font-size: 9pt"><SPAN STYLE="font-weight: normal">Add
+a BIN STATUS section to the comms modal showing all three bins with
+item counts, fill bars, and ship buttons. This replaces the old
+PENDING SALES section.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>AGENT
+PROMPT &mdash; HTML CHANGES TO COMMS MODAL</B></FONT></FONT></FONT></P>
+<TABLE WIDTH=648 BORDER=1 BORDERCOLOR="#1a3a1a" CELLPADDING=7 CELLSPACING=0>
+	<COL WIDTH=632>
+	<TR>
+		<TD WIDTH=632 VALIGN=TOP BGCOLOR="#010901">
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Working
+			in index.html, modal-comms div.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">FIND
+			this section in modal-comms:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;modal-section&quot;&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;modal-label&quot;&gt;PENDING SALES&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			id=&quot;shipping-queue-list&quot;&gt;&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;p
+			class=&quot;zone-hint&quot; id=&quot;shipping-queue-empty&quot;&gt;No
+			pending sales.&lt;/p&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">REPLACE
+			WITH:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;modal-section&quot;&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;modal-label&quot;&gt;SHIPPING BINS&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;!--
+			MAY BIN --&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			style=&quot;margin-bottom:0.5rem&quot;&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;modal-label&quot; style=&quot;font-size:11px&quot;&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">MAY
+			BIN &mdash; Civilian / Settlement</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;span
+			id=&quot;may-bin-count&quot;
+			style=&quot;color:var(--text-primary)&quot;&gt;0/12&lt;/span&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;scrap-bar-track&quot; style=&quot;height:4px&quot;&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			id=&quot;may-bin-bar&quot; class=&quot;scrap-bar-fill&quot;
+			style=&quot;width:0%;height:4px&quot;&gt;&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			id=&quot;may-bin-list&quot;
+			style=&quot;font-size:11px;color:var(--text-dim);max-height:60px;overflow-y:auto&quot;&gt;&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;!--
+			BROKER BIN --&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			style=&quot;margin-bottom:0.5rem&quot;&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;modal-label&quot; style=&quot;font-size:11px&quot;&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">BROKER
+			BIN &mdash; Industrial / Vessel</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;span
+			id=&quot;broker-bin-count&quot;
+			style=&quot;color:var(--text-primary)&quot;&gt;0/10&lt;/span&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;span
+			id=&quot;broker-bin-rate&quot;
+			style=&quot;font-size:10px;color:var(--text-warn)&quot;&gt;&lt;/span&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;scrap-bar-track&quot; style=&quot;height:4px&quot;&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			id=&quot;broker-bin-bar&quot; class=&quot;scrap-bar-fill&quot;
+			style=&quot;width:0%;height:4px&quot;&gt;&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			id=&quot;broker-bin-list&quot;
+			style=&quot;font-size:11px;color:var(--text-dim);max-height:60px;overflow-y:auto&quot;&gt;&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;modal-row&quot;&gt;&lt;button
+			onclick=&quot;handleBrokerBinShip()&quot;&gt;SHIP BROKER
+			BIN&lt;/button&gt;&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;!--
+			SVEN BIN --&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			style=&quot;margin-bottom:0.5rem&quot;&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			class=&quot;modal-label&quot;
+			style=&quot;font-size:11px;color:var(--text-warn)&quot;&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">SVEN
+			BIN &mdash; Rare / Anomalous (65% value &mdash; auto-ships at 2)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;span
+			id=&quot;sven-bin-count&quot;
+			style=&quot;color:var(--text-warn)&quot;&gt;0/3&lt;/span&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;div
+			id=&quot;sven-bin-list&quot;
+			style=&quot;font-size:11px;color:var(--text-warn);max-height:40px;overflow-y:auto&quot;&gt;&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&lt;/div&gt;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">ALSO:
+			Update the DISPATCH TO MAY button (and handleDispatchMay) to also</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">call
+			shipMayBin() so the May bin ships alongside the scrap:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">function
+			handleDispatchMay() {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			... existing scrap dispatch code ...</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">shipMayBin();
+			 // ADD THIS LINE at the end</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">ADD
+			renderBinPanel() function:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">function
+			renderBinPanel() {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			s = gameState.state;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			may = s.mayBin || [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			broker = s.brokerBin || [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			sven = s.svenBin || [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			May bin</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">setEl(&quot;may-bin-count&quot;,
+			may.length + &quot;/12&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			mayBar = document.getElementById(&quot;may-bin-bar&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(mayBar) mayBar.style.width = Math.round(may.length/12*100) + &quot;%&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			mayList = document.getElementById(&quot;may-bin-list&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(mayList) mayList.innerHTML = may.map(function(i){</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">return
+			&quot;&lt;div&gt;&quot; + escapeHtml(i.name.substring(0,28)) +
+			&quot;&lt;/div&gt;&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}).join(&quot;&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			Broker bin</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">setEl(&quot;broker-bin-count&quot;,
+			broker.length + &quot;/10&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			brokerBar = document.getElementById(&quot;broker-bin-bar&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(brokerBar) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			bPct = Math.round(broker.length/10*100);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">brokerBar.style.width
+			= bPct + &quot;%&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">brokerBar.className
+			= &quot;scrap-bar-fill&quot; +</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">(bPct
+			&gt;= 100 ? &quot;&quot; : bPct &gt;= 75 ? &quot; scrap-amber&quot;
+			: &quot; scrap-red&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			rateEl = document.getElementById(&quot;broker-bin-rate&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(rateEl) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			fp = broker.length / 10;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">rateEl.textContent
+			= fp &gt;= 1.0 ? &quot; 100%&quot; : fp &gt;= 0.75 ? &quot; 88%&quot;
+			: fp &gt; 0 ? &quot; 75%&quot; : &quot;&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			brokerList = document.getElementById(&quot;broker-bin-list&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(brokerList) brokerList.innerHTML = broker.map(function(i){</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">return
+			&quot;&lt;div&gt;&quot; + escapeHtml(i.name.substring(0,28)) + &quot;
+			&mdash; &quot; + getEffectiveValue(i) + &quot; cr&lt;/div&gt;&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}).join(&quot;&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			Sven bin</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">setEl(&quot;sven-bin-count&quot;,
+			sven.length + &quot;/3&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			svenList = document.getElementById(&quot;sven-bin-list&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(svenList) svenList.innerHTML = sven.map(function(i){</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">return
+			&quot;&lt;div&gt;&quot; + escapeHtml(i.name.substring(0,28)) + &quot;
+			&mdash; Sven: &quot; + (i.svenValue||0) + &quot; cr&lt;/div&gt;&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}).join(&quot;&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">updateModuleLights();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Call
+			renderBinPanel() from gameState._updateUI() at the end.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Call
+			renderBinPanel() on DOMContentLoaded.</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-top: 0.14in; margin-bottom: 0.14in; border-top: none; border-bottom: 1px solid #1a2a1a; border-left: none; border-right: none; padding: 0in">
+<BR><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.06in; border-top: 1px solid #e94560; border-bottom: 1px solid #333333; border-left: none; border-right: none; padding: 0in; page-break-before: always">
+<FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=4><B>STEP
+07  </B></FONT></FONT></FONT><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=3><B>SVEN
+INTERFERENCE &mdash; STEAL FROM BROKER BIN</B></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.11in"><FONT COLOR="#445544"><FONT FACE="Arial, serif"><FONT SIZE=2 STYLE="font-size: 9pt"><SPAN STYLE="font-weight: normal">When
+Sven interference fires, instead of (or in addition to) degrading a
+bot, Sven takes one item from the broker bin at his price with no
+warning. This makes ignoring Sven genuinely costly.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>AGENT
+PROMPT</B></FONT></FONT></FONT></P>
+<TABLE WIDTH=648 BORDER=1 BORDERCOLOR="#1a3a1a" CELLPADDING=7 CELLSPACING=0>
+	<COL WIDTH=632>
+	<TR>
+		<TD WIDTH=632 VALIGN=TOP BGCOLOR="#010901">
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Working
+			in index.html, maybeSvenInterference() function.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Find
+			maybeSvenInterference(). It currently:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">-
+			Degrades a bot</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">-
+			Replaces a manifest item</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">-
+			Shows an interference message</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">ADD
+			a broker bin steal BEFORE the existing bot degradation code:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">function
+			maybeSvenInterference() {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			s = gameState.state;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			pct = s.svenInterferencePct || 20;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(Math.random() * 100 &gt; pct) return;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">s.recentBotConflict
+			= true;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			--- NEW: STEAL FROM BROKER BIN ---</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			broker = s.brokerBin || [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(broker.length &gt; 0) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			Sven takes a random item from the broker bin</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			stealIdx = Math.floor(Math.random() * broker.length);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			stolen = broker.splice(stealIdx, 1)[0];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			svenPaid = Math.floor(getEffectiveValue(stolen) * 0.65);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">s.credits
+			+= svenPaid;  // He does pay &mdash; just less than market</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">s.brokerBin
+			= broker;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">s.svenStolenCount
+			= (s.svenStolenCount || 0) + 1;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">gameState._save();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">renderBinPanel();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			stealMsg = &quot;[SVEN INTERFERENCE] &quot; +
+			stolen.name.substring(0,22)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			     <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">+
+			&quot; removed from broker bin. Credited at Sven rate: &quot; +
+			svenPaid + &quot; cr.&quot;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			     <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">+
+			&quot; Interference probability: &quot; + pct + &quot;%.&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">otisLines.push({
+			role:&quot;otis&quot;, text: stealMsg }); renderOTIS();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			dot = document.getElementById(&quot;comms-dot-sven&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(dot) dot.className = &quot;comms-dot dot-amber&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">setLight(&quot;light-comms&quot;,
+			&quot;light-amber&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			svenEl = document.getElementById(&quot;sys-sven&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(svenEl) { svenEl.textContent = &quot;INTERFERENCE&quot;;
+			svenEl.className = &quot;status-warn&quot;; }</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			   <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">return;
+			 // Steal replaces the bot degradation this interference event</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			--- EXISTING: BOT DEGRADATION (only if broker bin was empty) ---</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			bots = s.bots || [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">//
+			... keep all existing bot degradation code here ...</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">This
+			design means:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">-
+			If broker bin has items: Sven steals one (player loses value but
+			gets some credit)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">-
+			If broker bin is empty: existing bot degradation fires</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">-
+			Running a full broker bin when Sven interference is high = risky</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">-
+			Answering Sven and reducing interference % = directly protects
+			your bin</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">DONE.
+			Push. Test: put 3 items in broker bin, trigger debug FORCE DROP</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">multiple
+			times to fire maybeSvenInterference. Verify one item gets stolen</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">and
+			partial credit appears. Verify bot degradation does NOT also fire</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">when
+			a steal occurs.</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-top: 0.14in; margin-bottom: 0.14in; border-top: none; border-bottom: 1px solid #1a2a1a; border-left: none; border-right: none; padding: 0in">
+<BR><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.06in; border-top: 1px solid #e94560; border-bottom: 1px solid #333333; border-left: none; border-right: none; padding: 0in; page-break-before: always">
+<FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=4><B>STEP
+08  </B></FONT></FONT></FONT><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=3><B>DECLARATION
+BUTTON LOGIC &mdash; CATEGORY ENFORCEMENT AND UI</B></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.11in"><FONT COLOR="#445544"><FONT FACE="Arial, serif"><FONT SIZE=2 STYLE="font-size: 9pt"><SPAN STYLE="font-weight: normal">Wire
+renderItemQueue() to enable/disable bin buttons based on item
+category. Also update the ARM ticker and module lights to reflect bin
+fill state.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>AGENT
+PROMPT</B></FONT></FONT></FONT></P>
+<TABLE WIDTH=648 BORDER=1 BORDERCOLOR="#1a3a1a" CELLPADDING=7 CELLSPACING=0>
+	<COL WIDTH=632>
+	<TR>
+		<TD WIDTH=632 VALIGN=TOP BGCOLOR="#010901">
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Working
+			in index.html.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">PART
+			A &mdash; Button enable/disable in renderItemQueue().</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">After
+			the existing cc button handling in renderItemQueue(),</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">add
+			bin-button state management:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(currentItem) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			cat = currentItem.rarity;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			itemCat = currentItem.category;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			mayBtn    = document.getElementById(&quot;btn-to-may&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			brokerBtn = document.getElementById(&quot;btn-to-broker&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			svenBtn   = document.getElementById(&quot;btn-to-sven&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			s = gameState.state;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(mayBtn) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			mayOk = (itemCat === &quot;Civilian&quot; || itemCat ===
+			&quot;Settlement&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">mayBtn.disabled
+			= !mayOk || (s.mayBin||[]).length &gt;= 12;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">mayBtn.title
+			= mayOk ? &quot;May bin: &quot; + (s.mayBin||[]).length + &quot;/12&quot;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">:
+			&quot;May only takes Civilian and Settlement&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(brokerBtn) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">brokerBtn.disabled
+			= (s.brokerBin||[]).length &gt;= 10;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">brokerBtn.title
+			= &quot;Broker bin: &quot; + (s.brokerBin||[]).length + &quot;/10&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(svenBtn) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			svenOk = (cat === &quot;Rare&quot; || cat === &quot;Anomalous&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">svenBtn.disabled
+			= !svenOk || (s.svenBin||[]).length &gt;= 3;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">svenBtn.title
+			= svenOk ? &quot;Sven bin: &quot; + (s.svenBin||[]).length + &quot;/3
+			&mdash; auto-ships at 2&quot;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			        <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">:
+			&quot;Sven only takes Rare and Anomalous&quot;;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">PART
+			B &mdash; Update updateModuleLights() to include bin fill state.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Find:
+			setLight(&quot;light-comms&quot;, ...)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Update
+			the condition to also check bin fill:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			brokerFull = (s.brokerBin||[]).length &gt;= 8;  // amber at 80%</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			mayFull = (s.mayBin||[]).length &gt;= 10;</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">setLight(&quot;light-comms&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">(arrears
+			&gt; 0 || dup &lt;= 3 || brokerFull) ? &quot;light-red&quot; :</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">(dup
+			&lt;= 7 || scrap &gt;= 75 || mayFull) ? &quot;light-amber&quot; :
+			&quot;&quot;);</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">PART
+			C &mdash; Update getNotificationTicker() to include bins.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">In
+			the ticker function, add new message types:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			broker = s.brokerBin || [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">var
+			may = s.mayBin || [];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(broker.length &gt;= 8)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">msgs.push({
+			text: &quot;BROKER\nBIN &quot; + broker.length + &quot;/10&quot;,
+			color: &quot;var(--ind-amber)&quot; });</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(broker.length &gt;= 10)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">msgs.push({
+			text: &quot;BROKER\nFULL&quot;, color: &quot;var(--ind-red)&quot;
+			});</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(may.length &gt;= 10)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">msgs.push({
+			text: &quot;MAY BIN\n&quot; + may.length + &quot;/12&quot;, color:
+			&quot;var(--ind-amber)&quot; });</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			(s.svenBin &amp;&amp; s.svenBin.length &gt; 0)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">msgs.push({
+			text: &quot;SVEN BIN\n&quot; + s.svenBin.length + &quot;/3&quot;,
+			color: &quot;var(--text-warn)&quot; });</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">PART
+			D &mdash; Update arm-status OTIS side comments for bin state.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">In
+			fireOtisSideComment(), add bin-aware comments to the msgs arrays:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			((s.brokerBin||[]).length &gt;= 8) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">msgs
+			= [</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;Broker
+			bin at &quot; + s.brokerBin.length + &quot;. Ship now at 88% or
+			wait for full.&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;Eight
+			items. Two more and you get full value. Or ship now.&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;Broker
+			bin getting heavy. Payment is in &quot; + dup + &quot; days.&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">if
+			((s.mayBin||[]).length &gt;= 8) {</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">msgs
+			= [</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;May
+			bin has &quot; + s.mayBin.length + &quot; items. Dispatch
+			alongside scrap.&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			      <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">&quot;May
+			bin is ready whenever you are. She pays full.&quot;,</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			    <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">];</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">}</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">PART
+			E &mdash; State version bump is already done in Step 1.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">FINAL
+			CHECKS:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">Add
+			mayBin: [], brokerBin: [], svenBin: [] to stateManager._default()</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">(Already
+			done in Step 1 but verify they are present.)</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">In
+			DOMContentLoaded, add: renderBinPanel();</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><BR><BR>
+			</P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">DONE.
+			Push. Full test:</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">1.
+			New game, clear save.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">2.
+			Drop arrives. Sort items: Civilian -&gt; May bin, Industrial -&gt;
+			Broker.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">3.
+			Verify buttons disable correctly for wrong category.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">4.
+			Fill broker bin to 10. Verify SHIP BROKER BIN at 100% gives full
+			value.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">5.
+			Ship broker bin at 50% fill. Verify 75% value multiplier.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">6.
+			Put a Rare item in Sven bin. Verify OTIS shows his offer (65%).</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">7.
+			Add second Rare to Sven bin. Verify auto-ship fires after 1.5
+			seconds.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">8.
+			Dispatch scrap. Verify May bin also ships simultaneously.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">9.
+			Advance 5 weeks (+WEEK x5 in debug). Verify cycle 5 escalation
+			fires.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in; margin-bottom: 0.01in"><FONT COLOR="#55cc88">
+			 <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">10.
+			Verify bank message appears, then OTIS response 3 seconds later.</FONT></FONT></FONT></P>
+			<P STYLE="margin-top: 0.01in"><FONT COLOR="#55cc88">  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt">11.
+			Make installment payment. Verify header shows new 1,000 cr amount.</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-top: 0.14in; margin-bottom: 0.14in; border-top: none; border-bottom: 1px solid #1a2a1a; border-left: none; border-right: none; padding: 0in">
+<BR><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-top: 0.35in; margin-bottom: 0.14in; border-top: 1px solid #e94560; border-bottom: 1px solid #222233; border-left: none; border-right: none; padding: 0in; page-break-before: always">
+<FONT COLOR="#e94560"><FONT FACE="Courier New, serif"><FONT SIZE=4><B>FULL
+VERIFICATION CHECKLIST</B></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<P STYLE="margin-top: 0.03in; margin-bottom: 0.03in"><FONT COLOR="#a8a8b3"><FONT FACE="Arial, serif"><FONT SIZE=2 STYLE="font-size: 9pt"><SPAN STYLE="font-weight: normal">Run
+these tests after all 8 steps are deployed and verified individually.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>ECONOMY
+FEEL TEST</B></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">EXAMINE
+a Common item &mdash; OTIS estimate shows 30-132 cr range</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">EXAMINE
+an Uncommon &mdash; shows 156-390 cr range</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">EXAMINE
+a Rare &mdash; shows 437-1120 cr range</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Header
+shows INST: 850cr/7d on new game</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Ledger
+shows LOAN BALANCE and NEXT INSTALLMENT separately</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>BIN
+ROUTING TEST</B></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Civilian
+item: MAY BIN enabled, BROKER BIN enabled, SVEN BIN disabled</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Industrial
+item: MAY BIN disabled, BROKER BIN enabled, SVEN BIN disabled</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Vessel
+item: MAY BIN disabled, BROKER BIN enabled, SVEN BIN disabled</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Rare
+item: MAY BIN disabled, BROKER BIN enabled, SVEN BIN enabled</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Anomalous
+item: MAY BIN disabled, BROKER BIN enabled, SVEN BIN enabled</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Civilian
+item in settlement category: MAY BIN enabled correctly</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>BIN
+SHIPPING TEST</B></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Broker
+bin at 10/10: SHIP gives 100% value. Calculate manually and verify.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Broker
+bin at 7/10: SHIP gives 88% of value (broker-bin-rate shows &quot;88%&quot;)</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Broker
+bin at 5/10: SHIP gives 75% of value</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">May
+bin ships automatically when DISPATCH SCRAP is clicked</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Sven
+bin auto-ships exactly 1.5 seconds after second item is added</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Sven
+pays 65% of OTIS estimate. Verify: put in 560 cr Rare, Sven pays ~364
+cr.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>SVEN
+STEAL TEST</B></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Put
+3 items in broker bin. Force 5-6 drops (debug). Verify steal fires.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">OTIS
+reports the specific item stolen and credits paid.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Sven
+dot goes amber after steal. sys-sven shows INTERFERENCE.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Bot
+does NOT also degrade when steal fires.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Empty
+broker bin: force drops. Verify bot degradation fires instead of
+steal.</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<P STYLE="margin-top: 0.19in"><FONT COLOR="#f0f0f0"><FONT FACE="Courier New, serif"><FONT SIZE=2 STYLE="font-size: 10pt"><B>PAYMENT
+ESCALATION TEST</B></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">New
+game: header shows INST: 850cr/7d</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Debug
++WEEK x5: bank message fires, then OTIS responds 3s later with cycle
+5 text</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">After
+escalation: header shows INST: 1000cr/7d</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Debug
++WEEK x5 more: cycle 10 escalation fires</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Making
+payment deducts currentInstallment not hardcoded 650</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.25in; margin-top: 0.02in; margin-bottom: 0.02in">
+<FONT COLOR="#55cc88">&#10003;  <FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">Missed
+payment adds currentInstallment to arrears not 650</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-top: 0.05in; margin-bottom: 0.05in"><BR><BR>
+</P>
+<P STYLE="margin-top: 0.14in; margin-bottom: 0.03in"><FONT COLOR="#445544"><FONT FACE="Courier New, serif"><FONT SIZE=1 STYLE="font-size: 8pt"><SPAN STYLE="font-weight: normal">O.T.I.S.
+&mdash; Bins + Escalation &mdash; 8-Step Agent Guide</SPAN></FONT></FONT></FONT></P>
+</BODY>
+</HTML>
