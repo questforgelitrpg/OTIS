@@ -277,7 +277,6 @@
 </head>
 <body>
     <div id="crt-overlay" aria-hidden="true"></div>
-    <div id="bot-anim-overlay" style="display:none" aria-hidden="true"></div>
     <div id="fatigue-overlay" aria-hidden="true"></div>
     <div id="fatigue-noise" aria-hidden="true"></div>
     <div id="otis-float" aria-live="polite"></div>
@@ -1817,6 +1816,7 @@
         var BOT_FRAMES = [' [o_o]>', ' [^_^]>', ' [-_-]>', ' [*_*]>'];
         var CARRY_FRAMES = [' [o_o]>[=]', ' [^_^]>[#]', ' [-_-]>[~]'];
         var LABELS = ['BOT-1', 'BOT-2', 'UNIT-A', 'UNIT-B', 'DRONE'];
+        var ROW_SPACING_PCT = 20;
         function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
         function randInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
         function makeBotStr() {
@@ -1834,17 +1834,18 @@
         for (var r = 0; r < 5; r++) {
             var el = document.createElement('div');
             el.className = 'bot-row';
-            el.style.top = (r * 20 + randInt(1, 4)) + '%';
+            el.style.top = (r * ROW_SPACING_PCT + randInt(1, 4)) + '%';
             var dur = randInt(4, 8);
             el.style.animationDuration = dur + 's';
             el.style.animationDelay = (-randInt(0, dur)) + 's';
             el.textContent = makeBotStr();
             container.appendChild(el);
-            rows.push({ el: el, dur: dur });
+            rows.push({ el: el, dur: dur, timer: null });
         }
         rows.forEach(function(row) {
-            setInterval(function() { row.el.textContent = makeBotStr(); }, row.dur * 1000);
+            row.timer = setInterval(function() { row.el.textContent = makeBotStr(); }, row.dur * 1000);
         });
+        container._botTimers = rows.map(function(row) { return row.timer; });
     }());
 
     function updateBeltUI(status) {
