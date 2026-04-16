@@ -1258,7 +1258,7 @@
         setEl('hdr-debt', 'LOAN: ' + s.debt.toLocaleString() + ' cr');
         setEl('hdr-naming', naming.toUpperCase());
         var payEl = document.getElementById('hdr-payment');
-        if (payEl) { payEl.textContent = 'INST: ' + (s.currentInstallment||850) + 'cr/' + dup + 'd'; payEl.className = 'hdr-stat' + (dup <= 3 ? ' payment-crit' : dup <= 7 ? ' payment-warn' : ''); }
+        if (payEl) { payEl.textContent = 'INST: ' + (s.currentInstallment||850) + 'cr/' + dup + 'd'; payEl.className = 'hdr-stat' + (dup <= 1 ? ' payment-crit' : dup <= 3 ? ' payment-warn' : ''); }
         var daysUntilDrop = (s.daysUntilNextDrop != null) ? s.daysUntilNextDrop : TIMING.DAYS_BETWEEN_DROPS;
         var bargeEl = document.getElementById('hdr-barge');
         if (bargeEl) bargeEl.textContent = s.bargeActive ? 'BARGE: ACTIVE' : 'BARGE: ' + daysUntilDrop + 'd';
@@ -1331,7 +1331,7 @@
 
     function recalculateNamingTier() {
         var s = gameState.state;
-        var dup = s.daysUntilPayment || 28;
+        var dup = (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS;
         var arrears = s.outstandingDebt || 0;
         var skips = s.skipCount || 0;
         var reserves = s.reserveSuccesses || 0;
@@ -1343,7 +1343,7 @@
         if (reserves >= 10) target = 3;
 
         if (skips >= 5) target = Math.max(0, target - 1);
-        if (dup <= 5) target = Math.max(0, target - 1);
+        if (dup <= 2) target = Math.max(0, target - 1);
         if (arrears > 500) target = Math.max(0, target - 1);
         if (missed >= 1) target = Math.max(0, target - 2);
         if (missed >= 2) target = 0;
@@ -1628,7 +1628,7 @@
         var text = '';
         var color = 'var(--text-dim)';
         var scrapFill = s.scrapFill || 0;
-        var dup = (s.daysUntilPayment != null) ? s.daysUntilPayment : 28;
+        var dup = (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS;
         var dnd = (s.daysUntilNextDrop != null) ? s.daysUntilNextDrop : 7;
         var keepLen = (s.keepLog && s.keepLog.length) || 0;
         var dropRem = s.dropItemsRemaining || 0;
@@ -1657,7 +1657,7 @@
         } else if (dnd <= 2 && !s.dropActive) {
             text = 'BARGE INCOMING \u2014 ' + dnd + 'd';
             color = 'var(--text-dim)';
-        } else if (dup <= 7) {
+        } else if (dup <= 3) {
             text = 'PAYMENT: ' + dup + 'd \u2014 ' + (s.credits || 0) + ' cr available';
             color = 'var(--text-dim)';
         } else {
@@ -1743,7 +1743,7 @@
 
     function fireOtisSideComment() {
         var s = gameState.state;
-        var dup = s.daysUntilPayment || 28;
+        var dup = (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS;
         var tier = s.namingTier || 0;
         var keeps = (s.keepLog || []).length;
         var drops = s.dropCount || 0;
@@ -3526,7 +3526,7 @@
         var armSt = document.getElementById('arm-status');
         if (arm) {
             var alert = s.missedPayments > 0 || arrears > 2000;
-            var warn  = dup <= 7 || scrap >= 75;
+            var warn  = dup <= 3 || scrap >= 75;
             arm.className = alert ? 'arm-alert' : warn ? 'arm-warning' : '';
             if (armSt) armSt.textContent = alert ? 'ALERT' : warn ? 'WARNING' : 'NOMINAL';
         }
@@ -3544,7 +3544,7 @@
         var behindPayment = arrears > 0 || dup <= 0;
         var bankLit = behindPayment || s.bankNotifUnread;
         var bd = document.getElementById('comms-dot-bank');
-        if (bd) bd.className = 'comms-dot' + (bankLit ? (behindPayment || dup <= 3 ? ' dot-red' : dup <= 7 ? ' dot-amber' : ' dot-on') : '');
+        if (bd) bd.className = 'comms-dot' + (bankLit ? (behindPayment || dup <= 2 ? ' dot-red' : dup <= 4 ? ' dot-amber' : ' dot-on') : '');
         var scrap = s.scrapFill || 0;
         var md = document.getElementById('comms-dot-may');
         if (md) md.className = 'comms-dot' + (scrap >= 75 ? ' dot-amber' : scrap > 0 ? ' dot-on' : '');
@@ -3690,7 +3690,7 @@
         s.daysUntilPayment = Math.max(0, (s.daysUntilPayment || 7) - 1);
         s.daysUntilNextDrop = Math.max(0, (s.daysUntilNextDrop || 7) - 1);
         // Fire bank notification once per day — always if behind, once per day if approaching
-        if ((s.outstandingDebt || 0) > 0 || s.daysUntilPayment <= 7) {
+        if ((s.outstandingDebt || 0) > 0 || s.daysUntilPayment <= 3) {
             if (s.lastBankNotifDay !== s.day) {
                 s.bankNotifUnread = true;
                 s.lastBankNotifDay = s.day;
@@ -3754,7 +3754,7 @@
             var dayMsg = DAY_TICK_POOL[Math.floor(Math.random() * DAY_TICK_POOL.length)]
                 .replace('{D}', s.day)
                 .replace('{STATE}', beltState)
-                .replace('{PAY}', s.daysUntilPayment || 28)
+                .replace('{PAY}', (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS)
                 .replace('{DEBT}', (s.debt || 0).toLocaleString());
             otisLines.push({ role: 'otis', text: dayMsg }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(dayMsg);
@@ -3852,14 +3852,14 @@
         if (window.OtisSound) OtisSound.playSFX('comms');
         var s = gameState.state;
         var arrears = s.outstandingDebt || 0;
-        var dup  = s.daysUntilPayment || 28;
+        var dup  = (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS;
         var loanBalance = s.debt || 0;
         var msg;
         if (arrears > 500) {
             msg = '[BANK] Account ' + (s.accountId||'VRN-001') + '. Arrears exceed threshold. Escalation notice filed. Respond within 3 business cycles or asset review commences.';
         } else if (dup <= 0) {
             msg = '[BANK] Payment past due. Interest accruing at standard rate. Settle balance within next cycle or penalty surcharge applies.';
-        } else if (dup <= 5) {
+        } else if (dup <= 3) {
             msg = '[BANK] Payment window closing. ' + dup + ' days remaining. Current balance: ' + arrears + ' credits. No action required if funds are available.';
         } else if (arrears <= 0) {
             msg = '[BANK] Account current. No outstanding balance. Continue operations.';
