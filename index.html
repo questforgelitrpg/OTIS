@@ -142,12 +142,12 @@
           animation: anim-bot-ltr linear infinite;
         }
         @keyframes anim-bot-rtl {
-          from { transform: translateX(100vw); }
-          to   { transform: translateX(-100%); }
+          from { transform: translateX(100vw) translateY(-50%); }
+          to   { transform: translateX(-100%) translateY(-50%); }
         }
         @keyframes anim-bot-ltr {
-          from { transform: translateX(-100%); }
-          to   { transform: translateX(100vw); }
+          from { transform: translateX(-100%) translateY(-50%); }
+          to   { transform: translateX(100vw) translateY(-50%); }
         }
 
         /* Quick actions */
@@ -1831,7 +1831,7 @@
         for (var r = 0; r < botCount; r++) {
           var el = document.createElement('pre');
           el.className = 'anim-bot-row ' + direction;
-          el.style.top        = '0';
+          el.style.top        = '50%';
           el.style.fontSize   = fontSize + 'px';
           el.style.lineHeight = BOT_LINE_HEIGHT.toString();
           el.style.margin     = '0';
