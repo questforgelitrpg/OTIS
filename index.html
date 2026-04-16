@@ -70,7 +70,8 @@
             border: 12px solid; border-color: #1a1f1a #0d120d #0d120d #1a1f1a; border-radius: 8px;
             box-shadow: inset 0 0 40px rgba(0,0,0,0.9), inset 0 0 2px #1a3a1a, 0 0 16px rgba(0,255,70,0.06), 0 2px 8px rgba(0,0,0,0.8);
             outline: 2px solid #0a0e0a;
-            filter: blur(0px); transition: filter 4s; }
+            filter: blur(0px); transition: filter 4s, margin-right 0.3s ease; }
+        body.panel-open #terminal { margin-right: min(640px, 60vw); }
 
         /* Header */
         #hdr { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; padding: 0.4rem 0.8rem; border-bottom: 1px solid var(--border); background: var(--bg-panel); font-size: 14px; flex-shrink: 0; }
@@ -530,6 +531,7 @@
                         <div id="may-bin-bar" class="scrap-bar-fill" style="width:0%;height:4px"></div>
                     </div>
                     <div id="may-bin-list" style="font-size:11px;color:var(--text-dim);max-height:60px;overflow-y:auto"></div>
+                    <div class="modal-row"><button onclick="shipMayBin()">SHIP MAY BIN</button></div>
                 </div>
                 <!-- BROKER BIN -->
                 <div style="margin-bottom:0.5rem">
@@ -552,6 +554,12 @@
                     </div>
                     <div id="sven-bin-list" style="font-size:11px;color:var(--text-warn);max-height:40px;overflow-y:auto"></div>
                 </div>
+                <!-- SCRAP CHANNEL -->
+                <div style="margin-bottom:0.5rem">
+                    <div class="modal-label" style="font-size:11px">SCRAP CHANNEL: <span id="scrap-pct">0%</span></div>
+                    <div class="scrap-bar-track" style="height:4px"><div class="scrap-bar-fill" id="scrap-bar-fill" style="width:0%;height:4px"></div></div>
+                    <div class="modal-row"><button onclick="handleDispatchMay()">SHIP SCRAP</button></div>
+                </div>
             </div>
         </div>
     </div>
@@ -561,9 +569,6 @@
         <div class="modal-inner">
             <div class="modal-header"><span>STOREROOM</span><button onclick="closeModal('store')">&#x2715; CLOSE</button></div>
             <div class="modal-section">
-                <div class="modal-label">SCRAP CHANNEL: <span id="scrap-pct">0%</span></div>
-                <div class="scrap-bar-track"><div class="scrap-bar-fill" id="scrap-bar-fill" style="width:0%"></div></div>
-                <div class="modal-row"><button onclick="handleDispatchMay()">DISPATCH TO MAY</button></div>
                 <div class="modal-label" style="margin-top:0.5rem">HUMANITY ARCHIVE: <span id="humanity-count">0</span></div>
             </div>
             <div class="modal-section" id="storeroom-buffer-section">
@@ -1198,6 +1203,9 @@
                 escalationFired: { tier1: false, tier2: false, tier3: false },
                 // --- SVEN STEAL TRACKING ---
                 svenStolenCount: 0,
+                // --- BANK NOTIFICATION THROTTLE ---
+                bankNotifUnread: false,
+                lastBankNotifDay: 0,
             };
         },
         save: function(state) {
@@ -1590,7 +1598,10 @@
     function openModal(name) {
         document.querySelectorAll('.modal.open').forEach(function(m) { m.classList.remove('open'); });
         var el = document.getElementById('modal-' + name);
-        if (el) el.classList.add('open');
+        if (el) {
+            el.classList.add('open');
+            if (el.classList.contains('modal-panel')) document.body.classList.add('panel-open');
+        }
         var floatBar = document.getElementById('otis-float');
         if (floatBar) floatBar.style.display = 'block';
         checkTutorialModalOpen(name);
@@ -1602,6 +1613,7 @@
         if (!document.querySelector('.modal.open')) {
             var floatBar = document.getElementById('otis-float');
             if (floatBar) floatBar.style.display = 'none';
+            document.body.classList.remove('panel-open');
         }
         // Remove ANSWER BANK highlight if comms modal closes during step 4
         if (name === 'comms') {
@@ -2627,12 +2639,20 @@
         if (!s.scriptedCommsFired) s.scriptedCommsFired = { bank: false, sven: false, may: false };
         if (s.day >= 1 && !s.scriptedCommsFired.bank) {
             s.scriptedCommsFired.bank = true;
+            s.bankNotifUnread = true;
+            s.lastBankNotifDay = s.day;
             appendHardcodedComm(SCRIPTED_COMMS.bank);
+            var bankDot = document.getElementById('comms-dot-bank');
+            if (bankDot) bankDot.className = 'comms-dot dot-on';
+            setLight('light-comms', 'light-amber');
             gameState._save();
         }
         if (s.day >= 2 && !s.scriptedCommsFired.sven) {
             s.scriptedCommsFired.sven = true;
             appendHardcodedComm(SCRIPTED_COMMS.sven);
+            var svenDot = document.getElementById('comms-dot-sven');
+            if (svenDot) svenDot.className = 'comms-dot dot-on';
+            setLight('light-comms', 'light-amber');
             gameState._save();
         }
         if (s.day >= 3 && !s.scriptedCommsFired.may) {
@@ -3494,9 +3514,11 @@
         setLight('light-belt',    s.dropActive ? 'light-on' : currentItem ? 'light-amber' : '');
         var brokerFull = (s.brokerBin||[]).length >= 8;
         var mayFull = (s.mayBin||[]).length >= 10;
+        var behindPayment = arrears > 0 || dup <= 0;
+        var bankLit = behindPayment || s.bankNotifUnread;
         setLight('light-comms',
             (arrears > 0 || dup <= 3 || brokerFull) ? 'light-red' :
-            (dup <= 7 || scrap >= 75 || mayFull) ? 'light-amber' : '');
+            (bankLit || scrap >= 75 || mayFull) ? 'light-amber' : '');
         var bufLen = (s.storeroomBuffer || []).length;
         setLight('light-store',   scrap >= 90 || bufLen >= 4 ? 'light-red' : (scrap >= 75 || bufLen > 0 || keep >= 10) ? 'light-amber' : '');
         setLight('light-systems', (s.missedPayments > 0 || arrears > 2000) ? 'light-red' : '');
@@ -3516,10 +3538,14 @@
         if (cls) el.className += ' ' + cls;
     }
     function updateCommsIndicators() {
-        var dup = (gameState.state.daysUntilPayment != null) ? gameState.state.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS;
+        var s = gameState.state;
+        var dup = (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS;
+        var arrears = s.outstandingDebt || 0;
+        var behindPayment = arrears > 0 || dup <= 0;
+        var bankLit = behindPayment || s.bankNotifUnread;
         var bd = document.getElementById('comms-dot-bank');
-        if (bd) bd.className = 'comms-dot' + (dup <= 3 ? ' dot-red' : dup <= 7 ? ' dot-amber' : '');
-        var scrap = gameState.state.scrapFill || 0;
+        if (bd) bd.className = 'comms-dot' + (bankLit ? (behindPayment || dup <= 3 ? ' dot-red' : dup <= 7 ? ' dot-amber' : ' dot-on') : '');
+        var scrap = s.scrapFill || 0;
         var md = document.getElementById('comms-dot-may');
         if (md) md.className = 'comms-dot' + (scrap >= 75 ? ' dot-amber' : scrap > 0 ? ' dot-on' : '');
     }
@@ -3663,6 +3689,13 @@
         s.day = (s.day || 1) + 1;
         s.daysUntilPayment = Math.max(0, (s.daysUntilPayment || 7) - 1);
         s.daysUntilNextDrop = Math.max(0, (s.daysUntilNextDrop || 7) - 1);
+        // Fire bank notification once per day — always if behind, once per day if approaching
+        if ((s.outstandingDebt || 0) > 0 || s.daysUntilPayment <= 7) {
+            if (s.lastBankNotifDay !== s.day) {
+                s.bankNotifUnread = true;
+                s.lastBankNotifDay = s.day;
+            }
+        }
         if (s.outstandingDebt > 0) {
             s.outstandingDebt = Math.ceil(s.outstandingDebt * 1.05);
             if (s.outstandingDebt > 2000) { var awMsg = 'Arrears: ' + s.outstandingDebt.toLocaleString() + ' credits. Compounding at 5% per day.'; otisLines.push({ role: 'otis', text: awMsg }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(awMsg); }
@@ -3835,8 +3868,12 @@
         }
         otisLines.push({ role:'otis', text: msg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(msg);
+        // Dismiss notification — keep dot lit only if behind in payment
+        s.bankNotifUnread = false;
+        gameState._save();
+        var behindPayment = arrears > 0 || dup <= 0;
         var dot = document.getElementById('comms-dot-bank');
-        if (dot) dot.className = 'comms-dot dot-on';
+        if (dot) dot.className = 'comms-dot' + (behindPayment ? ' dot-red' : '');
         if (s.tutorialStep === 4) tutorialAdvance();
     }
 
