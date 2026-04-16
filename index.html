@@ -43,6 +43,11 @@
         #crt-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 9998;
             background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px); }
 
+        /* Bot animation overlay — shown during bot deploy/docking sequences */
+        #bot-anim-overlay { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 180px;
+            z-index: 50; background: rgba(0,0,0,0.72); border-top: 1px solid #1a3a1a; pointer-events: none; }
+        #bot-anim-overlay iframe { width: 100%; height: 100%; border: none; background: transparent; }
+
         /* CRT flicker */
         @keyframes flicker { 0%, 89%, 91%, 93%, 95%, 100% { opacity: 1; } 90% { opacity: 0.85; } 92% { opacity: 0.95; } 94% { opacity: 0.88; } }
         body { animation: flicker 12s infinite; }
@@ -272,6 +277,7 @@
 </head>
 <body>
     <div id="crt-overlay" aria-hidden="true"></div>
+    <div id="bot-anim-overlay" aria-hidden="true"><iframe src="ASCII-bots-rolling-animation.html" title="Bot animation"></iframe></div>
     <div id="fatigue-overlay" aria-hidden="true"></div>
     <div id="fatigue-noise" aria-hidden="true"></div>
     <div id="otis-float" aria-live="polite"></div>
@@ -1566,6 +1572,7 @@
             gameState._save();
             updateBeltUI('DROP_COMPLETE');
             setBotDots(false);
+            showBotAnimation(3000);
             if (window.OtisSound) OtisSound.stopAmbient('conveyor');
             renderPickList();
             renderManifestSummary([]);
@@ -1691,7 +1698,9 @@
 
     function handleBargeArrival() {
         if (gameState.state.dropActive) return;
-        if (window.OtisSound) OtisSound.playSFX('bargedrop');
+        // Lock immediately to prevent double-firing during the staged delay windows
+        gameState.state.dropActive = true;
+        // Build manifest synchronously so data is ready when belt eventually starts
         var manifest = [];
         if (gameState.state.day === 1) {
             // Day 1 scripted drop: 4 Common items, all Used condition, no easter eggs
@@ -1721,29 +1730,43 @@
             }
         }
         gameState.state.manifestItems = manifest.slice();
-        gameState.state.dropActive = true;
         gameState.state.bargeActive = true;
         gameState.state.dropItemsRemaining = manifest.length;
         gameState.state.dropStartSize = manifest.length;
         gameState.state.currentDropScrapped = 0;
         gameState._save();
-        var scanBtn = document.getElementById('btn-scan-belt');
-        if (scanBtn) scanBtn.disabled = false;
-        setBotDots(true);
-        updateBeltUI('DELIVERING');
-        var bargeSummary = buildManifestSummary(manifest);
-        // Append pick list status so OTIS can comment on whether Vernon confirmed it
-        var confirmed = gameState.state.confirmedPickChoice;
-        if (confirmed && confirmed.mode !== 'DROP') {
-            bargeSummary += ' Pick list confirmed: ' + confirmed.mode
-                + (confirmed.category ? ' / ' + confirmed.category : '') + '.';
-        } else {
-            bargeSummary += ' No pick list confirmed for this drop.';
-        }
-        appendOTIS(bargeSummary, 'BARGE_IMMINENT');
-        renderManifestSummary(manifest);
-        startBeltDelivery();
-        deliverNextBeltItem();
+
+        // Stage 1 — wait 3 s, then play bargedrop sound + show OTIS manifest summary
+        setTimeout(function() {
+            if (window.OtisSound) OtisSound.playSFX('bargedrop');
+            var bargeSummary = buildManifestSummary(manifest);
+            // Append pick list status so OTIS can comment on whether Vernon confirmed it
+            var confirmed = gameState.state.confirmedPickChoice;
+            if (confirmed && confirmed.mode !== 'DROP') {
+                bargeSummary += ' Pick list confirmed: ' + confirmed.mode
+                    + (confirmed.category ? ' / ' + confirmed.category : '') + '.';
+            } else {
+                bargeSummary += ' No pick list confirmed for this drop.';
+            }
+            appendOTIS(bargeSummary, 'BARGE_IMMINENT');
+            renderManifestSummary(manifest);
+
+            // Stage 2 — wait 2 s, then deploy bots
+            setTimeout(function() {
+                var scanBtn = document.getElementById('btn-scan-belt');
+                if (scanBtn) scanBtn.disabled = false;
+                setBotDots(true);
+                showBotAnimation(4000);
+                renderPickList();
+
+                // Stage 3 — wait 2 s, then start belt
+                setTimeout(function() {
+                    updateBeltUI('DELIVERING');
+                    startBeltDelivery();
+                    deliverNextBeltItem();
+                }, 2000);
+            }, 2000);
+        }, 3000);
     }
 
     // Pull the next available item from the storeroom buffer onto the belt.
@@ -1771,6 +1794,13 @@
             if (active) OtisSound.startAmbient('bots');
             else OtisSound.stopAmbient('bots');
         }
+    }
+
+    function showBotAnimation(durationMs) {
+        var overlay = document.getElementById('bot-anim-overlay');
+        if (!overlay) return;
+        overlay.style.display = '';
+        setTimeout(function() { overlay.style.display = 'none'; }, durationMs);
     }
 
     function updateBeltUI(status) {
