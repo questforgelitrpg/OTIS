@@ -44,9 +44,6 @@
         }).join('');
     }
 
-    // STATE MANAGER
-    // Moved to js/gamestate.js — see Phase 3 refactor
-
     window.buildManifestSummary = buildManifestSummary;
     window.renderManifestSummary = renderManifestSummary;
 
@@ -844,7 +841,7 @@
     window.getBotDeliveryMs = getBotDeliveryMs;
 
     function rollConveyorJam() {
-        gameState.state.dropsSinceLastJam = gameState.state.dropsSinceLastJam + 1;
+        gameState.state.dropsSinceLastJam = (gameState.state.dropsSinceLastJam || 0) + 1;
         if (gameState.state.dropsSinceLastJam < 3) return;
         if (Math.random() >= 0.15 * getJamRateMultiplier()) return;
         gameState.state.dropsSinceLastJam = 0;
