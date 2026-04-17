@@ -2548,7 +2548,7 @@
                 if (GEORGE_WAREHOUSE[_gi].targetNodeID === item.targetNodeID) { _gwItem = GEORGE_WAREHOUSE[_gi]; break; }
             }
             if (_gwItem && !_gwItem.isInstalled) {
-                var _confirmSell = window.confirm('OTIS: This item is required for the Shadow Schematic. Selling it will permanently disable one station node. Proceed?');
+                var _confirmSell = window.confirm('OTIS: This item is required for the Master Integration Schematic. Selling it will permanently disable one station node. Proceed?');
                 if (!_confirmSell) return;
                 // Mark node as permanently offline
                 var _failedNodes = gameState.state.failedNodes || [];
@@ -2686,7 +2686,7 @@
                 if (GEORGE_WAREHOUSE[_gi].targetNodeID === item.targetNodeID) { _gwItem = GEORGE_WAREHOUSE[_gi]; break; }
             }
             if (_gwItem && !_gwItem.isInstalled) {
-                var _confirmSell = window.confirm('OTIS: This item is required for the Shadow Schematic. Selling it will permanently disable one station node. Proceed?');
+                var _confirmSell = window.confirm('OTIS: This item is required for the Master Integration Schematic. Selling it will permanently disable one station node. Proceed?');
                 if (!_confirmSell) return;
                 var _failedNodes = gameState.state.failedNodes || [];
                 if (_failedNodes.indexOf(item.targetNodeID) === -1) {
@@ -3631,6 +3631,9 @@
         NODE_THETA:   { label: 'Institutional Marker',  hint: 'Memorial Plaque \u2014 near the history archive' },
     };
 
+    // Time penalty (in sessionHours minutes) for a failed verification attempt
+    var VERIFICATION_FAILURE_PENALTY_HOURS = 120;
+
     // State for the node installation modal
     var _sniNodeID = null;
     var _sniSelectedItemIdx = null;
@@ -3682,7 +3685,7 @@
             var cls = isInstalled ? 'installed' : (isFailed ? 'failed' : '');
             var text = isInstalled ? '[#]' : (isFailed ? '[X]' : '[ ]');
             var clickAttr = (!isInstalled && !isFailed)
-                ? ' onclick="handleNodeClick(\'' + nodeID + '\')" tabindex="0" role="button"'
+                ? ' onclick="handleNodeClick(\'' + nodeID + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){handleNodeClick(\'' + nodeID + '\');event.preventDefault();}" tabindex="0" role="button"'
                 : '';
             var span = '<span class="schematic-node ' + cls + '" title="' + escapeHtml(meta.label) + '"' + clickAttr + '>' + text + '</span>';
             html = html.replace('{' + n + '}', span);
@@ -3812,14 +3815,14 @@
         } else if (!correctNode) {
             // Wrong node
             var failMsg = "That component is an industrial-grade regulator. You are trying to install it into a civilian comm-array. George was eccentric, not incompetent.";
-            s.sessionHours = (s.sessionHours || 0) + 120;
+            s.sessionHours = (s.sessionHours || 0) + VERIFICATION_FAILURE_PENALTY_HOURS;
             gameState._save();
             otisLines.push({ role: 'otis', text: failMsg }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(failMsg);
         } else {
             // Wrong evidence
             var failMsg = "Vernon, your data points do not intersect. George's entry for that date discusses a toaster, not the hardware in your hand. The math does not hold.";
-            s.sessionHours = (s.sessionHours || 0) + 120;
+            s.sessionHours = (s.sessionHours || 0) + VERIFICATION_FAILURE_PENALTY_HOURS;
             gameState._save();
             otisLines.push({ role: 'otis', text: failMsg }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(failMsg);
