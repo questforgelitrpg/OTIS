@@ -4,7 +4,7 @@ A browser-based narrative set aboard a junk-processing moon salvage station. You
 
 **OTIS** (Object, Tracking & Inventory System) is your AI co-star, powered by the Claude Haiku API. His slow drift from cold bank machine toward something George built is the story.
 
-**Live demo:** https://deadsignal-seven.vercel.app
+**Live demo:** 
 
 ---
 
