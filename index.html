@@ -1512,9 +1512,10 @@
                 var baseVal = Math.floor((k.baseValue||k.otisValue||0) * (CONDITION_MULTIPLIERS[k.condition]||1.0));
                 var gained = appraised - baseVal;
                 var gainStr = gained > 0 ? ' (+' + gained + ' cr appreciated)' : '';
+                var beltOccupied = (currentItem !== null);
                 return '<li class="keep-list-item"><span>' + escapeHtml(k.name) + '</span>' +
                     '<span class="keep-item-meta">' + escapeHtml(k.condition||'') + ' \u2014 ' + appraised + ' cr' + gainStr + ' \u2014 Day ' + (k.keepDay||k.day) + ' \u2014 ' + daysHeld + 'd held</span>' +
-                    '<button class="consult-card" onclick="handleSellBack(' + i + ')">SELL BACK</button></li>';
+                    '<button class="consult-card" onclick="handleReturnToBelt(' + i + ')"' + (beltOccupied ? ' disabled title="Belt is occupied — clear current item first"' : '') + '>RETURN TO BELT</button></li>';
             }).join('');
         }
         if (empty) empty.style.display = n ? 'none' : '';
@@ -2687,7 +2688,7 @@
                 setTimeout(handleSvenBinShip, 1500);
             }
         } else if (method === 'KEEP') {
-            var _keepEntry = { name: item.name, day: gameState.state.day, keepDay: gameState.state.day, condition: item.condition, otisValue: item.otisValue, baseValue: item.otisValue };
+            var _keepEntry = { name: item.name, day: gameState.state.day, keepDay: gameState.state.day, condition: item.condition, otisValue: item.otisValue, baseValue: item.otisValue, category: item.category, rarity: item.rarity };
             if (item.targetNodeID) _keepEntry.targetNodeID = item.targetNodeID;
             if (item.evidenceID)   _keepEntry.evidenceID   = item.evidenceID;
             gameState.state.keepLog.push(_keepEntry);
@@ -2733,37 +2734,20 @@
         }
     }
 
-    function handleSellBack(index) {
+    function handleReturnToBelt(index) {
         var item = gameState.state.keepLog[index]; if (!item) return;
-        // Phase 5: George item sell protection from keep log
-        if (item.targetNodeID) {
-            var _gwItem = null;
-            for (var _gi = 0; _gi < GEORGE_WAREHOUSE.length; _gi++) {
-                if (GEORGE_WAREHOUSE[_gi].targetNodeID === item.targetNodeID) { _gwItem = GEORGE_WAREHOUSE[_gi]; break; }
-            }
-            if (_gwItem && (gameState.state.installedNodes || []).indexOf(item.targetNodeID) === -1) {
-                var _confirmSell = window.confirm('OTIS: This item is required for the Master Integration Schematic. Selling it will permanently disable one station node. Proceed?');
-                if (!_confirmSell) return;
-                var _failedNodes = gameState.state.failedNodes || [];
-                if (_failedNodes.indexOf(item.targetNodeID) === -1) {
-                    _failedNodes.push(item.targetNodeID);
-                    gameState.state.failedNodes = _failedNodes;
-                }
-                var _soldItemName = item.name;
-                setTimeout(function() {
-                    var _sm = 'You sold the ' + _soldItemName + ' for credits? George spent years waiting for that to arrive. I hope the debt payment was worth the silence.';
-                    otisLines.push({ role: 'otis', text: _sm }); renderOTIS();
-                    if (window.OtisTTS) OtisTTS.speak(_sm);
-                    renderSchematic();
-                }, 500);
-            }
+        if (currentItem !== null) {
+            otisLines.push({ role: 'otis', text: 'Belt occupied. Clear current item before returning from hold.' });
+            renderOTIS();
+            return;
         }
-        var val = getAppraisedValue(item);
-        gameState.state.credits += val;
         gameState.state.keepLog.splice(index, 1);
+        setItemInQueue(item);
         gameState._save();
         gameState._updateUI();
-        narratorLine(SELL_FROM_LOG_POOL, { CR: val });
+        var msg = (item.name || 'Item') + ' returned to belt from hold.';
+        otisLines.push({ role: 'otis', text: msg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(msg);
     }
 
     function trackOTISLearning(action, item) {
