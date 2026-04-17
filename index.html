@@ -112,12 +112,22 @@
           position: absolute;
           inset: 0;
           display: flex;
-          flex-direction: column;
+          flex-direction: row;
           align-items: center;
           justify-content: center;
           z-index: 5;
           padding: 4px 8px;
           pointer-events: none;
+        }
+        #maze-left-text {
+          font-family: 'Courier New', monospace;
+          font-size: 8px;
+          color: var(--text-dim);
+          text-align: center;
+          line-height: 1.5;
+          white-space: nowrap;
+          margin-right: 8px;
+          flex-shrink: 0;
         }
         #maze-hud {
           font-family: 'Courier New', monospace;
@@ -126,6 +136,7 @@
           letter-spacing: 0.06em;
           margin-bottom: 2px;
           white-space: nowrap;
+          display: none;
         }
         #maze-pre {
           font-family: 'Courier New', monospace;
@@ -416,8 +427,11 @@
               <pre id="anim-barge"></pre>
               <div id="anim-bots-layer"></div>
               <div id="maze-panel" style="display:none">
-                <div id="maze-hud"></div>
-                <pre id="maze-pre"></pre>
+                <div id="maze-left-text">Finished All Your Items?<br>Solve A Maze</div>
+                <div style="display:flex;flex-direction:column;align-items:center;">
+                  <div id="maze-hud"></div>
+                  <pre id="maze-pre"></pre>
+                </div>
               </div>
             </div>
 
@@ -4640,11 +4654,10 @@
         win.classList.add('maze-visible');
 
         var idx = (s.mazeCurrentIndex || 0) % MAZE_POOL.length;
-        var hudText = 'MAZE ' + (idx + 1) + '/20   TOTAL CLEARED: ' + (s.mazesCompletedTotal || 0);
-        hud.textContent = hudText;
+        hud.textContent = '';
 
         if (!s.mazeActive) {
-            pre.textContent = '[ PRESS SPACE TO START MAZE ' + (idx + 1) + '/20 ]';
+            pre.textContent = '[ PRESS SPACE TO START ]';
             return;
         }
 
@@ -4703,15 +4716,26 @@
         s.mazeActive          = false;
         s.mazesCompletedTotal = (s.mazesCompletedTotal || 0) + 1;
         var prevIdx = s.mazeCurrentIndex || 0;
-        s.mazeCurrentIndex    = (prevIdx + 1) % MAZE_POOL.length;
-        if (s.mazeCurrentIndex === 0) {
+        var nextIdx = (prevIdx + 1) % MAZE_POOL.length;
+        if (nextIdx === 0) {
             s.mazeCompletionLoops = (s.mazeCompletionLoops || 0) + 1;
+        }
+        // After the first full loop, repeat mazes in random order
+        if ((s.mazeCompletionLoops || 0) >= 1) {
+            s.mazeCurrentIndex = Math.floor(Math.random() * MAZE_POOL.length);
+        } else {
+            s.mazeCurrentIndex = nextIdx;
         }
         s.mazePlayerPos = null;
         gameState._save();
 
         if (s.mazesCompletedTotal >= 20 && !s.mazeRewardGiven) {
             mazeGrantReward();
+        }
+
+        var milestones = [42, 64, 102];
+        if (milestones.indexOf(s.mazesCompletedTotal) !== -1) {
+            mazeGrantMilestoneEgg(s.mazesCompletedTotal);
         }
 
         mazeRender();
@@ -4745,6 +4769,33 @@
         renderGeorgeDiary();
 
         otisLines.push({ role: 'otis', text: 'Maze sequence complete. Twenty mazes cleared. I have added something to the storeroom. George left a note.' });
+        renderOTIS();
+    }
+
+    function mazeGrantMilestoneEgg(milestone) {
+        var s = gameState && gameState.state;
+        if (!s) return;
+        s.mazeMilestonesGiven = s.mazeMilestonesGiven || [];
+        if (s.mazeMilestonesGiven.indexOf(milestone) !== -1) return;
+        s.mazeMilestonesGiven.push(milestone);
+
+        var keepNames = (s.keepLog || []).map(function(k) { return k.name; });
+        var available = EASTER_EGG_POOL.filter(function(e) {
+            return keepNames.indexOf(e.name) === -1;
+        });
+        if (!available.length) available = EASTER_EGG_POOL.slice();
+        var eggItem = available[Math.floor(Math.random() * available.length)];
+        var reward  = Object.assign({}, eggItem, {
+            day: s.day, keepDay: s.day, baseValue: eggItem.otisValue, mazeReward: true
+        });
+        s.keepLog = s.keepLog || [];
+        s.keepLog.push(reward);
+        s.keepLog = s.keepLog.slice(0, 12);
+
+        gameState._save();
+        if (typeof gameState._renderKeepLog === 'function') gameState._renderKeepLog();
+
+        otisLines.push({ role: 'otis', text: 'Maze milestone reached. I have added something to the storeroom.' });
         renderOTIS();
     }
 
