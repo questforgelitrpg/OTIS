@@ -7,7 +7,7 @@
     <!-- Redirect new players to the standalone intro page before the game renders. -->
     <script>
     (function () {
-        var STATE_KEY = 'otis_state_v4'; // must match stateManager STATE_KEY below
+        var STATE_KEY = 'otis_state_v4'; // IMPORTANT: must match stateManager STATE_KEY below — bump both if key changes
         try {
             var raw = localStorage.getItem(STATE_KEY);
             var state = raw != null ? JSON.parse(raw) : null;
@@ -743,6 +743,9 @@
                     <span class="bot-dot"><span class="dot" id="sys-bot-dot-3"></span>BOT-3</span>
                 </div>
             </div>
+            <div id="pending-bot-repairs" class="modal-section" style="display:none;color:var(--text-dim)">
+                <div class="modal-label">PENDING REPAIRS</div>
+            </div>
             <div class="modal-section" id="active-orders-section" style="display:none">
                 <div class="modal-label">ACTIVE STANDING ORDERS</div>
                 <div id="active-orders-list"><p class="zone-hint">No active orders.</p></div>
@@ -875,8 +878,6 @@
         DROP_SIZE_ACT3_MIN:    26,
         DROP_SIZE_ACT3_MAX:    32,
         PAYMENT_CYCLE_DAYS:    7,
-        RESERVE_RESOLVE_MIN:   120000,
-        RESERVE_RESOLVE_MAX:   480000,
         ANOMALOUS_RESERVE_MIN: 400,
         ANOMALOUS_RESERVE_MAX: 1800,
         DEBUG_FAST_MODE:       false,
@@ -1296,6 +1297,8 @@
     }
 
     // STATE MANAGER
+    // IMPORTANT: STATE_KEY is declared twice — once above in the redirect script and once here.
+    // Both must be kept in sync. If you bump the key, update BOTH declarations.
     const STATE_KEY = 'otis_state_v4';
     const stateManager = {
         _default: function() {
@@ -1303,7 +1306,7 @@
                 debt: 25000, credits: 200, day: 1,
                 paymentDue: 850, daysUntilPayment: 7,
                 sessionHours: 0, namingTier: 0, skipCount: 0, act: 1,
-                scrapFill: 0, keepLog: [], shippingQueue: [], recentEvents: [],
+                scrapFill: 0, keepLog: [], recentEvents: [],
                 dropActive: false, bargeActive: false, dropItemsRemaining: 0,
                 manifestItems: [], outstandingDebt: 0, missedPayments: 0,
                 daysUntilNextDrop: 1, toastFiredToday: false, // 1 ensures first automatic drop fires on Day 2 via advanceDay→checkDropSchedule
@@ -1369,8 +1372,6 @@
                 paymentCycle: 0,
                 currentInstallment: 850,
                 escalationFired: { tier1: false, tier2: false, tier3: false },
-                // --- SVEN STEAL TRACKING ---
-                svenStolenCount: 0,
                 // --- BANK NOTIFICATION THROTTLE ---
                 bankNotifUnread: false,
                 lastBankNotifDay: 0,
@@ -1389,8 +1390,11 @@
                 svenRareRefusalExpiresDay: 0,
                 // --- STANDING ORDERS ---
                 activeOrders: [],
+                nextOrderId: 1,
                 // --- BANK INSPECTIONS ---
                 nextInspectionDay: 14,
+                // --- PENDING BOT REPAIRS ---
+                pendingBotRepairs: [],
             };
         },
         save: function(state) {
@@ -1407,7 +1411,23 @@
                         this.clear();
                         return null;
                     }
-                    return Object.assign({}, this._default(), parsed);
+                    var result = Object.assign({}, this._default(), parsed);
+                    // v4→v5 migration: explicitly set defaults for fields added in v5
+                    // Object.assign above handles most cases; these guard against any
+                    // saved state that was written before these fields existed.
+                    if (!result.upgrades) result.upgrades = { scanner: 0, belt: 0, storeroom: 0, comm: 0, power: 0, hull: 0, cooling: 0 };
+                    if (result.svenComplicity == null) result.svenComplicity = 0;
+                    if (result.svenRareRefusalActive == null) result.svenRareRefusalActive = false;
+                    if (result.svenRareRefusalExpiresDay == null) result.svenRareRefusalExpiresDay = 0;
+                    if (!result.activeOrders) result.activeOrders = [];
+                    if (!result.nextInspectionDay) result.nextInspectionDay = result.day + 14;
+                    if (!result.pendingBotRepairs) result.pendingBotRepairs = [];
+                    // nextOrderId: initialize to one above highest existing order id to avoid collisions
+                    if (!result.nextOrderId) {
+                        var maxId = (result.activeOrders || []).reduce(function(m, o) { return Math.max(m, o.id || 0); }, 0);
+                        result.nextOrderId = maxId + 1;
+                    }
+                    return result;
                 }
             } catch(e) { console.warn('Load failed:', e); }
             return null;
@@ -1506,15 +1526,6 @@
         var hc = document.getElementById('humanity-count');
         if (hc) hc.textContent = state.humanityArchive || 0;
     };
-    GameState.prototype.startSessionTimer = function() {
-        if (this._sessionTimer) return;
-        this._sessionStart = Date.now() - this.state.sessionHours * 60000;
-        var self = this;
-        this._sessionTimer = setInterval(function() { self.state.sessionHours = Math.floor((Date.now() - self._sessionStart) / 60000); self._save(); updateFatigueVisuals(); }, 60000);
-    };
-    GameState.prototype.advanceNamingTier = function() {
-        if (this.state.namingTier < NAMING_TIERS.length - 1) { this.state.namingTier++; this._save(); }
-    };
 
     function recalculateNamingTier() {
         var s = gameState.state;
@@ -1601,8 +1612,6 @@
     }
 
     var CONDITION_MULTIPLIERS = { Broken: 0.2, Poor: 0.5, Used: 1.0, Excellent: 1.5 };
-    var RESERVE_MULTIPLIERS   = { Common: 1.10, Uncommon: 1.20, Rare: 1.35 };
-    var RESERVE_SALE_SUCCESS_RATE = 0.70;
     // Per-rarity caps on the effective credit value of a single item (before Easter egg multiplier).
     // Prevents condition stacking from generating runaway credit awards.
     // EasterEgg and McGuffin rarities are intentionally uncapped here — EasterEgg items
@@ -1695,11 +1704,6 @@
         out.scrollTop = out.scrollHeight;
     }
 
-    var OTIS_SPRITES = ['idle.png','lookdown.png','lookleft.png','lookright.png','panleft.png','panright.png','tiltleft.png','tiltright.png'];
-    function randomOtisSprite() {
-        var img = document.getElementById('arm-art');
-        if (img) img.src = 'images/otis_sprite/' + OTIS_SPRITES[Math.floor(Math.random() * OTIS_SPRITES.length)];
-    }
 
     async function appendOTIS(userText, trigger) {
         var statusEl = document.getElementById('sys-otis');
@@ -2482,8 +2486,6 @@
     function handleConsult(trigger) {
         if (!currentItem) return;
         var ctx = buildItemContext(currentItem);
-        if (trigger === 'CONSULT_WHATIS') currentItem.consultedExamine = true;
-        if (trigger === 'CONSULT_WORTH')  { currentItem.consultedWorth = true; }
         if (trigger === 'CONSULT_GEORGE') currentItem.consultedGeorge = true;
         renderItemQueue();
         if (trigger === 'CONSULT_GEORGE') {
@@ -2552,14 +2554,6 @@
         "{N} in the log. George never went past seven.",
         "Keep log at capacity. Consider selling back before the next drop.",
     ];
-    var RESERVE_CONFIRMED_POOL = [
-        "Reserve confirmed. {CR} cr logged.",
-        "Buyer found. {CR} credits.",
-        "{CR} credits. Reserve held.",
-        "Confirmed at {CR} credits. George read was close.",
-        "Sale through. {CR} cr to the ledger.",
-        "Reserve cleared. {CR} credits.",
-    ];
     var SELL_FROM_LOG_POOL = [
         "Sold from hold. {CR} credits.",
         "Log item liquidated. {CR} credits.",
@@ -2580,21 +2574,6 @@
         "Day {D}. George log shows nothing unusual for this date either.",
     ];
     // ── END NARRATOR POOLS ────────────────────────────────────────────────────
-    var BATCH_REPORT_THRESHOLD = 3;
-
-    function trackDeclarationBatch(itemName, salePrice) {
-        var s = gameState.state;
-        s.declarationBatch = s.declarationBatch || [];
-        s.declarationBatch.push(itemName.substring(0, 20) + ' — ' + salePrice);
-        s.declarationBatchCount = (s.declarationBatchCount || 0) + 1;
-        if (s.declarationBatchCount >= BATCH_REPORT_THRESHOLD) {
-            var batchMsg = 'Last ' + BATCH_REPORT_THRESHOLD + ': ' + s.declarationBatch.join(', ') + '.';
-            s.declarationBatch = [];
-            s.declarationBatchCount = 0;
-            otisLines.push({ role: 'otis', text: batchMsg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(batchMsg);
-        }
-    }
 
     function handleDeclare(method) {
         if (!currentItem) return;
@@ -2618,7 +2597,7 @@
             for (var _gi = 0; _gi < GEORGE_WAREHOUSE.length; _gi++) {
                 if (GEORGE_WAREHOUSE[_gi].targetNodeID === item.targetNodeID) { _gwItem = GEORGE_WAREHOUSE[_gi]; break; }
             }
-            if (_gwItem && !_gwItem.isInstalled) {
+            if (_gwItem && (gameState.state.installedNodes || []).indexOf(item.targetNodeID) === -1) {
                 var _confirmSell = window.confirm('OTIS: This item is required for the Master Integration Schematic. Selling it will permanently disable one station node. Proceed?');
                 if (!_confirmSell) return;
                 // Mark node as permanently offline
@@ -2767,7 +2746,7 @@
             for (var _gi = 0; _gi < GEORGE_WAREHOUSE.length; _gi++) {
                 if (GEORGE_WAREHOUSE[_gi].targetNodeID === item.targetNodeID) { _gwItem = GEORGE_WAREHOUSE[_gi]; break; }
             }
-            if (_gwItem && !_gwItem.isInstalled) {
+            if (_gwItem && (gameState.state.installedNodes || []).indexOf(item.targetNodeID) === -1) {
                 var _confirmSell = window.confirm('OTIS: This item is required for the Master Integration Schematic. Selling it will permanently disable one station node. Proceed?');
                 if (!_confirmSell) return;
                 var _failedNodes = gameState.state.failedNodes || [];
@@ -2909,7 +2888,7 @@
     // SCRIPTED DAY 1-3 COMMS
     var SCRIPTED_COMMS = {
         bank: '[BANK] Universal Bank Conglomerate, automated channel. This is a courtesy notice. Station debt: 25,000 credits. Your 28-day payment cycle has begun. First payment: 650 credits. We expect prompt settlement. Welcome to the operation, Mr. Serling.',
-        sven: '[SVEN] Sven Digut, Digut Operations. You\'re the new operator. Good. I buy goods — Industrial, Vessel, Rare if the price is right. Put items on reserve and I\'ll make offers. Don\'t scrap what I can move. We\'ll work fine as long as you don\'t waste my time.',
+        sven: '[SVEN] Sven Digut, Digut Operations. You\'re the new operator. Good. I buy goods — Industrial, Vessel, Rare if the price is right. Route items to my bin and I\'ll move them fast. Don\'t scrap what I can move. We\'ll work fine as long as you don\'t waste my time.',
         may: '[MAY] May Finster, Leftover Recycling. I handle scrap for this station — always have, since your uncle. You fill the bin, you dispatch to me, I return credits based on fill rate. Simple. Don\'t let it back up past 90. George never did.',
     };
 
@@ -3162,38 +3141,6 @@
         gameState._updateUI();
     }
 
-    // SHIPPING QUEUE
-    function renderShippingQueue() {
-        var list = document.getElementById('shipping-queue-list');
-        var empty = document.getElementById('shipping-queue-empty');
-        var q = gameState.state.shippingQueue || [];
-        if (list) list.innerHTML = q.map(function(item) { return '<div class="shipping-item">' + escapeHtml(item.name) + ' \u2014 ' + item.price + ' cr \u2014 PENDING</div>'; }).join('');
-        if (empty) empty.style.display = q.length ? 'none' : '';
-    }
-    function checkShippingQueue() {
-        var q = gameState.state.shippingQueue; if (!q || !q.length) return;
-        var now = Date.now();
-        var resolved = q.filter(function(i) { return now >= i.resolveAt; });
-        if (!resolved.length) return;
-        gameState.state.shippingQueue = q.filter(function(i) { return now < i.resolveAt; });
-        resolved.forEach(function(item) {
-            if (Math.random() < RESERVE_SALE_SUCCESS_RATE) {
-                gameState.state.credits += item.price; gameState._save();
-                narratorLine(RESERVE_CONFIRMED_POOL, { CR: item.price });
-                gameState.state.reserveSuccesses = (gameState.state.reserveSuccesses || 0) + 1;
-                recalculateNamingTier();
-            } else {
-                var otisVal = item.otisValue || 0;
-                gameState.state.credits += otisVal;
-                var expMsg = item.name.substring(0, 22) + ' \u2014 no buyer. Relisted at OTIS price. +' + otisVal + ' credits.';
-                otisLines.push({ role: 'otis', text: expMsg }); renderOTIS();
-                if (window.OtisTTS) OtisTTS.speak(expMsg);
-            }
-        });
-        gameState._save(); renderShippingQueue(); gameState._updateUI();
-    }
-    setInterval(checkShippingQueue, 5000);
-
     // BOT DEGRADATION
     function getBotDeliveryMs() {
         var base = TIMING.DEBUG_FAST_MODE ? Math.floor(TIMING.BELT_DELIVERY_MS / TIMING.DEBUG_SPEED_MULTIPLIER) : TIMING.BELT_DELIVERY_MS;
@@ -3250,6 +3197,19 @@
             if (hasAlert) { if (!arm.classList.contains('arm-alert')) arm.classList.add('arm-alert'); arm.classList.remove('arm-warning'); }
             else if (hasWarn) { if (!arm.classList.contains('arm-warning')) arm.classList.add('arm-warning'); arm.classList.remove('arm-alert'); }
         }
+        renderPendingBotRepairs();
+    }
+
+    function renderPendingBotRepairs() {
+        var el = document.getElementById('pending-bot-repairs');
+        if (!el) return;
+        var repairs = gameState.state.pendingBotRepairs || [];
+        if (!repairs.length) { el.style.display = 'none'; return; }
+        el.style.display = '';
+        el.innerHTML = repairs.map(function(r) {
+            var daysLeft = Math.max(0, r.repairOnDay - (gameState.state.day || 1));
+            return '<div>BOT-' + r.botId + ' \u2014 parts en route \u2014 ' + daysLeft + 'd remaining</div>';
+        }).join('');
     }
 
     function handleBotCalibrate(id) {
@@ -3272,12 +3232,21 @@
         var s = gameState.state;
         var bot = (s.bots || []).find(function(b) { return b.id === id; });
         if (!bot) return;
+        // Already has a pending repair order
+        var pending = s.pendingBotRepairs || [];
+        if (pending.some(function(r) { return r.botId === id; })) {
+            var already = 'BOT-' + id + ' parts already ordered. Awaiting delivery.';
+            otisLines.push({ role: 'otis', text: already }); renderOTIS();
+            return;
+        }
         if (s.credits < 200) { var b4 = 'Insufficient credits. ORDER PARTS: 200 credits.'; otisLines.push({ role: 'otis', text: b4 }); renderOTIS(); return; }
         s.credits -= 200;
-        bot.degradation = 0;
-        bot.status = 'NOMINAL';
+        // Deferred repair: parts arrive in 2 in-game days
+        s.pendingBotRepairs = pending;
+        s.pendingBotRepairs.push({ botId: id, repairOnDay: s.day + 2 });
         gameState._save(); gameState._updateUI();
-        var b5 = 'BOT-' + id + ' parts ordered. ETA: 2 days.';
+        renderPendingBotRepairs();
+        var b5 = 'BOT-' + id + ' parts ordered. ETA: 2 days. Bot remains degraded until delivery.';
         otisLines.push({ role: 'otis', text: b5 }); renderOTIS();
     }
 
@@ -3343,7 +3312,7 @@
         if (!input || !input.value.trim()) return;
         var text = input.value.trim();
         input.value = '';
-        output.innerHTML += '<p style="color:var(--text-dim);margin:0.2rem 0"><span style="color:var(--text-bright)">&gt;</span> ' + text + '</p>';
+        output.innerHTML += '<p style="color:var(--text-dim);margin:0.2rem 0"><span style="color:var(--text-bright)">&gt;</span> ' + escapeHtml(text) + '</p>';
         auxChatHistory.push({ role: 'user', content: text });
         try {
             var resp = await fetch('/api/otis', { method: 'POST',
@@ -3910,13 +3879,6 @@
             if (!s.installedNodes) s.installedNodes = [];
             s.installedNodes.push(nodeID);
             s.keepLog.splice(keepLogIdx, 1);
-            // Mark source GEORGE_WAREHOUSE entry as installed
-            for (var i = 0; i < GEORGE_WAREHOUSE.length; i++) {
-                if (GEORGE_WAREHOUSE[i].targetNodeID === nodeID) {
-                    GEORGE_WAREHOUSE[i].isInstalled = true;
-                    break;
-                }
-            }
             gameState._save(); gameState._updateUI();
             drawSchematicLine(nodeID);
             var meta = SCHEMATIC_NODES[nodeID] || { label: nodeID };
@@ -3953,7 +3915,6 @@
             // Mark node installed
             if (!s.installedNodes) s.installedNodes = [];
             s.installedNodes.push(nodeID);
-            GEORGE_WAREHOUSE[warehouseIdx].isInstalled = true;
             gameState._save(); gameState._updateUI();
             renderGeorgeWarehouse();
             drawSchematicLine(nodeID);
@@ -4031,6 +3992,10 @@
         var noise   = document.getElementById('fatigue-noise');
         var auxBtn  = document.getElementById('module-btn-auxiliary');
 
+        // Mark power outage active so silence detector does not fire dad jokes
+        gameState.state.powerOutageActive = true;
+        gameState._save();
+
         // STAGE 1 — BLACKOUT (immediate)
         if (grid)    grid.style.display = 'none';
         document.querySelectorAll('#hdr .hdr-stat').forEach(function(el) { el.style.display = 'none'; });
@@ -4083,6 +4048,9 @@
                             setTimeout(function() { auxBtn.style.display = 'none'; }, 2000);
                         }
                         setLight('light-auxiliary', '');
+                        // Clear power outage flag so silence detector resumes
+                        gameState.state.powerOutageActive = false;
+                        gameState._save();
                     }, 4000);
                 }, 4000);
             }, 6000);
@@ -4199,7 +4167,7 @@
         var st = document.getElementById('sys-store');
         if (st) { st.textContent = scrap >= 90 ? 'CRITICAL' : scrap >= 75 ? 'ATTENTION' : 'NOMINAL'; st.className = scrap >= 90 ? 'status-err' : scrap >= 75 ? 'status-warn' : 'status-ok'; }
         var sh = document.getElementById('sys-ship');
-        if (sh) { var has = s.shippingQueue && s.shippingQueue.length > 0; sh.textContent = has ? 'ACTIVE' : 'NOMINAL'; sh.className = has ? 'status-warn' : 'status-ok'; }
+        if (sh) { sh.textContent = 'NOMINAL'; sh.className = 'status-ok'; }
         var pw = document.getElementById('sys-power');
         if (pw) { var dup = (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS; pw.textContent = dup <= 3 ? 'ALERT' : 'NOMINAL'; pw.className = dup <= 3 ? 'status-warn' : 'status-ok'; }
     }
@@ -4467,7 +4435,15 @@
     // Gated by Comm Boost Tier I. Arrive via COMMS with [STANDING ORDER] prefix.
     // Each order: { id, npc, desc, rewardCredits, rewardNote, expiresOnDay, accepted, requirementKey, requirementQty, fulfilled }
 
+    // _orderIdCounter is initialized from gameState.state.nextOrderId in DOMContentLoaded
+    // to survive page reloads. Mutate via _nextOrderId() only.
     var _orderIdCounter = 1;
+    function _nextOrderId() {
+        var id = _orderIdCounter++;
+        gameState.state.nextOrderId = _orderIdCounter;
+        gameState._save();
+        return id;
+    }
 
     var STANDING_ORDER_TEMPLATES = [
         // May — Settlement items
@@ -4584,7 +4560,7 @@
             if (available.length > 0) {
                 var tmpl = available[Math.floor(Math.random() * available.length)];
                 var newOrder = {
-                    id: _orderIdCounter++,
+                    id: _nextOrderId(),
                     npc: tmpl.npc,
                     desc: tmpl.makeDesc(s.day),
                     rewardCredits: tmpl.rewardCredits,
@@ -4908,9 +4884,38 @@
         checkDiaryUnlocksDay();
         checkStandingOrders();
         checkBankInspection();
+        resolvePendingBotRepairs();
         // Belt jam check — evaluated every 2 in-game days to reduce frequency
         _beltJamDayCounter++;
         if (_beltJamDayCounter >= 2) { _beltJamDayCounter = 0; checkBeltJam(); }
+    }
+
+    function resolvePendingBotRepairs() {
+        var s = gameState.state;
+        var pending = s.pendingBotRepairs || [];
+        if (!pending.length) return;
+        var remaining = [];
+        var resolved = false;
+        pending.forEach(function(r) {
+            if (s.day >= r.repairOnDay) {
+                var bot = (s.bots || []).find(function(b) { return b.id === r.botId; });
+                if (bot) {
+                    bot.degradation = 0;
+                    bot.status = 'NOMINAL';
+                    resolved = true;
+                    var msg = 'BOT-' + r.botId + ' parts delivered. Repair complete. Status: NOMINAL.';
+                    otisLines.push({ role: 'otis', text: msg }); renderOTIS();
+                    if (window.OtisTTS) OtisTTS.speak(msg);
+                }
+            } else {
+                remaining.push(r);
+            }
+        });
+        if (resolved) {
+            s.pendingBotRepairs = remaining;
+            gameState._save();
+            gameState._updateUI();
+        }
     }
 
     var UPGRADE_DEFLECT_MESSAGES = [
@@ -5024,8 +5029,7 @@
         if (window.OtisSound) OtisSound.playSFX('comms');
         var s = gameState.state;
         var ignoreDays = s.svenIgnoreDays || 0;
-        var rareInQueue = (s.shippingQueue||[]).length > 0 ||
-            (s.manifestItems||[]).some(function(i){ return i.rarity==='Rare'||i.rarity==='Anomalous'; });
+        var rareInQueue = (s.manifestItems||[]).some(function(i){ return i.rarity==='Rare'||i.rarity==='Anomalous'; });
         var botConflict = s.recentBotConflict || false;
         var msg;
         if (botConflict) {
@@ -5111,7 +5115,6 @@
             var svenPaid = Math.floor(getEffectiveValue(stolen) * 0.65);
             s.credits += svenPaid;
             s.brokerBin = broker;
-            s.svenStolenCount = (s.svenStolenCount || 0) + 1;
             gameState._save();
             renderBinPanel();
             var stealMsg = '[SVEN INTERFERENCE] ' + stolen.name.substring(0,22) + ' removed from broker bin. Credited at Sven rate: ' + svenPaid + ' cr. Interference probability: ' + pct + '%.';
@@ -5128,8 +5131,6 @@
         var bots = s.bots || [];
         if (bots.length > 0) {
             var idx = Math.floor(Math.random() * bots.length);
-            bots[idx].condition = Math.max(0, (bots[idx].condition || 50) - 15);
-            // Also increment degradation for status update
             bots[idx].degradation = Math.min(9, (bots[idx].degradation || 0) + 2);
             if (bots[idx].degradation >= 9) bots[idx].status = 'OFFLINE';
             else if (bots[idx].degradation >= 6) bots[idx].status = 'RED';
@@ -5256,7 +5257,7 @@
         } else if (s.upgradeDecision === 'decline') {
             endingKey = archive >= 5 ? 'HUMANITY' : 'COMPROMISE';
         } else {
-            endingKey = archive >= 12 ? 'HUMANITY' : archive >= 5 ? 'COMPROMISE' : 'COMMERCE';
+            endingKey = archive >= 5 ? 'HUMANITY' : 'COMPROMISE';
         }
         var ending = ENDINGS[endingKey];
         var titleEl = document.getElementById('ending-title');
@@ -5905,9 +5906,13 @@
     <script>
     (async function() {
         gameState.init();
+        // Sync _orderIdCounter from persisted state to avoid ID collisions across reloads
+        _orderIdCounter = (gameState.state.nextOrderId != null)
+            ? Math.max(gameState.state.nextOrderId,
+                (gameState.state.activeOrders || []).reduce(function(m, o) { return Math.max(m, o.id || 0); }, 0) + 1)
+            : 1;
         gameState._updateUI();
         renderItemQueue();
-        renderShippingQueue();
         renderStoreroomBuffer();
         renderBinPanel();
         if (gameState.state.georgeWarehouseRevealed || (gameState.state.georgeWarehouseFound && gameState.state.georgeWarehouseFound.length)) { renderGeorgeWarehouse(); }
