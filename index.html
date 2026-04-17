@@ -3636,6 +3636,8 @@
 
     // Time penalty (in sessionHours minutes) for a failed verification attempt
     var VERIFICATION_FAILURE_PENALTY_HOURS = 120;
+    var VERIFY_FAIL_WRONG_NODE     = "That component is an industrial-grade regulator. You are trying to install it into a civilian comm-array. George was eccentric, not incompetent.";
+    var VERIFY_FAIL_WRONG_EVIDENCE = "Vernon, your data points do not intersect. George's entry for that date discusses a toaster, not the hardware in your hand. The math does not hold.";
 
     // State for the node installation modal
     var _sniNodeID = null;
@@ -3801,6 +3803,8 @@
         if (typeof itemVal === 'string' && itemVal.indexOf('w:') === 0) {
             verifyGeorgeCorrelationWarehouse(nodeID, parseInt(itemVal.slice(2)), diaryID);
         } else {
+            // 'k:N' prefix is the current format; bare integer is a fallback for any
+            // pre-existing saved state or code paths that stored a raw numeric index.
             var kIdx = typeof itemVal === 'string' && itemVal.indexOf('k:') === 0 ? parseInt(itemVal.slice(2)) : parseInt(itemVal);
             verifyGeorgeCorrelation(nodeID, kIdx, diaryID);
         }
@@ -3835,18 +3839,16 @@
             checkSchematicCompletion();
         } else if (!correctNode) {
             // Wrong node
-            var failMsg = "That component is an industrial-grade regulator. You are trying to install it into a civilian comm-array. George was eccentric, not incompetent.";
             s.sessionHours = (s.sessionHours || 0) + VERIFICATION_FAILURE_PENALTY_HOURS;
             gameState._save();
-            otisLines.push({ role: 'otis', text: failMsg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(failMsg);
+            otisLines.push({ role: 'otis', text: VERIFY_FAIL_WRONG_NODE }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(VERIFY_FAIL_WRONG_NODE);
         } else {
             // Wrong evidence
-            var failMsg = "Vernon, your data points do not intersect. George's entry for that date discusses a toaster, not the hardware in your hand. The math does not hold.";
             s.sessionHours = (s.sessionHours || 0) + VERIFICATION_FAILURE_PENALTY_HOURS;
             gameState._save();
-            otisLines.push({ role: 'otis', text: failMsg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(failMsg);
+            otisLines.push({ role: 'otis', text: VERIFY_FAIL_WRONG_EVIDENCE }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(VERIFY_FAIL_WRONG_EVIDENCE);
         }
     }
 
@@ -3875,17 +3877,15 @@
             checkDiaryUnlocksWarehouse(warehouseIdx);
             checkSchematicCompletion();
         } else if (!correctNode) {
-            var failMsg = "That component is an industrial-grade regulator. You are trying to install it into a civilian comm-array. George was eccentric, not incompetent.";
             s.sessionHours = (s.sessionHours || 0) + VERIFICATION_FAILURE_PENALTY_HOURS;
             gameState._save();
-            otisLines.push({ role: 'otis', text: failMsg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(failMsg);
+            otisLines.push({ role: 'otis', text: VERIFY_FAIL_WRONG_NODE }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(VERIFY_FAIL_WRONG_NODE);
         } else {
-            var failMsg = "Vernon, your data points do not intersect. George's entry for that date discusses a toaster, not the hardware in your hand. The math does not hold.";
             s.sessionHours = (s.sessionHours || 0) + VERIFICATION_FAILURE_PENALTY_HOURS;
             gameState._save();
-            otisLines.push({ role: 'otis', text: failMsg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(failMsg);
+            otisLines.push({ role: 'otis', text: VERIFY_FAIL_WRONG_EVIDENCE }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(VERIFY_FAIL_WRONG_EVIDENCE);
         }
     }
 
