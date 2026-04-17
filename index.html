@@ -98,6 +98,36 @@
           overflow: hidden;
           position: relative;
           flex-shrink: 0;
+          transition: height 0.3s ease;
+        }
+        #anim-window.maze-visible { height: 180px; }
+        #maze-panel {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          z-index: 5;
+          padding: 4px 8px;
+          pointer-events: none;
+        }
+        #maze-hud {
+          font-family: 'Courier New', monospace;
+          font-size: 10px;
+          color: var(--text-dim);
+          letter-spacing: 0.06em;
+          margin-bottom: 2px;
+          white-space: nowrap;
+        }
+        #maze-pre {
+          font-family: 'Courier New', monospace;
+          font-size: 9px;
+          line-height: 1.1;
+          color: #33ff66;
+          margin: 0;
+          white-space: pre;
+          pointer-events: none;
         }
         #anim-barge {
           position: absolute;
@@ -376,6 +406,10 @@
             <div id="anim-window" aria-hidden="true">
               <pre id="anim-barge"></pre>
               <div id="anim-bots-layer"></div>
+              <div id="maze-panel" style="display:none">
+                <div id="maze-hud"></div>
+                <pre id="maze-pre"></pre>
+              </div>
             </div>
 
             <div id="otis-actions">
@@ -1007,6 +1041,11 @@
         { id: 28, year: 25, day: 19,  unlockType: 'final', unlockCondition: 6,
           text: 'The station is in good shape. Better than when I arrived.\nEverything is in the warehouse.\nEverything that matters is in the\n\n[ENTRY INCOMPLETE \u2014 filed as received]',
           otisResponse: '[ENTRY_CLOSE: incomplete. Filed as received.]' },
+
+        // Entry 99 — Maze reward (unlocked by completing all 20 mazes)
+        { id: 99, year: 8, day: 14,   unlockType: 'maze', unlockCondition: null,
+          text: 'I used to play a maze game on the terminal between intakes.\nOTIS never said anything about it.\nI think he was keeping score.',
+          otisResponse: 'I was keeping score. He completed 47 before I stopped counting.' },
     ];
 
     // PICK LIST
@@ -1228,6 +1267,13 @@
                 // --- BANK NOTIFICATION THROTTLE ---
                 bankNotifUnread: false,
                 lastBankNotifDay: 0,
+                // --- MAZE MINI-GAME ---
+                mazeCurrentIndex: 0,
+                mazesCompletedTotal: 0,
+                mazeCompletionLoops: 0,
+                mazeRewardGiven: false,
+                mazePlayerPos: null,
+                mazeActive: false,
             };
         },
         save: function(state) {
@@ -1940,6 +1986,7 @@
 
       function startBargeSequence() {
         _clearTimers();
+        if (window.mazePause) window.mazePause();
         var bargeEl = document.getElementById('anim-barge');
         if (!bargeEl) return;
         _clearBots();
@@ -1958,6 +2005,7 @@
 
       function startBotsReturn() {
         _clearTimers();
+        if (window.mazePause) window.mazePause();
         var bargeEl = document.getElementById('anim-barge');
         if (bargeEl) { bargeEl.classList.remove('running'); bargeEl.textContent = ''; }
         if (window.OtisSound) {
@@ -1974,6 +2022,7 @@
         var bargeEl = document.getElementById('anim-barge');
         if (bargeEl) { bargeEl.classList.remove('running'); bargeEl.textContent = ''; }
         if (window.OtisSound) OtisSound.stopAmbient('bots');
+        if (window.mazeResume) window.mazeResume();
       }
 
       return { startBargeSequence: startBargeSequence, startBotsReturn: startBotsReturn, clear: clear };
@@ -4283,6 +4332,452 @@
       window.closeModal=function(name){if(_oc)_oc(name);if(name==='belt'||name==='items')window.stopBeltAnim();};
     })();
 
+    // ── Maze Mini-Game ────────────────────────────────────────────────────────
+    var MAZE_POOL = [
+      // Maze 1 (seed 42)
+      ['#####################',
+       '#S#   #         #   #',
+       '# # # # # ##### # ###',
+       '# # #   # #   # #   #',
+       '# # ##### ### # ### #',
+       '# # #   #   # # #   #',
+       '# ### # ### # # # ###',
+       '# #   # #   #   #   #',
+       '# # ### # ### ##### #',
+       '#   #     #        E#',
+       '#####################'],
+      // Maze 2 (seed 7)
+      ['#####################',
+       '#S  #     #     #   #',
+       '### # ### ### # ### #',
+       '#   # # #     #     #',
+       '# ### # ########### #',
+       '# #   #     #       #',
+       '# ### # ### # #######',
+       '# #   #   #   #     #',
+       '# # ##### ##### ### #',
+       '#   #           #  E#',
+       '#####################'],
+      // Maze 3 (seed 13)
+      ['#####################',
+       '#S      # #     #   #',
+       '####### # # ### # # #',
+       '#   #   # # # # # # #',
+       '# # # ### # # # # # #',
+       '# #   #   # # #   # #',
+       '# ##### ### # ##### #',
+       '# #           #   # #',
+       '# ############# # # #',
+       '#               #  E#',
+       '#####################'],
+      // Maze 4 (seed 99)
+      ['#####################',
+       '#S# #             # #',
+       '# # # ### ####### # #',
+       '# # #   #   #     # #',
+       '# # # ##### ### ### #',
+       '# #   #   #   # #   #',
+       '# ##### # ### # # # #',
+       '#   #   # #   # # # #',
+       '### # ### # ### # # #',
+       '#     #     #     #E#',
+       '#####################'],
+      // Maze 5 (seed 256)
+      ['#####################',
+       '#S    #     #       #',
+       '##### # ### # ##### #',
+       '#   #   # #   # #   #',
+       '### ##### ##### # ###',
+       '#     #         # # #',
+       '# ##### ####### # # #',
+       '#       #     # # # #',
+       '# ######### # # # # #',
+       '#           # #    E#',
+       '#####################'],
+      // Maze 6 (seed 1337)
+      ['#####################',
+       '#S        #         #',
+       '######### ### ##### #',
+       '#       #   #   #   #',
+       '# # ####### # ### # #',
+       '# # #       # #   # #',
+       '# # # ######### ### #',
+       '# #   #       # #   #',
+       '# ####### ### # # ###',
+       '#         #     #  E#',
+       '#####################'],
+      // Maze 7 (seed 420)
+      ['#####################',
+       '#S#         #   #   #',
+       '# ##### ### # # ### #',
+       '#   #   # # # # #   #',
+       '### # ### # # # # # #',
+       '#   #   # # # #   # #',
+       '# ##### # # # ##### #',
+       '# #   # #   # # #   #',
+       '# # # # # ### # # ###',
+       '#   #   #     #    E#',
+       '#####################'],
+      // Maze 8 (seed 69)
+      ['#####################',
+       '#S#   #       #     #',
+       '# # ### # ### # ### #',
+       '# #     # #   # #   #',
+       '# ####### # ### #####',
+       '#         #   #     #',
+       '############# ##### #',
+       '#     #     #       #',
+       '# ### # ### ####### #',
+       '#   #     #        E#',
+       '#####################'],
+      // Maze 9 (seed 2024)
+      ['#####################',
+       '#S#               # #',
+       '# ####### ####### # #',
+       '#         #     # # #',
+       '############### # # #',
+       '#     #         # # #',
+       '# ### # ### ##### # #',
+       '# # # # #   #     # #',
+       '# # # # # ### ##### #',
+       '#   #   #          E#',
+       '#####################'],
+      // Maze 10 (seed 1984)
+      ['#####################',
+       '#S    #   #     #   #',
+       '##### # ### # # ### #',
+       '# #   #   # # #   # #',
+       '# # ### # # # ### # #',
+       '# # #   #   # # # # #',
+       '# # ######### # # # #',
+       '# #           # #   #',
+       '# ############# ### #',
+       '#                  E#',
+       '#####################'],
+      // Maze 11 (seed 111)
+      ['#####################',
+       '#S            #     #',
+       '############# # #####',
+       '#   #       # #     #',
+       '# ### # ##### ##### #',
+       '# #   #     #   #   #',
+       '# # ####### ### # # #',
+       '#   #     #   # # # #',
+       '# ##### # ### # # # #',
+       '#       #   #     #E#',
+       '#####################'],
+      // Maze 12 (seed 222)
+      ['#####################',
+       '#S#         #     # #',
+       '# ### ### # ### # # #',
+       '#   # #   #     #   #',
+       '### # # ########### #',
+       '# # # # #   #     # #',
+       '# # ### # # # # ### #',
+       '# # #   # # # #     #',
+       '# # # ### ### #######',
+       '#     #            E#',
+       '#####################'],
+      // Maze 13 (seed 333)
+      ['#####################',
+       '#S  #     #         #',
+       '### ##### # ### #####',
+       '# #   #   # # #     #',
+       '# ### # ### # ##### #',
+       '#   # #         #   #',
+       '# # # # ##### ### # #',
+       '# # # # #   # #   # #',
+       '# # # ### # ### ### #',
+       '# #       #     #  E#',
+       '#####################'],
+      // Maze 14 (seed 444)
+      ['#####################',
+       '#S            #     #',
+       '############# # ### #',
+       '#     #     # #   # #',
+       '# ### # # ### ### # #',
+       '#   #   #   #   # # #',
+       '### ####### ### ### #',
+       '# #     # #   #     #',
+       '# ##### # ### ##### #',
+       '#           #      E#',
+       '#####################'],
+      // Maze 15 (seed 555)
+      ['#####################',
+       '#S#                 #',
+       '# ####### # ####### #',
+       '#       # # #       #',
+       '####### # # ### #####',
+       '#     # # #   # #   #',
+       '# ### # # ### # # # #',
+       '#   #   # #   # # # #',
+       '### ####### ### # # #',
+       '#           #     #E#',
+       '#####################'],
+      // Maze 16 (seed 666)
+      ['#####################',
+       '#S        #   #     #',
+       '######### # ### ### #',
+       '#     #   #     # # #',
+       '# # # # ### ##### # #',
+       '# # # #   # #     # #',
+       '### ##### # ### ### #',
+       '#   #     #     #   #',
+       '# ### ########### # #',
+       '#                 #E#',
+       '#####################'],
+      // Maze 17 (seed 777)
+      ['#####################',
+       '#S          #       #',
+       '########### # ##### #',
+       '#           #     # #',
+       '# ############# ### #',
+       '# #       #     #   #',
+       '# # ##### ####### # #',
+       '# # #   # #       # #',
+       '# # # # # # ####### #',
+       '#   # #     #      E#',
+       '#####################'],
+      // Maze 18 (seed 888)
+      ['#####################',
+       '#S#     #   #       #',
+       '# ### # ### # ##### #',
+       '#   # #   #   #   # #',
+       '### # ### ##### # # #',
+       '# #   # #     # #   #',
+       '# ##### ##### # ### #',
+       '#     #     #   #   #',
+       '# # ### ### ##### ###',
+       '# #       #        E#',
+       '#####################'],
+      // Maze 19 (seed 999)
+      ['#####################',
+       '#S#             #   #',
+       '# # # ######### ### #',
+       '# # # #           # #',
+       '# # # ########### # #',
+       '# # #           # # #',
+       '# # ##### ##### # # #',
+       '# # #   # #   # #   #',
+       '# ### # ### # # ### #',
+       '#     #     #   #  E#',
+       '#####################'],
+      // Maze 20 (seed 12345)
+      ['#####################',
+       '#S      #     #     #',
+       '####### # ### # ### #',
+       '#     # #   # # # # #',
+       '# ### # # # # # # # #',
+       '# # # # # # #   # # #',
+       '# # # # # # ##### # #',
+       '# # #   # #   #   # #',
+       '# # ######### # ### #',
+       '#             #    E#',
+       '#####################']
+    ];
+
+    var _mazePaused = false;
+    var _mazeOtisLastComment = 0;
+
+    window.mazePause = function() {
+        _mazePaused = true;
+        var panel = document.getElementById('maze-panel');
+        var win   = document.getElementById('anim-window');
+        if (panel) panel.style.display = 'none';
+        if (win)   win.classList.remove('maze-visible');
+    };
+
+    window.mazeResume = function() {
+        _mazePaused = false;
+        mazeRender();
+    };
+
+    function mazeRender() {
+        var panel = document.getElementById('maze-panel');
+        var pre   = document.getElementById('maze-pre');
+        var hud   = document.getElementById('maze-hud');
+        var win   = document.getElementById('anim-window');
+        if (!panel || !pre || !hud || !win) return;
+
+        if (_mazePaused) {
+            panel.style.display = 'none';
+            win.classList.remove('maze-visible');
+            return;
+        }
+
+        var s = gameState && gameState.state;
+        if (!s) return;
+
+        panel.style.display = '';
+        win.classList.add('maze-visible');
+
+        var idx = (s.mazeCurrentIndex || 0) % MAZE_POOL.length;
+        var hudText = 'MAZE ' + (idx + 1) + '/20   CLEARED: ' + (s.mazesCompletedTotal || 0);
+        hud.textContent = hudText;
+
+        if (!s.mazeActive) {
+            pre.textContent = '[ PRESS SPACE TO START MAZE ' + (idx + 1) + '/20 ]';
+            return;
+        }
+
+        var maze = MAZE_POOL[idx];
+        var pos  = s.mazePlayerPos;
+        var lines = maze.map(function(row, rowIdx) {
+            if (!pos || rowIdx !== pos.y) return row;
+            return row.substring(0, pos.x) + '@' + row.substring(pos.x + 1);
+        });
+        pre.textContent = lines.join('\n');
+    }
+
+    function mazeStart() {
+        var s = gameState && gameState.state;
+        if (!s || s.mazeActive) return;
+        var idx  = (s.mazeCurrentIndex || 0) % MAZE_POOL.length;
+        var maze = MAZE_POOL[idx];
+        var startPos = null;
+        for (var r = 0; r < maze.length; r++) {
+            var c = maze[r].indexOf('S');
+            if (c !== -1) { startPos = { x: c, y: r }; break; }
+        }
+        s.mazeActive    = true;
+        s.mazePlayerPos = startPos || { x: 1, y: 1 };
+        gameState._save();
+        mazeRender();
+    }
+
+    function mazeTryMove(dx, dy) {
+        var s = gameState && gameState.state;
+        if (!s || !s.mazeActive || _mazePaused) return;
+        var idx  = (s.mazeCurrentIndex || 0) % MAZE_POOL.length;
+        var maze = MAZE_POOL[idx];
+        var pos  = s.mazePlayerPos;
+        if (!pos) return;
+        var ny = pos.y + dy;
+        var nx = pos.x + dx;
+        if (ny < 0 || ny >= maze.length || nx < 0 || nx >= maze[ny].length) return;
+        var cell = maze[ny][nx];
+        if (cell === '#') return;
+        s.mazePlayerPos = { x: nx, y: ny };
+        gameState._save();
+        mazeRender();
+        mazeCheckOtisComment();
+        if (cell === 'E') {
+            setTimeout(mazeComplete, 120);
+        }
+    }
+
+    function mazeComplete() {
+        var s = gameState && gameState.state;
+        if (!s) return;
+        s.mazeActive          = false;
+        s.mazesCompletedTotal = (s.mazesCompletedTotal || 0) + 1;
+        var prevIdx = s.mazeCurrentIndex || 0;
+        s.mazeCurrentIndex    = (prevIdx + 1) % MAZE_POOL.length;
+        if (s.mazeCurrentIndex === 0) {
+            s.mazeCompletionLoops = (s.mazeCompletionLoops || 0) + 1;
+        }
+        s.mazePlayerPos = null;
+        gameState._save();
+
+        if (s.mazesCompletedTotal >= 20 && !s.mazeRewardGiven) {
+            mazeGrantReward();
+        }
+
+        mazeRender();
+    }
+
+    function mazeGrantReward() {
+        var s = gameState && gameState.state;
+        if (!s) return;
+        s.mazeRewardGiven = true;
+
+        var keepNames = (s.keepLog || []).map(function(k) { return k.name; });
+        var available = EASTER_EGG_POOL.filter(function(e) {
+            return keepNames.indexOf(e.name) === -1;
+        });
+        if (!available.length) available = EASTER_EGG_POOL.slice();
+        var eggItem = available[Math.floor(Math.random() * available.length)];
+        var reward  = Object.assign({}, eggItem, {
+            day: s.day, keepDay: s.day, baseValue: eggItem.otisValue, mazeReward: true
+        });
+        s.keepLog = s.keepLog || [];
+        s.keepLog.push(reward);
+        s.keepLog = s.keepLog.slice(0, 12);
+
+        if (!s.georgesDiaryFound) s.georgesDiaryFound = [];
+        if (s.georgesDiaryFound.indexOf(99) === -1) {
+            s.georgesDiaryFound.push(99);
+        }
+
+        gameState._save();
+        if (typeof gameState._renderKeepLog === 'function') gameState._renderKeepLog();
+        renderGeorgeDiary();
+
+        otisLines.push({ role: 'otis', text: 'Maze sequence complete. Twenty mazes cleared. I have added something to the storeroom. George left a note.' });
+        renderOTIS();
+    }
+
+    function mazeCheckOtisComment() {
+        var s = gameState && gameState.state;
+        if (!s || !s.mazeActive) return;
+        var now = Date.now();
+        if (now - _mazeOtisLastComment < 60000) return;
+
+        var hasWork = (currentItem !== null) ||
+                      (s.manifestItems && s.manifestItems.length > 0) ||
+                      (s.storeroomBuffer && s.storeroomBuffer.length > 0) ||
+                      s.dropActive;
+        if (!hasWork) return;
+
+        _mazeOtisLastComment = now;
+        var n = (s.manifestItems && s.manifestItems.length) || 0;
+        var comments = [
+            'I notice you are navigating a maze. The belt queue has ' + n + ' items pending.',
+            'Maze engagement logged. Storeroom buffer is not empty, for reference.',
+            'You are playing a maze game. That is noted. The work is still here.',
+            'Belt activity detected. Maze activity also detected. I am not commenting. This is me not commenting.',
+            'There are items in the queue. You appear to be elsewhere.',
+            'Maze progress: noted. Item queue progress: less noted.'
+        ];
+        var msg = comments[Math.floor(Math.random() * comments.length)];
+        otisLines.push({ role: 'otis', text: msg });
+        renderOTIS();
+    }
+
+    function mazeInit() {
+        _mazePaused = false;
+        mazeRender();
+    }
+
+    document.addEventListener('keydown', function(e) {
+        var tag = document.activeElement ? document.activeElement.tagName : '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        if (_mazePaused) return;
+
+        var s = gameState && gameState.state;
+        if (!s) return;
+
+        if (!s.mazeActive && e.code === 'Space') {
+            var panel = document.getElementById('maze-panel');
+            if (panel && panel.style.display !== 'none') {
+                e.preventDefault();
+                mazeStart();
+            }
+            return;
+        }
+
+        if (s.mazeActive) {
+            var dx = 0, dy = 0;
+            if      (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') { dx = -1; }
+            else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { dx =  1; }
+            else if (e.key === 'ArrowUp'    || e.key === 'w' || e.key === 'W') { dy = -1; }
+            else if (e.key === 'ArrowDown'  || e.key === 's' || e.key === 'S') { dy =  1; }
+            else return;
+            e.preventDefault();
+            mazeTryMove(dx, dy);
+        }
+    });
+
     </script>
 
     <script src="dad-jokes.js"></script>
@@ -4307,6 +4802,7 @@
         updateModuleLights();
         updateBeltUI('CLEAR');
         updateFatigueVisuals();
+        mazeInit();
 
         // Sound system — unlock on first user gesture and start music immediately.
         // Also listen for keydown so keyboard-first users get audio too.
