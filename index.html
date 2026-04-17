@@ -460,6 +460,7 @@
                     <p class="item-name" id="item-queue-name"></p>
                     <div class="item-tags" id="item-tags"></div>
                     <p class="otis-estimate" id="otis-estimate" style="display:none"></p>
+                    <pre id="item-queue-ascii" class="george-ascii" style="display:none"></pre>
                     <div class="consult-cards">
                         <button class="consult-card" id="cc-examine" onclick="handleConsultMerged()">EXAMINE &amp; VALUE</button>
                         <button class="consult-card" id="cc-george" onclick="handleConsult('CONSULT_GEORGE')">GEORGE ARCHIVE</button>
@@ -2174,6 +2175,23 @@
             if (declEl) declEl.style.display = any ? 'flex' : 'none';
             var cc = { 'cc-examine': 'consultedExamine', 'cc-george': 'consultedGeorge' };
             Object.keys(cc).forEach(function(id) { var b = document.getElementById(id); if (b) b.classList.toggle('consulted', !!currentItem[cc[id]]); });
+            // Easter egg ASCII art for belt items
+            var artEl = document.getElementById('item-queue-ascii');
+            if (artEl) {
+                if (currentItem.asciiFile) {
+                    artEl.textContent = '[ART PENDING]';
+                    var safeColor = /^#[0-9a-fA-F]{3,8}$/.test(currentItem.asciiColor) ? currentItem.asciiColor : '';
+                    artEl.style.color = safeColor;
+                    artEl.style.display = '';
+                    fetch(currentItem.asciiFile).then(function(r){return r.text();}).then(function(txt){
+                        if (artEl) artEl.textContent = txt;
+                    }).catch(function(){
+                        if (artEl) artEl.textContent = '[ART PENDING]';
+                    });
+                } else {
+                    artEl.style.display = 'none';
+                }
+            }
             // Bin button state management
             if (currentItem) {
                 var itemCat = currentItem.category;
@@ -2789,7 +2807,7 @@
         renderStoreroomBuffer();
         var warn = document.getElementById('storeroom-overflow-warning');
         if (warn) warn.style.display = 'none';
-        var rsMsg = 'Routing ' + TIMING.BUFFER_ROUTE_COUNT + ' items to buffer. ' + s.storeroomBuffer.length + ' held.';
+        var rsMsg = 'Routing items to storeroom buffer. ' + s.storeroomBuffer.length + ' held.';
         otisLines.push({ role: 'otis', text: rsMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(rsMsg);
     }
