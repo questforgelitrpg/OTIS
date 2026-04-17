@@ -1412,15 +1412,10 @@
                         return null;
                     }
                     var result = Object.assign({}, this._default(), parsed);
-                    // v4→v5 migration: explicitly set defaults for fields added in v5
-                    // Object.assign above handles most cases; these guard against any
-                    // saved state that was written before these fields existed.
-                    if (!result.upgrades) result.upgrades = { scanner: 0, belt: 0, storeroom: 0, comm: 0, power: 0, hull: 0, cooling: 0 };
-                    if (result.svenComplicity == null) result.svenComplicity = 0;
-                    if (result.svenRareRefusalActive == null) result.svenRareRefusalActive = false;
-                    if (result.svenRareRefusalExpiresDay == null) result.svenRareRefusalExpiresDay = 0;
-                    if (!result.activeOrders) result.activeOrders = [];
-                    if (!result.nextInspectionDay) result.nextInspectionDay = result.day + 14;
+                    // Fields added in v5 that require special handling beyond Object.assign:
+                    // - pendingBotRepairs: always safe to default to []
+                    // - nextOrderId: must be initialized above the highest existing order id
+                    //   to prevent duplicate IDs across reloads
                     if (!result.pendingBotRepairs) result.pendingBotRepairs = [];
                     // nextOrderId: initialize to one above highest existing order id to avoid collisions
                     if (!result.nextOrderId) {
