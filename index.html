@@ -4612,7 +4612,7 @@
         win.classList.add('maze-visible');
 
         var idx = (s.mazeCurrentIndex || 0) % MAZE_POOL.length;
-        var hudText = 'MAZE ' + (idx + 1) + '/20   CLEARED: ' + (s.mazesCompletedTotal || 0);
+        var hudText = 'MAZE ' + (idx + 1) + '/20   TOTAL CLEARED: ' + (s.mazesCompletedTotal || 0);
         hud.textContent = hudText;
 
         if (!s.mazeActive) {
