@@ -117,12 +117,18 @@
         _startWatchdog();
     }
 
+    // Sanitize text before speech: replace abbreviations that TTS mispronounces.
+    // "cr." and standalone "cr" are read as "crossing" by some engines; use "credits".
+    function _sanitize(text) {
+        return text.replace(/\bcr\.?(?!\w)/g, 'credits');
+    }
+
     function speak(text) {
         if (_muted) return;
         if (!window.speechSynthesis) return;
         // Drop oldest queued items if queue is already deep to prevent backup.
         while (_queue.length >= MAX_QUEUE_DEPTH) _queue.shift();
-        _queue.push(text);
+        _queue.push(_sanitize(text));
         _speakNext();
     }
 
