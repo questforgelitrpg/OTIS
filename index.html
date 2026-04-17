@@ -400,6 +400,27 @@
         #conveyor-jam-warning { color: var(--text-danger); font-size: 14px; margin: 0.3rem 0; display: none; }
         /* Floating OTIS bar (mobile, modal-cover fallback) */
         #otis-float { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; display: none; background: var(--bg-panel); border-top: 1px solid var(--border); padding: 0.4rem 0.8rem; font-size: 14px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Station Upgrades */
+        .upgrade-entry { margin-bottom: 0.6rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-dim); }
+        .upgrade-entry:last-child { border-bottom: none; margin-bottom: 0; }
+        .upgrade-name { font-size: 14px; color: var(--text-bright); letter-spacing: 0.06em; }
+        .upgrade-tier { font-size: 14px; color: var(--text-dim); margin: 0.1rem 0; }
+        .upgrade-effect { font-size: 14px; color: var(--ind-on); margin: 0.1rem 0; }
+        .upgrade-lore { font-size: 13px; color: var(--text-muted); font-style: italic; margin: 0.2rem 0 0.3rem; line-height: 1.5; }
+        .upgrade-cost { font-size: 14px; color: var(--text-warn); }
+        .upgrade-maxed { font-size: 14px; color: var(--text-dim); font-style: italic; }
+
+        /* Standing Orders */
+        .standing-order-entry { border-left: 2px solid var(--ind-amber); padding: 0.3rem 0 0.3rem 0.6rem; margin-bottom: 0.5rem; }
+        .standing-order-entry:last-child { margin-bottom: 0; }
+        .so-header { font-size: 14px; color: var(--ind-amber); letter-spacing: 0.06em; margin-bottom: 0.15rem; }
+        .so-desc { font-size: 14px; color: var(--text-primary); margin-bottom: 0.15rem; }
+        .so-meta { font-size: 14px; color: var(--text-dim); }
+        .so-actions { margin-top: 0.25rem; display: flex; gap: 0.3rem; flex-wrap: wrap; }
+
+        /* Bank inspection notice */
+        .inspection-notice { border-left: 2px solid var(--ind-red); padding-left: 0.5rem; }
     </style>
 </head>
 <body>
@@ -721,6 +742,14 @@
                     <span class="bot-dot"><span class="dot" id="sys-bot-dot-2"></span>BOT-2</span>
                     <span class="bot-dot"><span class="dot" id="sys-bot-dot-3"></span>BOT-3</span>
                 </div>
+            </div>
+            <div class="modal-section" id="active-orders-section" style="display:none">
+                <div class="modal-label">ACTIVE STANDING ORDERS</div>
+                <div id="active-orders-list"><p class="zone-hint">No active orders.</p></div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label">STATION UPGRADES</div>
+                <div id="upgrades-list"></div>
             </div>
         </div>
     </div>
@@ -1307,7 +1336,6 @@
                 declarationBatch: [],
                 declarationBatchCount: 0,
                 deliveryCount: 0,
-                stateVersion: 4,
                 svenIgnoreDays: 0,
                 svenInterferencePct: 20,
                 recentBotConflict: false,
@@ -1352,6 +1380,17 @@
                 mazeRewardGiven: false,
                 mazePlayerPos: null,
                 mazeActive: false,
+                // --- STATION UPGRADES ---
+                upgrades: { scanner: 0, belt: 0, storeroom: 0, comm: 0, power: 0, hull: 0, cooling: 0 },
+                // --- SVEN COMPLICITY ---
+                svenComplicity: 0,
+                svenRareRefusalActive: false,
+                svenRareRefusalExpiresDay: 0,
+                // --- STANDING ORDERS ---
+                activeOrders: [],
+                // --- BANK INSPECTIONS ---
+                nextInspectionDay: 14,
+                stateVersion: 5,
             };
         },
         save: function(state) {
@@ -1441,6 +1480,8 @@
         if (typeof renderStoreroomBuffer === 'function') renderStoreroomBuffer();
         if (typeof updateGameHints === 'function') updateGameHints();
         if (typeof renderBinPanel === 'function') renderBinPanel();
+        if (typeof renderUpgrades === 'function') renderUpgrades();
+        if (typeof renderActiveOrders === 'function') renderActiveOrders();
     };
     GameState.prototype._renderKeepLog = function() {
         var list  = document.getElementById('keep-log-list');
@@ -1448,7 +1489,7 @@
         var cnt   = document.getElementById('keep-log-count');
         var state = this.state;
         var n = state.keepLog.length;
-        if (cnt) { cnt.textContent = n + ' / 12'; cnt.style.color = n >= 12 ? 'var(--text-danger)' : n >= 10 ? 'var(--text-warn)' : 'var(--text-dim)'; }
+        if (cnt) { cnt.textContent = n + ' / ' + getStorageCap(); cnt.style.color = n >= getStorageCap() ? 'var(--text-danger)' : n >= (getStorageCap() - 2) ? 'var(--text-warn)' : 'var(--text-dim)'; }
         if (list) {
             list.innerHTML = state.keepLog.map(function(k, i) {
                 var daysHeld = Math.max(0, (state.day||1) - (k.keepDay||k.day||1));
@@ -1527,6 +1568,36 @@
     function setEl(id, text) { var e = document.getElementById(id); if (e) e.textContent = text; }
     function escapeHtml(str) {
         return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    // ── UPGRADE HELPERS — centralized lookups, never scatter state.upgrades refs ──
+    function getScannerBonus() {
+        var t = ((gameState.state.upgrades)||{}).scanner||0;
+        return [0, 0.08, 0.18, 0.30][t] || 0;
+    }
+    function getStorageCap() {
+        var t = ((gameState.state.upgrades)||{}).storeroom||0;
+        return 12 + ([0, 3, 7, 12][t] || 0);
+    }
+    function getJamRateMultiplier() {
+        var t = ((gameState.state.upgrades)||{}).belt||0;
+        return [1.0, 0.85, 0.70, 0.50][t] || 1.0;
+    }
+    function getDegradationMultiplier() {
+        var t = ((gameState.state.upgrades)||{}).power||0;
+        return [1.0, 0.90, 0.80, 0.67][t] || 1.0;
+    }
+    function getCommOrderCap() {
+        var t = ((gameState.state.upgrades)||{}).comm||0;
+        return [0, 3, 4, 5][t] || 0;
+    }
+    function getHullPatchFactor() {
+        var t = ((gameState.state.upgrades)||{}).hull||0;
+        return [1.0, 0.75, 0.50, 0.25][t] || 1.0;
+    }
+    function getCoolingBonus() {
+        var t = ((gameState.state.upgrades)||{}).cooling||0;
+        return [0, 0.15, 0.30, 0.50][t] || 0;
     }
 
     var CONDITION_MULTIPLIERS = { Broken: 0.2, Poor: 0.5, Used: 1.0, Excellent: 1.5 };
@@ -1954,8 +2025,8 @@
     function shuffleDropPool(pickChoice) {
         var nonRare = MANIFEST_POOL.filter(function(i) { return i.rarity !== 'Rare'; });
         var rareItems = MANIFEST_POOL.filter(function(i) { return i.rarity === 'Rare'; });
-        // Include each Rare item with 25% probability to reduce their drop frequency.
-        var rareReduced = rareItems.filter(function() { return Math.random() < 0.25; });
+        // Include each Rare item with base 25% probability + scanner bonus to adjust drop frequency.
+        var rareReduced = rareItems.filter(function() { return Math.random() < (0.25 + getScannerBonus()); });
         var pool = nonRare.concat(rareReduced);
         // Fallback: if all Rare items were filtered out and there are no non-Rare items, use full pool.
         if (!pool.length) pool = MANIFEST_POOL.slice();
@@ -2585,6 +2656,7 @@
             trackOTISLearning('SELL', item);
             clearItemQueue();
             renderBinPanel();
+            recordOrderProgress(item.category, item.rarity);
             var binMsg = item.name.substring(0,22) + ' to May bin. ' + mayBin.length + '/12.';
             otisLines.push({ role:'otis', text: binMsg }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(binMsg);
@@ -2601,6 +2673,7 @@
             trackOTISLearning('SELL', item);
             clearItemQueue();
             renderBinPanel();
+            recordOrderProgress(item.category, item.rarity);
             var bbMsg = item.name.substring(0,22) + ' to broker. ' + brokerBin.length + '/10.';
             otisLines.push({ role:'otis', text: bbMsg }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(bbMsg);
@@ -2621,12 +2694,17 @@
             if (item.rarity === 'Anomalous') {
                 svenValue = Math.floor((Math.random() * (TIMING.ANOMALOUS_RESERVE_MAX - TIMING.ANOMALOUS_RESERVE_MIN) + TIMING.ANOMALOUS_RESERVE_MIN) * 0.65);
             }
+            // Sven rare refusal standing order: track complicity when routing Rare items to Sven
+            if (item.rarity === 'Rare' && gameState.state.svenRareRefusalActive) {
+                gameState.state.svenComplicity = (gameState.state.svenComplicity || 0) + 1;
+            }
             svenBin.push({ name: item.name, category: item.category, rarity: item.rarity, condition: item.condition, otisValue: item.otisValue, svenValue: svenValue, addedDay: gameState.state.day });
             gameState.state.svenBin = svenBin;
             gameState._save();
             trackOTISLearning('SELL', item);
             clearItemQueue();
             renderBinPanel();
+            recordOrderProgress(item.category, item.rarity);
             var svMsg = item.name.substring(0,22) + ' to Sven. His offer: ' + svenValue + ' cr. Bin: ' + svenBin.length + '/3.';
             otisLines.push({ role:'otis', text: svMsg }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(svMsg);
@@ -2639,7 +2717,7 @@
             if (item.targetNodeID) _keepEntry.targetNodeID = item.targetNodeID;
             if (item.evidenceID)   _keepEntry.evidenceID   = item.evidenceID;
             gameState.state.keepLog.push(_keepEntry);
-            gameState.state.keepLog = gameState.state.keepLog.slice(0, 12);
+            gameState.state.keepLog = gameState.state.keepLog.slice(0, getStorageCap());
             // Humanity archive tracking
             if (item.category === 'Civilian' || item.category === 'Settlement') {
                 gameState.state.humanityArchive = (gameState.state.humanityArchive || 0) + 1;
@@ -2652,7 +2730,7 @@
             trackOTISLearning('KEEP', item);
             clearItemQueue();
             var kn = gameState.state.keepLog.length;
-            if (kn >= 10) {
+            if (kn >= getStorageCap() - 2) {
                 narratorLine(DECLARE_KEEP_FULL_POOL, { N: kn });
             } else {
                 // Skip the last 2 entries (George-reference lines) for low keep counts
@@ -2669,6 +2747,7 @@
             gameState._save();
             trackOTISLearning('SCRAP', item);
             clearItemQueue();
+            recordOrderProgress(item.category, item.rarity);
             var msg = SCRAP_SHORTS[Math.floor(Math.random() * SCRAP_SHORTS.length)];
             otisLines.push({ role: 'otis', text: msg }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(msg);
@@ -3131,7 +3210,15 @@
         if (!s.bots) s.bots = [{ id:1,status:'NOMINAL',degradation:0 },{ id:2,status:'NOMINAL',degradation:0 },{ id:3,status:'NOMINAL',degradation:0 }];
         var idx = Math.floor(Math.random() * 3);
         var bot = s.bots[idx];
-        bot.degradation++;
+        var wasNominal = bot.status === 'NOMINAL';
+        // Power Regulator: reduces chance that degradation actually ticks
+        if (Math.random() < getDegradationMultiplier()) {
+            bot.degradation++;
+            // Cooling Loop: chance to prevent a bot slipping from NOMINAL to AMBER
+            if (wasNominal && bot.degradation >= 3 && Math.random() < getCoolingBonus()) {
+                bot.degradation = Math.max(0, bot.degradation - 1); // undo the slip
+            }
+        }
         if (bot.degradation >= 9) bot.status = 'OFFLINE';
         else if (bot.degradation >= 6) bot.status = 'RED';
         else if (bot.degradation >= 3) bot.status = 'AMBER';
@@ -3198,7 +3285,7 @@
     function rollConveyorJam() {
         gameState.state.dropsSinceLastJam = gameState.state.dropsSinceLastJam + 1;
         if (gameState.state.dropsSinceLastJam < 3) return;
-        if (Math.random() >= 0.15) return;
+        if (Math.random() >= 0.15 * getJamRateMultiplier()) return;
         gameState.state.dropsSinceLastJam = 0;
         gameState.state.conveyorJammed = true;
         gameState.state.daysUntilNextDrop = (gameState.state.daysUntilNextDrop || TIMING.DAYS_BETWEEN_DROPS) + 1;
@@ -4220,6 +4307,501 @@
     }
     function toggleDebug() { var p = document.getElementById('debug-panel'); if (p) p.style.display = p.style.display !== 'block' ? 'block' : 'none'; }
 
+    // ── STATION UPGRADES ─────────────────────────────────────────────────────
+    // Catalog: 7 upgrades × 3 tiers. Cost curve: I ≈ 850, II ≈ 2125, III ≈ 4250.
+    var UPGRADE_CATALOG = [
+        {
+            key: 'scanner',
+            name: 'Scanner Sensitivity',
+            effects: ['+8% rare detection', '+18% rare detection', '+30% rare detection'],
+            costs: [850, 2125, 4250],
+            // LORE
+            lore: [
+                'George built the original scanner mod from a spare navigation array. Year 7. It is still running on his calibration.',
+                'Second pass recalibrates the sweep angle. George marked the optimal range in pencil on the housing. The pencil is still there.',
+                'Full overhaul. The detection ceiling he never got to. He had the parts. He ran out of days.',
+            ],
+        },
+        {
+            key: 'belt',
+            name: 'Belt Governor',
+            effects: ['-15% jam rate', '-30% jam rate', '-50% jam rate'],
+            costs: [850, 2125, 4250],
+            // LORE
+            lore: [
+                'George shimmed the governor with a piece of insulation tape on day three. It held for twenty-two years. You are replacing the tape.',
+                'The secondary tension arm. George noted it was rated for a heavier load than the station ever ran. He kept the spec sheet anyway.',
+                'Full governor replacement. George ordered this part in year 18 and never installed it. It was still in the crate.',
+            ],
+        },
+        {
+            key: 'storeroom',
+            name: 'Storeroom Expansion',
+            effects: ['+3 storage slots', '+7 storage slots', '+12 storage slots'],
+            costs: [850, 2125, 4250],
+            // LORE
+            lore: [
+                'George built the original racks himself. He said the station came with nowhere to put things and he fixed it. You are fixing it further.',
+                'Second bay cleared and shelved. George used this space for personal items in year 4. They were gone by year 8. He never said where.',
+                'Full expansion to the rear bulkhead. George mapped it out in year 11 and never started. The chalk lines are still on the wall.',
+            ],
+        },
+        {
+            key: 'comm',
+            name: 'Comm Boost',
+            effects: ['Unlocks Standing Orders (NPC orders via COMMS)', '+1 concurrent order cap (4 total)', '+2 concurrent order cap (5 total)'],
+            costs: [850, 2125, 4250],
+            // LORE
+            lore: [
+                'George upgraded the antenna himself after the first year. Said the default range was embarrassing. You are just restoring what he built.',
+                'Wideband filter added. George said the noise-to-signal ratio was the real problem. He was right. He usually was.',
+                'Full relay stack active. George got a message from this configuration once that he never explained. He said it was nothing. I did not believe him.',
+            ],
+        },
+        {
+            key: 'power',
+            name: 'Power Regulator',
+            effects: ['-10% bot degradation rate', '-20% bot degradation rate', '-33% bot degradation rate'],
+            costs: [850, 2125, 4250],
+            // LORE
+            lore: [
+                'George rewound the coil himself in year 12 when the original failed. His rewind lasted eleven years. This is a proper replacement.',
+                'Secondary buffer installed. George ran without one for the first six years. He said the bots were tougher then. I have the maintenance logs. They were not.',
+                'Full regulator array. George designed this configuration in year 19. He never had the credits. You have the credits.',
+            ],
+        },
+        {
+            key: 'hull',
+            name: 'Hull Patch',
+            effects: ['-25% inspection failure debt', '-50% inspection failure debt', '-75% inspection failure debt'],
+            costs: [850, 2125, 4250],
+            // LORE
+            lore: [
+                'George patched this section three times. Each patch is a different colour. He was not embarrassed about this. You should not be either.',
+                'Structural foam applied to the inner ring. George said the station was held together by optimism and polymer sealant. He was not wrong.',
+                'Full plate reinforcement. George had the material quoted in year 23. He said it was not urgent. It was not, until the inspectors started coming.',
+            ],
+        },
+        {
+            key: 'cooling',
+            name: 'Cooling Loop',
+            effects: ['-15% chance bots slip below NOMINAL', '-30% chance bots slip below NOMINAL', '-50% chance bots slip below NOMINAL'],
+            costs: [850, 2125, 4250],
+            // LORE
+            lore: [
+                'George ran the original cooling loop off a reclaimed refrigeration unit. He said it was fine. The maintenance logs disagreed twice a year.',
+                'Secondary loop added. George considered this in year 14. He said the bots ran warmer in winter and cooler in summer and that evened out. It did not.',
+                'Full dedicated circuit. George earmarked budget for this in year 21. He used it for something else. He never told me what.',
+            ],
+        },
+    ];
+
+    function renderUpgrades() {
+        var el = document.getElementById('upgrades-list');
+        if (!el) return;
+        var upgrades = gameState.state.upgrades || {};
+        var credits = gameState.state.credits || 0;
+        el.innerHTML = UPGRADE_CATALOG.map(function(upg) {
+            var tier = upgrades[upg.key] || 0;
+            var tierLabel = tier === 0 ? 'NOT INSTALLED' : ('TIER ' + ['I','II','III'][tier-1] + ' / III');
+            var nextTier = tier + 1;
+            var canUpgrade = nextTier <= 3;
+            var cost = canUpgrade ? upg.costs[nextTier - 1] : 0;
+            var effectStr = tier > 0 ? upg.effects[tier - 1] : '—';
+            var loreStr = tier < 3 ? upg.lore[tier] : upg.lore[2];
+            var costHtml = canUpgrade
+                ? '<div class="upgrade-cost">TIER ' + ['I','II','III'][nextTier-1] + ': ' + cost.toLocaleString() + ' cr'
+                    + '<button style="margin-left:0.5rem;font-size:13px;padding:0.1rem 0.4rem;min-height:22px"'
+                    + (credits < cost ? ' disabled' : '')
+                    + ' onclick="handlePurchaseUpgrade(\'' + upg.key + '\')">'
+                    + (credits < cost ? 'NEED ' + (cost - credits) + ' cr' : 'INSTALL')
+                    + '</button></div>'
+                : '<div class="upgrade-maxed">FULLY UPGRADED</div>';
+            return '<div class="upgrade-entry">'
+                + '<div class="upgrade-name">' + escapeHtml(upg.name) + '</div>'
+                + '<div class="upgrade-tier">' + tierLabel + (tier > 0 ? ' — ' + escapeHtml(effectStr) : '') + '</div>'
+                + '<div class="upgrade-lore">' + escapeHtml(loreStr) + '</div>'
+                + costHtml
+                + '</div>';
+        }).join('');
+    }
+
+    function handlePurchaseUpgrade(key) {
+        var s = gameState.state;
+        if (!s.upgrades) s.upgrades = { scanner: 0, belt: 0, storeroom: 0, comm: 0, power: 0, hull: 0, cooling: 0 };
+        var upg = UPGRADE_CATALOG.find(function(u) { return u.key === key; });
+        if (!upg) return;
+        var currentTier = s.upgrades[key] || 0;
+        var nextTier = currentTier + 1;
+        if (nextTier > 3) return;
+        var cost = upg.costs[nextTier - 1];
+        if (s.credits < cost) {
+            var msg = 'Insufficient credits. ' + upg.name + ' Tier ' + ['I','II','III'][nextTier-1] + ': ' + cost.toLocaleString() + ' cr required.';
+            otisLines.push({ role: 'otis', text: msg }); renderOTIS();
+            return;
+        }
+        s.credits -= cost;
+        s.upgrades[key] = nextTier;
+        gameState._save();
+        gameState._updateUI();
+        renderUpgrades();
+        var tierRoman = ['I','II','III'][nextTier-1];
+        // LORE — installation acknowledgement
+        var installLines = {
+            scanner: 'Scanner Sensitivity upgraded to Tier ' + tierRoman + '. Detection range adjusted. George would have noted this in the maintenance log.',
+            belt:    'Belt Governor upgraded to Tier ' + tierRoman + '. Jam probability reduced. George never got around to this. You did.',
+            storeroom: 'Storeroom Expansion completed. Tier ' + tierRoman + '. George drew up those plans in year 11. The chalk is finally gone.',
+            comm:    nextTier === 1
+                ? 'Comm Boost Tier I installed. Standing Orders channel now active. NPCs can reach you directly. George had this. He used it constantly.'
+                : 'Comm Boost upgraded to Tier ' + tierRoman + '. Order capacity increased. More channels open.',
+            power:   'Power Regulator upgraded to Tier ' + tierRoman + '. Bot degradation rate reduced. George would have called this overdue.',
+            hull:    'Hull Patch upgraded to Tier ' + tierRoman + '. Inspection penalty reduction active. George patched the rest. You patched the last section.',
+            cooling: 'Cooling Loop upgraded to Tier ' + tierRoman + '. Bot thermal tolerance improved. The refrigeration unit George used is finally retired.',
+        };
+        var installMsg = installLines[key] || (upg.name + ' Tier ' + tierRoman + ' installed.');
+        otisLines.push({ role: 'otis', text: installMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(installMsg);
+    }
+
+    // ── STANDING ORDERS ───────────────────────────────────────────────────────
+    // Gated by Comm Boost Tier I. Arrive via COMMS with [STANDING ORDER] prefix.
+    // Each order: { id, npc, desc, rewardCredits, rewardNote, expiresOnDay, accepted, requirementKey, requirementQty, fulfilled }
+
+    var _orderIdCounter = 1;
+
+    var STANDING_ORDER_TEMPLATES = [
+        // May — Settlement items
+        {
+            npc: 'MAY',
+            makeDesc: function(day) { return 'FINSTER RECYCLING: I need 3 Settlement-grade items before my buyer\'s window closes. Reward: 400 cr. 2 days.'; },
+            rewardCredits: 400,
+            rewardNote: '+small scrap rate bonus',
+            durationDays: 2,
+            requirementKey: 'settlementItems',
+            requirementQty: 3,
+        },
+        // May — Vessel items
+        {
+            npc: 'MAY',
+            makeDesc: function(day) { return 'FINSTER RECYCLING: Vessel items are moving this week. Send me 2 Vessel items within 2 days. Reward: 350 cr.'; },
+            rewardCredits: 350,
+            rewardNote: '',
+            durationDays: 2,
+            requirementKey: 'vesselItems',
+            requirementQty: 2,
+        },
+        // May — Industrial items
+        {
+            npc: 'MAY',
+            makeDesc: function(day) { return 'FINSTER RECYCLING: Industrial clearance running. Need 2 Industrial items fast. Reward: 300 cr.'; },
+            rewardCredits: 300,
+            rewardNote: '',
+            durationDays: 2,
+            requirementKey: 'industrialItems',
+            requirementQty: 2,
+        },
+        // Sven — First refusal on Rares
+        {
+            npc: 'SVEN',
+            makeDesc: function(day) { return '[SVEN] First refusal on all Rares this cycle. I drop interference to 5%. Accept or decline.'; },
+            rewardCredits: 0,
+            rewardNote: 'Sven interference drops to 5% for 7 days',
+            durationDays: 7,
+            requirementKey: 'svenRareRefusal',
+            requirementQty: 1,
+            hasAcceptDecline: true,
+        },
+        // Sven — Anomalous item
+        {
+            npc: 'SVEN',
+            makeDesc: function(day) { return '[SVEN] I\'ll take Anomalous items this cycle. Bring 1 in 48 hours. I pay 300 cr above standard rate.'; },
+            rewardCredits: 300,
+            rewardNote: '+300 cr above standard Sven rate',
+            durationDays: 2,
+            requirementKey: 'anomalousItem',
+            requirementQty: 1,
+        },
+        // Bank — Inspection compliance notice
+        {
+            npc: 'BANK',
+            makeDesc: function(day) { return '[UBC] Compliance notice. All bot systems must show NOMINAL within 48 hours. Compliance reward: 500 cr arrears waived.'; },
+            rewardCredits: 500,
+            rewardNote: '500 cr arrears waived',
+            durationDays: 2,
+            requirementKey: 'allBotsNominal',
+            requirementQty: 1,
+        },
+        // Bank — Processed items quota
+        {
+            npc: 'BANK',
+            makeDesc: function(day) { return '[UBC] Efficiency review. Process 8 items this cycle for debt reduction of 600 cr.'; },
+            rewardCredits: 600,
+            rewardNote: '600 cr off debt',
+            durationDays: 3,
+            requirementKey: 'processedItems',
+            requirementQty: 8,
+        },
+    ];
+
+    function checkStandingOrders() {
+        var s = gameState.state;
+        var cap = getCommOrderCap();
+        if (cap === 0) return; // Comm Boost not installed
+        if (!s.activeOrders) s.activeOrders = [];
+
+        // Expire old orders; clean up side-effects
+        s.activeOrders = s.activeOrders.filter(function(o) {
+            if (s.day > o.expiresOnDay && !o.fulfilled) {
+                var expMsg = '[STANDING ORDER EXPIRED] ' + o.npc + ': ' + o.desc.substring(0, 60) + '...';
+                otisLines.push({ role: 'otis', text: expMsg }); renderOTIS();
+                // Reset Sven interference when his rare refusal order expires
+                if (o.requirementKey === 'svenRareRefusal' && o.accepted) {
+                    s.svenRareRefusalActive = false;
+                    s.svenInterferencePct = 20;
+                }
+                return false;
+            }
+            return true;
+        });
+
+        // Check fulfilment on active orders
+        s.activeOrders.forEach(function(o) {
+            if (o.fulfilled || o.requirementKey === 'svenRareRefusal') return;
+            var fulfilled = checkOrderFulfilment(o, s);
+            if (fulfilled) {
+                o.fulfilled = true;
+                applyOrderReward(o, s);
+            }
+        });
+
+        // Possibly generate a new order
+        if (s.activeOrders.length < cap && Math.random() < 0.5) {
+            // Pick a template at random (avoid duplicating active npc/key combos)
+            var activeKeys = s.activeOrders.map(function(o) { return o.requirementKey; });
+            var available = STANDING_ORDER_TEMPLATES.filter(function(t) {
+                return activeKeys.indexOf(t.requirementKey) === -1;
+            });
+            if (available.length > 0) {
+                var tmpl = available[Math.floor(Math.random() * available.length)];
+                var newOrder = {
+                    id: _orderIdCounter++,
+                    npc: tmpl.npc,
+                    desc: tmpl.makeDesc(s.day),
+                    rewardCredits: tmpl.rewardCredits,
+                    rewardNote: tmpl.rewardNote || '',
+                    expiresOnDay: s.day + tmpl.durationDays,
+                    accepted: !tmpl.hasAcceptDecline, // auto-accepted unless it has explicit accept/decline
+                    requirementKey: tmpl.requirementKey,
+                    requirementQty: tmpl.requirementQty,
+                    fulfilled: false,
+                    hasAcceptDecline: !!tmpl.hasAcceptDecline,
+                    progressQty: 0,
+                };
+                s.activeOrders.push(newOrder);
+                var soMsg = '[STANDING ORDER] ' + newOrder.desc + ' Expires: Day ' + newOrder.expiresOnDay + '.';
+                if (newOrder.rewardNote) soMsg += ' Note: ' + newOrder.rewardNote + '.';
+                otisLines.push({ role: 'otis', text: soMsg }); renderOTIS();
+                if (window.OtisTTS) OtisTTS.speak('[STANDING ORDER] ' + newOrder.npc + ' — ' + newOrder.desc.substring(0, 60));
+                setLight('light-comms', 'light-amber');
+            }
+        }
+
+        gameState._save();
+        renderActiveOrders();
+    }
+
+    function checkOrderFulfilment(order, s) {
+        var key = order.requirementKey;
+        if (key === 'allBotsNominal') {
+            return (s.bots || []).every(function(b) { return b.status === 'NOMINAL'; });
+        }
+        if (key === 'processedItems') {
+            return (order.progressQty || 0) >= order.requirementQty;
+        }
+        if (key === 'settlementItems' || key === 'vesselItems' || key === 'industrialItems' || key === 'anomalousItem') {
+            return (order.progressQty || 0) >= order.requirementQty;
+        }
+        return false;
+    }
+
+    function applyOrderReward(order, s) {
+        var rewardMsg = '[STANDING ORDER COMPLETE] ' + order.npc + ': ' + order.desc.substring(0, 50) + '...';
+        if (order.rewardCredits > 0) {
+            if (order.rewardNote && order.rewardNote.indexOf('arrears') !== -1) {
+                s.outstandingDebt = Math.max(0, (s.outstandingDebt || 0) - order.rewardCredits);
+                rewardMsg += ' ' + order.rewardCredits + ' cr arrears waived.';
+            } else if (order.rewardNote && order.rewardNote.indexOf('debt') !== -1) {
+                s.debt = Math.max(0, (s.debt || 0) - order.rewardCredits);
+                rewardMsg += ' ' + order.rewardCredits + ' cr debt reduction.';
+            } else {
+                s.credits = (s.credits || 0) + order.rewardCredits;
+                rewardMsg += ' +' + order.rewardCredits + ' cr.';
+            }
+        }
+        otisLines.push({ role: 'otis', text: rewardMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(rewardMsg);
+        gameState._save();
+        gameState._updateUI();
+    }
+
+    function handleAcceptStandingOrder(orderId) {
+        var s = gameState.state;
+        var order = (s.activeOrders || []).find(function(o) { return o.id === orderId; });
+        if (!order) return;
+        order.accepted = true;
+        if (order.requirementKey === 'svenRareRefusal') {
+            // Mark all Rares this week as going to Sven at his rate; drop interference
+            s.svenInterferencePct = 5;
+            s.svenRareRefusalActive = true;
+            s.svenRareRefusalExpiresDay = order.expiresOnDay;
+            s.svenComplicity = (s.svenComplicity || 0) + 1;
+            var acceptMsg = '[STANDING ORDER ACCEPTED] Sven: First refusal on Rares active. Interference at 5% for 7 days. All Rares auto-flagged for Sven this cycle.'; // LORE
+            otisLines.push({ role: 'otis', text: acceptMsg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(acceptMsg);
+        }
+        gameState._save();
+        renderActiveOrders();
+    }
+
+    function handleDeclineStandingOrder(orderId) {
+        var s = gameState.state;
+        s.activeOrders = (s.activeOrders || []).filter(function(o) { return o.id !== orderId; });
+        var declineMsg = 'Standing order declined. Order removed.'; // LORE
+        otisLines.push({ role: 'otis', text: declineMsg }); renderOTIS();
+        gameState._save();
+        renderActiveOrders();
+    }
+
+    function recordOrderProgress(category, rarity) {
+        var s = gameState.state;
+        if (!s.activeOrders) return;
+        s.activeOrders.forEach(function(o) {
+            if (o.fulfilled || !o.accepted) return;
+            var key = o.requirementKey;
+            var matched = false;
+            if (key === 'settlementItems' && category === 'Settlement') matched = true;
+            if (key === 'vesselItems' && category === 'Vessel') matched = true;
+            if (key === 'industrialItems' && category === 'Industrial') matched = true;
+            if (key === 'anomalousItem' && rarity === 'Anomalous') matched = true;
+            if (key === 'processedItems') matched = true;
+            if (matched) {
+                o.progressQty = (o.progressQty || 0) + 1;
+                if (checkOrderFulfilment(o, s)) {
+                    o.fulfilled = true;
+                    applyOrderReward(o, s);
+                }
+            }
+        });
+        gameState._save();
+        renderActiveOrders();
+    }
+
+    function renderActiveOrders() {
+        var section = document.getElementById('active-orders-section');
+        var list = document.getElementById('active-orders-list');
+        if (!section || !list) return;
+        var s = gameState.state;
+        var cap = getCommOrderCap();
+        if (cap === 0) { section.style.display = 'none'; return; }
+        var orders = (s.activeOrders || []).filter(function(o) { return !o.fulfilled; });
+        section.style.display = '';
+        if (orders.length === 0) {
+            list.innerHTML = '<p class="zone-hint">No active orders.</p>';
+            return;
+        }
+        list.innerHTML = orders.map(function(o) {
+            var daysLeft = Math.max(0, o.expiresOnDay - s.day);
+            var progressStr = (o.requirementQty > 1)
+                ? ' [' + (o.progressQty || 0) + '/' + o.requirementQty + ']'
+                : '';
+            var actionsHtml = '';
+            if (o.hasAcceptDecline && !o.accepted) {
+                actionsHtml = '<div class="so-actions">'
+                    + '<button onclick="handleAcceptStandingOrder(' + o.id + ')">ACCEPT</button>'
+                    + '<button class="btn-warn" onclick="handleDeclineStandingOrder(' + o.id + ')">DECLINE</button>'
+                    + '</div>';
+            }
+            return '<div class="standing-order-entry">'
+                + '<div class="so-header">[STANDING ORDER] ' + escapeHtml(o.npc) + '</div>'
+                + '<div class="so-desc">' + escapeHtml(o.desc) + progressStr + '</div>'
+                + '<div class="so-meta">Reward: ' + (o.rewardCredits > 0 ? o.rewardCredits + ' cr' : '') + (o.rewardNote ? ' ' + escapeHtml(o.rewardNote) : '') + ' — Expires Day ' + o.expiresOnDay + ' (' + daysLeft + 'd)</div>'
+                + actionsHtml
+                + '</div>';
+        }).join('');
+    }
+
+    // ── BANK INSPECTIONS ──────────────────────────────────────────────────────
+    // Scheduled every 14 days. Check bot status; apply pass/fail with Hull Patch.
+    function checkBankInspection() {
+        var s = gameState.state;
+        if (!s.nextInspectionDay) s.nextInspectionDay = s.day + 14;
+        if (s.day < s.nextInspectionDay) return;
+        s.nextInspectionDay = s.day + 14;
+
+        var bots = s.bots || [];
+        var offlineBots = bots.filter(function(b) { return b.status === 'OFFLINE'; });
+        var redBots     = bots.filter(function(b) { return b.status === 'RED'; });
+        var amberBots   = bots.filter(function(b) { return b.status === 'AMBER'; });
+        var allNominal  = bots.every(function(b) { return b.status === 'NOMINAL'; });
+
+        var result;
+        var penalty = 0;
+
+        if (allNominal) {
+            // Pass — small credit reward
+            var reward = 200;
+            s.credits = (s.credits || 0) + reward;
+            result = 'PASS';
+            // LORE
+            var passMsg = '[UBC INSPECTION] Day ' + s.day + '. All systems NOMINAL. Compliance confirmed. Operational credit: ' + reward + ' cr. George ran clean inspections for nineteen years. You are catching up.';
+            otisLines.push({ role: 'otis', text: passMsg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(passMsg);
+        } else if (offlineBots.length > 0 || redBots.length > 0) {
+            // Fail — significant penalty
+            var basePenalty = 600 + (offlineBots.length * 300) + (redBots.length * 150);
+            penalty = Math.round(basePenalty * getHullPatchFactor());
+            s.outstandingDebt = (s.outstandingDebt || 0) + penalty;
+            result = 'FAIL';
+            // LORE
+            var failMsg = '[UBC INSPECTION] Day ' + s.day + '. Critical deficiencies found. '
+                + (offlineBots.length ? offlineBots.length + ' bot(s) OFFLINE. ' : '')
+                + (redBots.length ? redBots.length + ' bot(s) RED. ' : '')
+                + 'Penalty: ' + penalty + ' cr added to arrears.'
+                + (getHullPatchFactor() < 1.0 ? ' Hull Patch reduced original penalty.' : '')
+                + ' George never failed an inspection. He also never ran bots this hard.';
+            otisLines.push({ role: 'otis', text: failMsg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(failMsg);
+        } else {
+            // Warning — AMBER bots, minor penalty
+            var warnPenalty = Math.round(150 * amberBots.length * getHullPatchFactor());
+            penalty = warnPenalty;
+            if (penalty > 0) s.outstandingDebt = (s.outstandingDebt || 0) + penalty;
+            result = 'WARNING';
+            // LORE
+            var warnMsg = '[UBC INSPECTION] Day ' + s.day + '. ' + amberBots.length + ' bot(s) AMBER. Warning filed. '
+                + (penalty > 0 ? 'Minor penalty: ' + penalty + ' cr. ' : '')
+                + 'Bring systems to NOMINAL before next cycle.';
+            otisLines.push({ role: 'otis', text: warnMsg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(warnMsg);
+        }
+
+        // Check if there is an active compliance standing order for allBotsNominal
+        if (result === 'PASS' && s.activeOrders) {
+            s.activeOrders.forEach(function(o) {
+                if (!o.fulfilled && o.requirementKey === 'allBotsNominal') {
+                    o.fulfilled = true;
+                    applyOrderReward(o, s);
+                }
+            });
+        }
+
+        var dot = document.getElementById('comms-dot-bank');
+        if (dot) dot.className = 'comms-dot dot-' + (result === 'PASS' ? 'on' : result === 'FAIL' ? 'red' : 'amber');
+        gameState._save();
+        gameState._updateUI();
+        renderActiveOrders();
+    }
+
     function checkPaymentEscalation() {
       var s = gameState.state;
       if (!s.escalationFired) s.escalationFired = { tier1: false, tier2: false, tier3: false };
@@ -4323,6 +4905,8 @@
         checkScriptedComms();
         checkUpgradeThreshold();
         checkDiaryUnlocksDay();
+        checkStandingOrders();
+        checkBankInspection();
         // Belt jam check — evaluated every 2 in-game days to reduce frequency
         _beltJamDayCounter++;
         if (_beltJamDayCounter >= 2) { _beltJamDayCounter = 0; checkBeltJam(); }
