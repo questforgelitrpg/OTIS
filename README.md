@@ -1,6 +1,6 @@
 # O.T.I.S. — Object, Tracking & Inventory System
 
-A browser-based narrative LitRPG set aboard a junk-processing moon salvage station. You run the operation entirely from a single terminal console — no walking, no inventory screens. The console is the world.
+A browser-based narrative set aboard a junk-processing moon salvage station. You run the operation entirely from a single terminal console — no walking, no inventory screens. The console is the world.
 
 **OTIS** (Object, Tracking & Inventory System) is your AI co-star, powered by the Claude Haiku API. His slow drift from cold bank machine toward something George built is the story.
 
