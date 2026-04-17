@@ -1,0 +1,34 @@
++================================================================+
+|       STATION INTEGRATION SCHEMATIC --- CLASSIFIED            |
+|            OPERATION: RETURN ADDRESS --- 452b                 |
++================================================================+
+|                                                               |
+|  [a] SCANNER ARRAY                   [h] DEEP-SPACE ARRAY    |
+|  Sub-Atomic Pickup                   The Long Listen         |
+|       {ALPHA}                              {ETA}             |
+|          |                                   |               |
+|          |          [b] PROCESSING CORE      |               |
+|          |          Encryption Buffer        |               |
+|          |               {BETA}              |               |
+|          |                 |                 |               |
+|  [g] REGISTRY LOGS         |      [q] MEMORIAL PLAQUE        |
+|  Land-Claim Link           |      Institutional Marker       |
+|       {GAMMA}              |            {THETA}              |
+|          |                 |                 |               |
+|          +-----------------|---+-------------+               |
+|                            |   |                             |
+|             +--------------+---+-----------+                 |
+|             |    [d] SOURCE 452b UPLINK    |                 |
+|             |    External Comms Dish       |                 |
+|             |          {DELTA}             |                 |
+|             +--------------+---+-----------+                 |
+|                            |   |                             |
+|         +------------------+   |                             |
+|         |                  |   |                             |
+|  [e] CENTRAL CPU           |  [z] COOLANT PIPES             |
+|  Logic Gate Alpha          |  Aux Heat Exchange             |
+|       {EPSILON}            |        {ZETA}                  |
+|                            |                                 |
++================================================================+
+|  NODES INSTALLED: 0/8          SIGNAL TO 452b: INACTIVE      |
++================================================================+
