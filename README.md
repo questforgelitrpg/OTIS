@@ -10,7 +10,7 @@ A browser-based narrative set aboard a junk-processing moon salvage station. You
 
 ## What the Game Is
 
-You are Vernon Serling, new operator of a debt-laden salvage station orbiting a dead moon. Your predecessor, George Verne, ran the place for 25 years. He left debts, a warehouse of mysterious components, and an AI that seems to have been paying attention the whole time.
+You are Vernon Serling, new operator of a debt-laden salvage station orbiting a dead moon. Your predecessor, George, ran the place for 25 years. He left debts, a warehouse of mysterious components, and an AI that seems to have been paying attention the whole time.
 
 Every drop, the barge brings items. You sort them. The bank watches the clock. Sven Digut runs interference from the outside. May Finster handles scrap. OTIS handles everything else.
 
