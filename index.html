@@ -1336,6 +1336,7 @@
                 declarationBatch: [],
                 declarationBatchCount: 0,
                 deliveryCount: 0,
+                stateVersion: 5,
                 svenIgnoreDays: 0,
                 svenInterferencePct: 20,
                 recentBotConflict: false,
@@ -1390,7 +1391,6 @@
                 activeOrders: [],
                 // --- BANK INSPECTIONS ---
                 nextInspectionDay: 14,
-                stateVersion: 5,
             };
         },
         save: function(state) {
@@ -4650,12 +4650,12 @@
         if (!order) return;
         order.accepted = true;
         if (order.requirementKey === 'svenRareRefusal') {
-            // Mark all Rares this week as going to Sven at his rate; drop interference
+            // Drop interference; complicity is tracked when Rare items are actually routed to Sven
             s.svenInterferencePct = 5;
             s.svenRareRefusalActive = true;
             s.svenRareRefusalExpiresDay = order.expiresOnDay;
-            s.svenComplicity = (s.svenComplicity || 0) + 1;
-            var acceptMsg = '[STANDING ORDER ACCEPTED] Sven: First refusal on Rares active. Interference at 5% for 7 days. All Rares auto-flagged for Sven this cycle.'; // LORE
+            // LORE
+            var acceptMsg = '[STANDING ORDER ACCEPTED] Sven: First refusal on Rares active. Interference at 5% for 7 days. Route Rare items to Sven this cycle to honour the deal. George never made this agreement. He said the interference was the honest version of the relationship.';
             otisLines.push({ role: 'otis', text: acceptMsg }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(acceptMsg);
         }
@@ -4666,7 +4666,8 @@
     function handleDeclineStandingOrder(orderId) {
         var s = gameState.state;
         s.activeOrders = (s.activeOrders || []).filter(function(o) { return o.id !== orderId; });
-        var declineMsg = 'Standing order declined. Order removed.'; // LORE
+        // LORE
+        var declineMsg = 'Standing order declined. Sven will note it. George used to say no to him once a month on principle. I do not know if it helped.';
         otisLines.push({ role: 'otis', text: declineMsg }); renderOTIS();
         gameState._save();
         renderActiveOrders();
