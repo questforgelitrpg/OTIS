@@ -2884,6 +2884,8 @@
         otisLines.push({ role:'otis', text: svMsg }); renderOTIS();
         var dot = document.getElementById('comms-dot-sven');
         if (dot) dot.className = 'comms-dot dot-on';
+        var svenEl = document.getElementById('sys-sven');
+        if (svenEl) { svenEl.textContent = 'NOMINAL'; svenEl.className = 'status-ok'; }
         if (window.OtisTTS) OtisTTS.speak(svMsg);
     }
 
@@ -3134,6 +3136,7 @@
         var clearMsg = 'Jam cleared. Belt running.';
         otisLines.push({ role: 'otis', text: clearMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(clearMsg);
+        updateBeltUI(gameState.state.dropActive ? 'DELIVERING' : 'CLEAR');
     }
 
     // AUXILIARY CHANNEL
@@ -4015,7 +4018,7 @@
         var dot = document.getElementById('comms-dot-sven');
         if (dot) dot.className = 'comms-dot';
         var svenEl = document.getElementById('sys-sven');
-        if (svenEl) svenEl.textContent = 'NOMINAL';
+        if (svenEl) { svenEl.textContent = 'NOMINAL'; svenEl.className = 'status-ok'; }
     }
 
     // COMMS — IGNORE SVEN
