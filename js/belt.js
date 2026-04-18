@@ -77,6 +77,9 @@
     //
     var beltQueueCap = 3;
     var botFetchTimer = null;
+    // _lastStallWarnAt is intentionally ephemeral (not persisted). Resetting on reload
+    // is acceptable — the player may have just fixed the bots, and re-seeing the warning
+    // immediately is not harmful. Storing it in gameState would add save noise every 60s.
     var _lastStallWarnAt = 0;
 
     function computeFetchDuration(bot) {
@@ -359,12 +362,14 @@
                 advanceBeltQueue();
             } else if (fp.length > 0 || botsActive) {
                 // One item on belt (or none), more in field/transit — show ETAs
-                var etaMsg = 'Bots still fielding. ' + (s.bots || []).map(function(b) {
-                    var eta = (b.activity === 'IDLE' || b.activity === 'OFFLINE')
-                        ? b.activity.toLowerCase()
-                        : Math.ceil(b.activityRemainingMs / 1000) + 's';
-                    return 'Bot-' + b.id + ': ' + eta;
+                var activeBotsInfo = (s.bots || []).filter(function(b) {
+                    return b.activity === 'FETCHING' || b.activity === 'CARRYING';
+                }).map(function(b) {
+                    return 'Bot-' + b.id + ': ' + Math.ceil(b.activityRemainingMs / 1000) + 's';
                 }).join(', ');
+                var etaMsg = activeBotsInfo
+                    ? 'Bots still fielding. ' + activeBotsInfo + '.'
+                    : 'Bots fielding. All in transit — items incoming.';
                 otisLines.push({ role: 'otis', text: etaMsg }); renderOTIS();
             } else {
                 // Drop winding down — advance if possible

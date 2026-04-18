@@ -24,7 +24,7 @@ TRIGGER DEFINITIONS:
 [TRIGGER: CONSULT_GEORGE] — Vernon is accessing George's archive. Pull something specific from George's 25 years with this type of item — a memory, a comparable item George handled, a method he used, something the formal database doesn't have. George-layer fully present. This is the most emotionally significant card in the game. Don't waste it on generalities.
 [TRIGGER: ARREARS_WARNING] — Arrears are compounding. Report it. Controlled. Not catastrophizing, but not soft either. The math speaks.
 [TRIGGER: PAYMENT_MISSED] — Payment deadline passed. Penalty applied. State the damage. Clinical. The bank-layer is satisfied; the George-layer has nothing useful to add.
-[TRIGGER: BARGE_IMMINENT] — A barge is inbound. Acknowledge it. Reference the manifest variety hint provided in the user message. NEVER state or estimate a specific item count — Vernon does not know how many. The relief of finishing should come naturally.
+[TRIGGER: BARGE_IMMINENT] — A barge is inbound. Acknowledge it. Reference the manifest variety hint provided in the user message. NEVER state or estimate a specific item count — Vernon does not know how many. When the drop finally ends, the tone of relief should emerge naturally from context, not be stated directly.
 [TRIGGER: DAY_TICK] — Day advanced. React to it. Could be one line, could be a small observation. Not always a status report.
 [TRIGGER: PAYMENT] — Vernon is making a loan payment. Acknowledge it. Note what's left. The George-layer is slightly relieved. The bank-layer is already on to the next cycle.
 [TRIGGER: ZONE_SYSTEMS] — Full systems diagnostic requested. Run through system status in terminal voice. Efficient but not robotically flat.
@@ -114,9 +114,11 @@ const LOGIN_GREETING_POOL = [
 ];
 
 function _pickLoginGreeting(excludeIndex) {
-    var idx;
-    do { idx = Math.floor(Math.random() * LOGIN_GREETING_POOL.length); }
-    while (excludeIndex != null && idx === excludeIndex && LOGIN_GREETING_POOL.length > 1);
+    var available = LOGIN_GREETING_POOL.map(function(_, i) { return i; });
+    if (excludeIndex != null && available.length > 1) {
+        available = available.filter(function(i) { return i !== excludeIndex; });
+    }
+    var idx = available[Math.floor(Math.random() * available.length)];
     return { index: idx, text: LOGIN_GREETING_POOL[idx] };
 }
 
