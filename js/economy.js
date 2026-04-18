@@ -56,10 +56,13 @@
         }, 0);
         s.credits += total;
         s.mayBin = [];
+        s.mayNotifUnread = true;
         gameState._save(); gameState._updateUI();
         renderBinPanel();
         var mMsg = 'May bin shipped. ' + bin.length + ' items. +' + total + ' cr.';
         otisLines.push({ role:'otis', text: mMsg }); renderOTIS();
+        var mayDot = document.getElementById('comms-dot-may');
+        if (mayDot) mayDot.className = 'comms-dot dot-on';
         if (window.OtisTTS) OtisTTS.speak(mMsg);
     }
     function handleBrokerBinShip() {

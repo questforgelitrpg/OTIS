@@ -268,10 +268,11 @@
         gameState._save();
         var entry = GEORGE_DIARY.filter(function(e) { return e.id === id; })[0];
         if (!entry) return false;
-        // Surface a brief notification in OTIS terminal
+        // Surface a brief notification in OTIS terminal and light the storeroom indicator
         var notif = 'Diary entry found. Year ' + entry.year + ', Day ' + entry.day + '. OTIS: ' + entry.otisResponse;
         otisLines.push({ role: 'otis', text: notif });
         renderOTIS();
+        setLight('light-store', 'light-amber');
         renderGeorgeDiary();
         return true;
     }
@@ -284,16 +285,16 @@
         var groupAFoundCount = groupA.filter(function(e) { return found.indexOf(e.id) !== -1; }).length;
         var groupAUnfound = groupA.filter(function(e) { return found.indexOf(e.id) === -1; });
         if (!groupAUnfound.length) return;
-        // Phase 6: Accelerated unlock — once day >= 5 AND warehouse interacted at least once,
+        // Phase 6: Accelerated unlock — once day >= 3 AND warehouse interacted at least once,
         // switch to one entry per in-game day (24 hrs) instead of one per 3 days.
         var warehouseInteracted = s.schematicFound || (s.georgeWarehouseFound || []).length > 0 || (s.warehouseMisses || 0) > 0;
         var nextUnlockDay;
-        if (s.day >= 5 && warehouseInteracted) {
-            // Accelerated: one entry per day after day 5
-            nextUnlockDay = 5 + (groupAFoundCount + 1);
+        if (s.day >= 3 && warehouseInteracted) {
+            // Accelerated: one entry per day after day 3
+            nextUnlockDay = 3 + (groupAFoundCount + 1);
         } else {
-            // Standard: one entry per 3 in-game days after day 5
-            nextUnlockDay = 5 + 3 * (groupAFoundCount + 1);
+            // Standard: one entry per 3 in-game days after day 3
+            nextUnlockDay = 3 + 3 * (groupAFoundCount + 1);
         }
         if (s.day >= nextUnlockDay) {
             _unlockDiaryEntry(groupAUnfound[0].id);
