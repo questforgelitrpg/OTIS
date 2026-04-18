@@ -148,7 +148,8 @@
                 // --- v7 FIELDS ---
                 earlyDebtEventFired: false,  // Day 2-4 collector ping
                 weighItShown: [],            // item names already shown weigh-it hint
-                orderFollowUpDay: {},        // last follow-up day per NPC (Sven/May)
+        orderFollowUpDay: {},        // last follow-up day per NPC (Sven/May) — used to
+                                     // rate-limit future NPC follow-up pings to once per day
             };
         },
         save: function(state) {
@@ -160,9 +161,11 @@
                 var raw = localStorage.getItem(STATE_KEY);
                 if (raw) {
                     var parsed = JSON.parse(raw);
-                    // Hard require stateVersion 7 — no legacy migration (solo dev, no active saves).
+                    // Solo-dev project: no active player saves to migrate.
+                    // Any save older than v7 is intentionally cleared — this is a
+                    // breaking reset, not a silent data loss.
                     if (!parsed.stateVersion || parsed.stateVersion < 7) {
-                        console.log('Old save detected (v' + (parsed.stateVersion || '?') + '). Clearing for v7.');
+                        console.log('Save version ' + (parsed.stateVersion || '?') + ' < 7 — clearing (intentional reset, no active saves).');
                         this.clear();
                         return null;
                     }

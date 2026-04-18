@@ -129,7 +129,10 @@
     }
     window.computeBeltQueueCap = computeBeltQueueCap;
 
-    // Track a routed item in the ephemeral recentRoutedItems list (last 12).
+    // Maximum number of recently-routed items tracked for CONSULT_GEORGE item callbacks.
+    var MAX_RECENT_ROUTED_ITEMS = 12;
+
+    // Track a routed item in the ephemeral recentRoutedItems list (last MAX_RECENT_ROUTED_ITEMS).
     // Used by CONSULT_GEORGE to surface item-level callbacks and history.
     function trackRecentRoutedItem(item, route) {
         var s = gameState.state;
@@ -141,9 +144,10 @@
             route: route,
             day: s.day,
         });
-        s.recentRoutedItems = s.recentRoutedItems.slice(0, 12);
+        s.recentRoutedItems = s.recentRoutedItems.slice(0, MAX_RECENT_ROUTED_ITEMS);
     }
     window.trackRecentRoutedItem = trackRecentRoutedItem;
+    window.MAX_RECENT_ROUTED_ITEMS = MAX_RECENT_ROUTED_ITEMS;
 
     // ── WEIGH-IT competing-pressure hint ─────────────────────────────────────
     // Fires on ~12% of items, or any item that matches a live standing order,
@@ -223,6 +227,15 @@
         return 'mixed';
     }
 
+    // Shared belt-saturation message generator.
+    function _beltSaturationMsg(queueCap) {
+        var s = gameState.state;
+        var degradedCount = (s.bots || []).filter(function(b) { return b.status === 'RED' || b.status === 'OFFLINE'; }).length;
+        return degradedCount >= 2
+            ? 'Belt saturated, boss \u2014 bots degraded. Queue full (' + queueCap + '). Repair bots to clear backlog.'
+            : 'Belt queue full (' + queueCap + '). Item held until belt clears.';
+    }
+
     function pushToBeltQueue(item) {
         var s = gameState.state;
         if (!s.beltQueue) s.beltQueue = [];
@@ -232,10 +245,7 @@
             var now = Date.now();
             if (now - _lastStallWarnAt >= 60000) {
                 _lastStallWarnAt = now;
-                var degradedCount = (s.bots || []).filter(function(b) { return b.status === 'RED' || b.status === 'OFFLINE'; }).length;
-                var stallMsg = degradedCount >= 2
-                    ? 'Belt saturated, boss \u2014 bots degraded. Queue full (' + beltQueueCap + '). Repair bots to clear backlog.'
-                    : 'Belt queue full (' + beltQueueCap + '). Item held until belt clears.';
+                var stallMsg = _beltSaturationMsg(beltQueueCap);
                 otisLines.push({ role: 'otis', text: stallMsg }); renderOTIS();
                 var stalledEl = document.getElementById('belt-stall-indicator');
                 if (stalledEl) stalledEl.style.display = '';
@@ -481,7 +491,7 @@
             var now = Date.now();
             if (now - _lastStallWarnAt >= 60000) {
                 _lastStallWarnAt = now;
-                otisLines.push({ role: 'otis', text: 'Belt saturated, boss \u2014 all bots offline. Field items waiting. Repair the bots to clear the backlog.' });
+                otisLines.push({ role: 'otis', text: _beltSaturationMsg(beltQueueCap) });
                 renderOTIS();
                 var stalledEl = document.getElementById('belt-stall-indicator');
                 if (stalledEl) stalledEl.style.display = '';

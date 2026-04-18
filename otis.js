@@ -215,8 +215,9 @@ function buildOTISContext(gs, opts) {
     let recentPart = '';
     if (opts && opts.includeRecentItems) {
         const keepLog = s.keepLog || [];
-        // Build digest from last 8–12 routed items across keepLog + recent routing events
-        const recentRouted = (s.recentRoutedItems || []).slice(0, 12);
+        // Build digest from last MAX_RECENT_ROUTED_ITEMS routed items
+        const maxItems = (typeof window !== 'undefined' && window.MAX_RECENT_ROUTED_ITEMS) || 12;
+        const recentRouted = (s.recentRoutedItems || []).slice(0, maxItems);
         if (recentRouted.length > 0) {
             const digest = recentRouted.map(function(r) {
                 return `${r.name} (${r.rarity}, ${r.route}, Day ${r.day})`;
