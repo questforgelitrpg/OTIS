@@ -250,7 +250,9 @@
                 appendOTIS('Payment missed. Arrears: ' + s.outstandingDebt + ' credits. Compound rate: 5% per day.', 'PAYMENT_MISSED');
                 if (s.missedPayments >= 3) triggerForeclosure();
             }
-            // Track consecutive arrears cycles for POWER_FAILURE ending
+            // Track consecutive arrears cycles for POWER_FAILURE ending.
+            // Placed AFTER optional arrears reduction so that if the player's
+            // remaining credits cleared outstandingDebt above, cycles reset to 0.
             if ((s.outstandingDebt || 0) > 0) {
                 s.consecutiveArrearsCycles = (s.consecutiveArrearsCycles || 0) + 1;
             } else {
@@ -389,6 +391,10 @@
     }
 
     // FORECLOSURE CUTSCENE — B2: converted to a true game-over with restart
+    // NOTE: endingTriggered is set at the very top (before the cutscene) to prevent
+    // any other ending from firing during the 16+ second sequence.  renderEndingScreen
+    // is called directly (not via triggerEnding) because endingTriggered is already
+    // set and triggerEnding would return early.
     function triggerForeclosure() {
         if (gameState.state.endingTriggered) return;
         gameState.state.endingTriggered = true;

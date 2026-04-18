@@ -1275,8 +1275,10 @@
         s.mazePlayerPos = null;
         gameState._save();
 
-        // B5 — MAZE_MASTER hidden ending at 103 completions.
-        // No telegraphing: no hint, no comment, no UI indicator.
+        // B5 — MAZE_MASTER hidden ending: fires silently after the player has
+        // completed 103 mazes.  The threshold (103) is intentional per owner spec.
+        // IMPORTANT: no UI hints, progress bars, or comments that telegraph this
+        // ending to the player — it must remain a complete easter egg.
         if (s.mazesCompletedTotal >= 103 && !s.endingTriggered) {
             triggerEnding('MAZE_MASTER');
             return;

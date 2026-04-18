@@ -295,7 +295,10 @@
         var needsRestart = !!ending.restart;
         if (restartBtn) restartBtn.style.display = needsRestart ? '' : 'none';
         if (ackBtn)     ackBtn.style.display     = needsRestart ? 'none' : '';
-        // Scripted OTIS line for failure endings (not FORECLOSURE, LEGACY, or MAZE_MASTER)
+        // Scripted OTIS line — present only on endings that have otisLine defined
+        // (currently SCRAP_HEAP and POWER_FAILURE).  FORECLOSURE uses a bespoke
+        // cutscene in triggerForeclosure().  MAZE_MASTER, LEGACY, HUMANITY, COMMERCE,
+        // and COMPROMISE have no otisLine field and are unaffected.
         if (ending.otisLine) {
             otisLines.push({ role: 'otis', text: ending.otisLine }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(ending.otisLine);
