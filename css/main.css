@@ -416,6 +416,7 @@ body.kbd-glitch { animation: kbd-glitch 0.3s infinite; }
     display: block;
 }
 .chaos-btn:hover { background: #122012; border-color: #2a4a2a; }
+.chaos-btn:focus-visible { outline: 2px solid var(--ind-on); outline-offset: 2px; }
 .chaos-btn.active {
     background: #0a1f0a;
     border-color: var(--ind-on);
