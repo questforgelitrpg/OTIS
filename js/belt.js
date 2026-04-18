@@ -585,6 +585,11 @@
     }
     window.handleSkip = handleSkip;
 
+    // NOTE: handleConsult and handleConsultMerged are intentionally separate.
+    // - handleConsult(trigger) — used by GEORGE ARCHIVE path; always hits the API
+    // - handleConsultMerged() — used by EXAMINE & VALUE path; short-circuits Common rarity to a hardcoded line
+    // They share the consultedExamine/consultedWorth flags but follow different prompt paths.
+    // Do not merge — the Common-rarity short-circuit is a deliberate cost optimization.
     function handleConsult(trigger) {
         if (!currentItem) return;
         var ctx = buildItemContext(currentItem);
@@ -894,3 +899,21 @@
     window.rollConveyorJam = rollConveyorJam;
     window.checkBeltJam = checkBeltJam;
     window.handleClearJam = handleClearJam;
+
+    function setPickMode(mode) {
+        var s = gameState.state;
+        if (!s.pickListChoice) s.pickListChoice = { mode: 'DROP', category: null };
+        s.pickListChoice.mode = mode;
+        gameState._save();
+        renderPickList();
+    }
+    window.setPickMode = setPickMode;
+
+    function getAppraisedValue(keepItem) {
+        var base = keepItem.baseValue || keepItem.otisValue || 0;
+        if (keepItem.rarity === 'Anomalous' || base === 0) return base;
+        var daysHeld = Math.max(0, (gameState.state.day || 1) - (keepItem.keepDay || keepItem.day || 1));
+        var mult = Math.pow(1.02, daysHeld);
+        return Math.floor(base * mult * (CONDITION_MULTIPLIERS[keepItem.condition] || 1.0));
+    }
+    window.getAppraisedValue = getAppraisedValue;
