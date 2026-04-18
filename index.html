@@ -472,6 +472,9 @@
     <script src="js/comms.js"></script>
     <script src="js/upgrades.js"></script>
     <script src="js/orders.js"></script>
+    <script src="js/tutorial.js"></script>
+    <script src="js/naming.js"></script>
+    <script src="js/debug.js"></script>
     <script>
     // Moved to js/gamestate.js — see Phase 3 refactor
     // Moved to js/data.js — see Phase 2 refactor
@@ -582,32 +585,7 @@
 
     // Moved to js/belt.js — see Phase 5 refactor
     // Moved to js/belt.js — see Phase 5 refactor
-    function recalculateNamingTier() {
-        var s = gameState.state;
-        var dup = (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS;
-        var arrears = s.outstandingDebt || 0;
-        var skips = s.skipCount || 0;
-        var reserves = s.reserveSuccesses || 0;
-        var missed = s.missedPayments || 0;
-
-        var target = 0;
-        if (reserves >= 3) target = 1;
-        if (reserves >= 6) target = 2;
-        if (reserves >= 10) target = 3;
-
-        if (skips >= 5) target = Math.max(0, target - 1);
-        if (dup <= 2) target = Math.max(0, target - 1);
-        if (arrears > 500) target = Math.max(0, target - 1);
-        if (missed >= 1) target = Math.max(0, target - 2);
-        if (missed >= 2) target = 0;
-
-        target = Math.max(0, Math.min(NAMING_TIERS.length - 1, target));
-        if (target !== s.namingTier) {
-            s.namingTier = target;
-            gameState._save();
-            gameState._updateUI();
-        }
-    }
+    // Moved to js/naming.js — see Phase 12 refactor
 
     function checkActProgression() {
         var s = gameState.state;
@@ -664,79 +642,13 @@
     // Moved to js/narrative.js — see Phase 7 refactor
     // Moved to js/data.js — see Phase 2 refactor
 
-    function _tutorialActive() {
-        var step = gameState.state.tutorialStep;
-        return step >= 1 && step <= 5;
-    }
-
-    function _clearTutorialHighlight() {
-        document.querySelectorAll('.tutorial-highlight').forEach(function(el) {
-            el.classList.remove('tutorial-highlight');
-        });
-    }
-
-    function _showTutorialSkip(visible) {
-        var btn = document.getElementById('tutorial-skip-btn');
-        if (btn) btn.style.display = visible ? '' : 'none';
-    }
-
-    function _startTutorialStep(step) {
-        _clearTutorialHighlight();
-        var data = TUTORIAL_STEPS[step - 1];
-        if (!data) return;
-        var el = document.getElementById(data.target);
-        if (el) el.classList.add('tutorial-highlight');
-        var msg = data.msg;
-        otisLines.push({ role: 'otis', text: msg }); renderOTIS();
-        if (window.OtisTTS) OtisTTS.speak(msg);
-        _showTutorialSkip(true);
-    }
-
-    function tutorialAdvance() {
-        var s = gameState.state;
-        if (!_tutorialActive()) return;
-        var next = s.tutorialStep + 1;
-        if (next > 5) {
-            // All steps done — complete
-            _clearTutorialHighlight();
-            _showTutorialSkip(false);
-            s.tutorialStep = 0;
-            gameState._save();
-            var doneMsg = 'Tutorial complete. You know enough to start. The rest you learn by doing.';
-            otisLines.push({ role: 'otis', text: doneMsg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(doneMsg);
-            return;
-        }
-        s.tutorialStep = next;
-        gameState._save();
-        _startTutorialStep(next);
-    }
-
-    function tutorialExit() {
-        if (!_tutorialActive()) return;
-        _clearTutorialHighlight();
-        _showTutorialSkip(false);
-        gameState.state.tutorialStep = 0;
-        gameState._save();
-        var msg = 'Tutorial skipped. The belt does not wait.';
-        otisLines.push({ role: 'otis', text: msg }); renderOTIS();
-        if (window.OtisTTS) OtisTTS.speak(msg);
-    }
-
-    function checkTutorialModalOpen(name) {
-        var s = gameState.state;
-        if (s.tutorialStep === 1 && name === 'belt') {
-            // Belt opened — ensure an item is ready then advance to step 2
-            if (currentItem === null) { deliverNextBeltItem(); }
-            tutorialAdvance();
-        } else if (s.tutorialStep === 4 && name === 'comms') {
-            // Comms opened during step 4 — also highlight the ANSWER BANK button
-            var bankBtn = document.getElementById('btn-answer-bank');
-            if (bankBtn) bankBtn.classList.add('tutorial-highlight');
-        } else if (s.tutorialStep === 5 && name === 'systems') {
-            tutorialAdvance();
-        }
-    }
+    // Moved to js/tutorial.js — see Phase 12 refactor
+    // Moved to js/tutorial.js — see Phase 12 refactor
+    // Moved to js/tutorial.js — see Phase 12 refactor
+    // Moved to js/tutorial.js — see Phase 12 refactor
+    // Moved to js/tutorial.js — see Phase 12 refactor
+    // Moved to js/tutorial.js — see Phase 12 refactor
+    // Moved to js/tutorial.js — see Phase 12 refactor
 
     // Moved to js/ui.js — see Phase 4 refactor
     // Moved to js/ui.js — see Phase 4 refactor
@@ -1029,41 +941,9 @@
 
     // Moved to js/narrative.js — see Phase 7 refactor
 
-    // Debug: manually trigger the toaster incident (Act 3 power-outage plot event).
-    // Resets the fired-guard first so the button works even after the incident has
-    // already occurred in a normal game session.
-    function handleToasterIncident() {
-        gameState.state.toasterIncidentFired = false;
-        fireToasterIncident();
-    }
+    // Moved to js/debug.js — see Phase 12 refactor
 
-    // MCGUFFIN SEQUENCE
-    function handleMcGuffin() {
-        var out = document.getElementById('otis-output');
-        if (out) out.classList.add('mcguffin-blur');
-        document.body.style.filter = 'blur(0.5px) contrast(0.9)';
-        var term = document.getElementById('terminal');
-        if (term) term.style.filter = 'blur(0.8px)';
-        if (window.OtisTTS && OtisTTS.setRate) OtisTTS.setRate(0.8);
-        appendHardcodedComm('\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 \u2588\u2588 \u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588 \u2588\u2588 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588');
-        setTimeout(function() {
-            document.body.style.filter = '';
-            if (term) term.style.filter = '';
-            if (window.OtisTTS && OtisTTS.setRate) OtisTTS.setRate(1.0);
-            if (out) out.classList.remove('mcguffin-blur');
-            var ttsText = "George would have known what to call it. I don't.";
-            if (window.OtisTTS) window.OtisTTS.speak(ttsText);
-            setItemInQueue(Object.assign({}, MCGUFFIN_ITEM));
-            setTimeout(function() {
-                if (otisLines.length > 0) {
-                    var last = otisLines[otisLines.length - 1];
-                    if (last.text && last.text.indexOf('\u2588') !== -1) otisLines.pop();
-                }
-                otisLines.push({ role: 'otis', text: '[SIGNAL RESTORED]' });
-                renderOTIS();
-            }, 4000);
-        }, 8000);
-    }
+    // Moved to js/debug.js — see Phase 12 refactor
 
     // Moved to js/ui.js — see Phase 4 refactor
     // Moved to js/ui.js — see Phase 4 refactor
@@ -1125,7 +1005,7 @@
         var muted = window.OtisSound.toggleMute();
         var btn = document.getElementById('sfx-btn'); if (btn) btn.textContent = muted ? 'SFX: OFF' : 'SFX: ON';
     }
-    function toggleDebug() { var p = document.getElementById('debug-panel'); if (p) p.style.display = p.style.display !== 'block' ? 'block' : 'none'; }
+    // Moved to js/debug.js — see Phase 12 refactor
     // Moved to js/data.js — see Phase 2 refactor
 
     // Moved to js/upgrades.js — see Phase 11 refactor
@@ -1204,42 +1084,14 @@
         }
     }
 
-    function dbgDay()      { advanceDay(); }
-    function dbgWeek()     { for (var i = 0; i < 7; i++) advanceDay(); }
-    function dbgCredits()  { gameState.state.credits += 500; gameState._save(); gameState._updateUI(); }
-    function dbgForcePay() { gameState.state.daysUntilPayment = 0; gameState._save(); gameState._updateUI(); }
-    // Force-fire the DAILY TOAST (debug only). Bypasses the toastFiredToday guard.
-    // Note: this calls autoToast() which is the daily-toast routine only — it does
-    // NOT trigger the toaster incident (Act 3 power-outage).  Use the TOASTER INC
-    // debug button to test that separate plot event.
-    function dbgForceToast() { gameState.state.toastFiredToday = false; gameState._save(); autoToast(); }
-    // Replay the opening intro (debug only) — clears the flag and sends to intro.html.
-    function dbgReplayIntro() { gameState.state.introPlayed = false; gameState._save(); window.location.href = 'intro.html'; }
-    function dbgFastMode() {
-        TIMING.DEBUG_FAST_MODE = !TIMING.DEBUG_FAST_MODE;
-        // Restart the canonical window-level day interval at the new speed.
-        // (gameState._dayTimer is unused; the live timer is window._otisDayIntervalId.)
-        if (window._otisDayIntervalId) { clearInterval(window._otisDayIntervalId); window._otisDayIntervalId = null; }
-        var ms = TIMING.DEBUG_FAST_MODE ? Math.floor(TIMING.MS_PER_INGAME_DAY / TIMING.DEBUG_SPEED_MULTIPLIER) : TIMING.MS_PER_INGAME_DAY;
-        window._otisDayIntervalId = setInterval(function() { advanceDay(); }, ms);
-        if (beltTimer) { stopBeltDelivery(); startBeltDelivery(); }
-        appendOTIS('Fast mode: ' + (TIMING.DEBUG_FAST_MODE ? 'ON (10\u00d7)' : 'OFF'), 'ZONE_SYSTEMS');
-    }
-    var _clearPending = false;
-    var _clearTimer   = null;
-    function handleClearSave(btn) {
-        if (!_clearPending) {
-            _clearPending = true; btn.textContent = 'CONFIRM?'; btn.classList.add('btn-confirm-pending');
-            _clearTimer = setTimeout(function() { _clearPending = false; btn.textContent = 'CLEAR SAVE'; btn.classList.remove('btn-confirm-pending'); }, 3000);
-        } else {
-            clearTimeout(_clearTimer); _clearPending = false; btn.classList.remove('btn-confirm-pending');
-            // Replace in-memory state with the full default (day=1, introPlayed=false, etc.)
-            // so the reload presents the complete new-game experience — backstory intro,
-            // operator login gate, daily toast, then Day 1 gameplay — from the very start.
-            gameState.state = stateManager._default();
-            stateManager.clear(); location.reload();
-        }
-    }
+    // Moved to js/debug.js — see Phase 12 refactor
+    // Moved to js/debug.js — see Phase 12 refactor
+    // Moved to js/debug.js — see Phase 12 refactor
+    // Moved to js/debug.js — see Phase 12 refactor
+    // Moved to js/debug.js — see Phase 12 refactor
+    // Moved to js/debug.js — see Phase 12 refactor
+    // Moved to js/debug.js — see Phase 12 refactor
+    // Moved to js/debug.js — see Phase 12 refactor
 
     // COMMS — ANSWER BANK (scripted, no API)
     // Moved to js/comms.js — see Phase 10 refactor
