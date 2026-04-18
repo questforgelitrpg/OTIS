@@ -91,7 +91,22 @@
     function handleSvenBinShip() {
         var s = gameState.state;
         var bin = s.svenBin || [];
-        if (bin.length < 2) return;
+        if (bin.length < 2) {
+            // Bug fix: silent failure was swallowing player feedback.
+            // If the player manually triggers ship on a single-item bin, tell them why it won't go.
+            if (bin.length === 1) {
+                var shortMsg = 'Sven won\u2019t ship a single-item lot. Add one more Rare or Anomalous first.';
+                otisLines.push({ role: 'otis', text: shortMsg }); renderOTIS();
+                if (window.OtisTTS) OtisTTS.speak(shortMsg);
+                // Flash the ship button so the player sees the rejection
+                var shipBtn = document.getElementById('btn-sven-ship');
+                if (shipBtn) {
+                    shipBtn.classList.add('btn-flash-warn');
+                    setTimeout(function() { shipBtn.classList.remove('btn-flash-warn'); }, 1200);
+                }
+            }
+            return;
+        }
         var total = bin.reduce(function(sum, item) { return sum + (item.svenValue || 0); }, 0);
         s.credits += total;
         s.svenBin = [];

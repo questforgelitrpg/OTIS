@@ -76,13 +76,14 @@
                 declarationBatch: [],
                 declarationBatchCount: 0,
                 deliveryCount: 0,
-                stateVersion: 5,
+                stateVersion: 6,
                 svenIgnoreDays: 0,
                 svenInterferencePct: 20,
                 recentBotConflict: false,
                 svenComplaints: 0,
                 humanityArchive: 0,
                 humanityLog: [],
+                anomalyLog: [],
                 endingTriggered: false,
                 scrapDispatchCount: 0,
                 avgScrapFillPct: 0,
@@ -177,6 +178,8 @@
                             return Object.assign({ activity: 'IDLE', activityRemainingMs: 0, carrying: null }, b);
                         });
                     }
+                    // v6 migration: ensure anomalyLog exists
+                    ensureStateDefaults(result);
                     return result;
                 }
             } catch(e) { console.warn('Load failed:', e); }
@@ -185,6 +188,16 @@
         clear: function() { localStorage.removeItem(STATE_KEY); },
     };
     window.stateManager = stateManager;
+
+    // ensureStateDefaults — applied after loading a saved state to guarantee all
+    // fields introduced in newer stateVersion bumps are present.  Add a guard here
+    // whenever a new persisted field is added so that old saves migrate cleanly.
+    function ensureStateDefaults(state) {
+        if (!Array.isArray(state.anomalyLog))  state.anomalyLog  = [];
+        if (!Array.isArray(state.humanityLog)) state.humanityLog = [];
+        if (typeof state.humanityArchive !== 'number') state.humanityArchive = 0;
+    }
+    window.ensureStateDefaults = ensureStateDefaults;
 
     function GameState() {
         this.state = stateManager._default();
@@ -236,6 +249,13 @@
         }
         var bdc = document.getElementById('belt-drop-countdown');
         if (bdc) bdc.textContent = daysUntilDrop;
+        // Archive count in header — visible once at least one item has been archived
+        var archiveHdrEl = document.getElementById('hdr-archive');
+        if (archiveHdrEl) {
+            var archCount = s.humanityArchive || 0;
+            archiveHdrEl.textContent = '\u25C6 ARCHIVE: ' + archCount;
+            archiveHdrEl.style.display = archCount > 0 ? '' : 'none';
+        }
         this._renderKeepLog();
         updateModuleLights();
         updateCommsIndicators();

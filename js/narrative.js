@@ -29,6 +29,8 @@
         // Only fire during active session, not during a drop or power outage
         if (s.dropActive || s.powerOutageActive) return;
         if (Date.now() - _lastOtisActivity < SILENCE_THRESHOLD_MS) return;
+        // Suppress dad jokes while an emotional beat is active (debrief, anomaly archive, debt warning, etc.)
+        if (window.emotionalBeatActive) return;
 
         var joke = _getNextDadJoke();
         var setups = [

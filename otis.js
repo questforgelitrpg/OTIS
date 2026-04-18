@@ -176,10 +176,11 @@ function buildOTISContext(gs) {
         return 'CRITICAL';
     })();
     // Derive naming from namingTier index
-    // NOTE: Local cache. otis.js may load independently of data.js (e.g. server-rendered fallback).
-    // Keep in sync with NAMING_TIERS in js/data.js. See Phase 13 review.
-    const NAMING_TIERS = ['Mr. Serling','Vernon','Vern','Buddy','Pal','Coworker','Boss','Mr. Serling','Oh. You.'];
-    const naming = NAMING_TIERS[s.namingTier] || 'Mr. Serling';
+    // Use the canonical NAMING_TIERS from js/data.js (window.NAMING_TIERS) if available;
+    // fall back to the local copy so otis.js still works in server-rendered/standalone contexts.
+    // See Phase 13 review — the duplicate is intentional as a load-order safety net.
+    const _namingTiers = (typeof window !== 'undefined' && window.NAMING_TIERS) || ['Mr. Serling','Vernon','Vern','Buddy','Pal','Coworker','Boss','Mr. Serling','Oh. You.'];
+    const naming = _namingTiers[s.namingTier] || 'Mr. Serling';
     const dup = s.daysUntilPayment != null ? s.daysUntilPayment : 28;
     const arr = s.outstandingDebt || 0;
     const pressure = arr > 1000 ? 'CRITICAL' : arr > 0 ? 'HIGH' : dup <= 5 ? 'ELEVATED' : 'NORMAL';

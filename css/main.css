@@ -366,6 +366,20 @@ body.kbd-glitch { animation: kbd-glitch 0.3s infinite; }
 /* Transmit button */
 #btn-transmit-452b { color: var(--text-warn); border-color: var(--text-warn); font-weight: bold; }
 
+/* Debrief modal — end-of-drop summary */
+#modal-debrief .modal-inner { max-width: 480px; margin-top: 10vh; }
+.debrief-route-row { display: flex; align-items: baseline; gap: 0.5rem; font-size: 14px; line-height: 1.7; }
+.debrief-route-label { color: var(--text-bright); letter-spacing: 0.06em; min-width: 80px; }
+.debrief-route-count { color: var(--text-primary); min-width: 28px; text-align: right; }
+.debrief-route-pct   { color: var(--text-dim); font-size: 13px; }
+.debrief-sven    .debrief-route-label { color: var(--ind-amber); }
+.debrief-archive .debrief-route-label { color: #cc77ff; }
+.debrief-skip    .debrief-route-label { color: var(--text-muted); }
+
+/* Button flash warning — used for Sven bin rejection feedback */
+@keyframes btn-flash-warn { 0%, 100% { border-color: var(--border); color: var(--text-primary); } 25%, 75% { border-color: var(--text-warn); color: var(--text-warn); box-shadow: 0 0 6px var(--ind-amber); } }
+.btn-flash-warn { animation: btn-flash-warn 0.4s ease 3; }
+
 /* Conveyor jam warning */
 #conveyor-jam-warning { color: var(--text-danger); font-size: 14px; margin: 0.3rem 0; display: none; }
 /* Floating OTIS bar (mobile, modal-cover fallback) */
