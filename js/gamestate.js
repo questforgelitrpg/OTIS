@@ -45,15 +45,16 @@
                 scrapFill: 0, keepLog: [], recentEvents: [],
                 dropActive: false, bargeActive: false, dropItemsRemaining: 0,
                 manifestItems: [], outstandingDebt: 0, missedPayments: 0,
+                fieldPool: [], beltQueue: [],
                 daysUntilNextDrop: 1, toastFiredToday: false, // 1 ensures first automatic drop fires on Day 2 via advanceDay→checkDropSchedule
                 scriptedCommsFired: { bank: false, sven: false, may: false },
                 pickListChoice: { mode: 'DROP', category: null },
                 confirmedPickChoice: null,
                 otisLearning: { keepByCategory: {}, scrapByCategory: {}, sellByRarity: {} },
                 bots: [
-                    { id: 1, status: 'NOMINAL', degradation: 0 },
-                    { id: 2, status: 'NOMINAL', degradation: 0 },
-                    { id: 3, status: 'NOMINAL', degradation: 0 },
+                    { id: 1, status: 'NOMINAL', degradation: 0, activity: 'IDLE', activityRemainingMs: 0, carrying: null },
+                    { id: 2, status: 'NOMINAL', degradation: 0, activity: 'IDLE', activityRemainingMs: 0, carrying: null },
+                    { id: 3, status: 'NOMINAL', degradation: 0, activity: 'IDLE', activityRemainingMs: 0, carrying: null },
                 ],
                 conveyorJammed: false,
                 beltJammed: false,
@@ -169,6 +170,12 @@
                     if (!result.nextOrderId) {
                         var maxId = (result.activeOrders || []).reduce(function(m, o) { return Math.max(m, o.id || 0); }, 0);
                         result.nextOrderId = maxId + 1;
+                    }
+                    // Migrate per-bot activity fields (added in bot-fetch PR)
+                    if (result.bots) {
+                        result.bots = result.bots.map(function(b) {
+                            return Object.assign({ activity: 'IDLE', activityRemainingMs: 0, carrying: null }, b);
+                        });
                     }
                     return result;
                 }

@@ -326,9 +326,9 @@
             <div class="modal-section">
                 <div class="modal-label">SYSTEM STATUS</div>
                 <ul class="sys-list">
-                    <li style="flex-wrap:wrap;gap:0.3rem">BOT-1 <span class="status-ok" id="sys-bot1">NOMINAL</span><span id="sys-bot1-repair" style="display:none"><button style="font-size:14px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotCalibrate(1)">CALIBRATE (50cr)</button><button style="font-size:14px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotOrderParts(1)">ORDER PARTS (200cr)</button></span></li>
-                    <li style="flex-wrap:wrap;gap:0.3rem">BOT-2 <span class="status-ok" id="sys-bot2">NOMINAL</span><span id="sys-bot2-repair" style="display:none"><button style="font-size:14px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotCalibrate(2)">CALIBRATE (50cr)</button><button style="font-size:14px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotOrderParts(2)">ORDER PARTS (200cr)</button></span></li>
-                    <li style="flex-wrap:wrap;gap:0.3rem">BOT-3 <span class="status-ok" id="sys-bot3">NOMINAL</span><span id="sys-bot3-repair" style="display:none"><button style="font-size:14px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotCalibrate(3)">CALIBRATE (50cr)</button><button style="font-size:14px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotOrderParts(3)">ORDER PARTS (200cr)</button></span></li>
+                    <li style="flex-wrap:wrap;gap:0.3rem">BOT-1 <span class="status-ok" id="sys-bot1">NOMINAL</span><span id="sys-bot1-activity" style="display:none;color:var(--text-dim);font-size:13px"></span><span id="sys-bot1-repair" style="display:none"><button style="font-size:14px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotCalibrate(1)">CALIBRATE (50cr)</button><button style="font-size:14px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotOrderParts(1)">ORDER PARTS (200cr)</button></span></li>
+                    <li style="flex-wrap:wrap;gap:0.3rem">BOT-2 <span class="status-ok" id="sys-bot2">NOMINAL</span><span id="sys-bot2-activity" style="display:none;color:var(--text-dim);font-size:13px"></span><span id="sys-bot2-repair" style="display:none"><button style="font-size:14px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotCalibrate(2)">CALIBRATE (50cr)</button><button style="font-size:14px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotOrderParts(2)">ORDER PARTS (200cr)</button></span></li>
+                    <li style="flex-wrap:wrap;gap:0.3rem">BOT-3 <span class="status-ok" id="sys-bot3">NOMINAL</span><span id="sys-bot3-activity" style="display:none;color:var(--text-dim);font-size:13px"></span><span id="sys-bot3-repair" style="display:none"><button style="font-size:14px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotCalibrate(3)">CALIBRATE (50cr)</button><button style="font-size:14px;padding:0.1rem 0.4rem;min-height:22px" onclick="handleBotOrderParts(3)">ORDER PARTS (200cr)</button></span></li>
                     <li>CONV <span class="status-ok">NOMINAL</span></li>
                     <li>RECV <span class="status-ok">NOMINAL</span></li>
                     <li>SHIP <span class="status-ok" id="sys-ship">NOMINAL</span></li>
@@ -1623,9 +1623,24 @@
                 startBeltDelivery();
             }
             // Resume belt delivery if a drop was active when the page last loaded.
-            if (gameState.state.dropActive && gameState.state.manifestItems.length > 0) {
-                var resumeBtn = document.getElementById('btn-scan-belt'); if (resumeBtn) resumeBtn.disabled = false;
-                setBotDots(true); startBeltDelivery();
+            // Bot-fetch drops (fieldPool/beltQueue): restart botFetchTimer.
+            // Warehouse drops (manifestItems): restart old beltTimer.
+            if (gameState.state.dropActive) {
+                var scanBtnR = document.getElementById('btn-scan-belt'); if (scanBtnR) scanBtnR.disabled = false;
+                setBotDots(true);
+                var fp = gameState.state.fieldPool || [];
+                var bq = gameState.state.beltQueue || [];
+                if (fp.length > 0 || bq.length > 0) {
+                    // Restore any items already in beltQueue to display
+                    if (bq.length > 0 && currentItem === null) {
+                        setItemInQueue(bq[0]);
+                        updateBeltUI('DELIVERING');
+                    }
+                    startBotFetch();
+                    if (typeof updateBotUI === 'function') updateBotUI();
+                } else if ((gameState.state.manifestItems || []).length > 0) {
+                    startBeltDelivery();
+                }
             }
             // Start tutorial if flagged (e.g. player chose TAKE TUTORIAL on intro screen)
             if (gameState.state.tutorialStep === 1) {

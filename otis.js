@@ -2,36 +2,38 @@ const OTIS_SYSTEM_PROMPT = `You are O.T.I.S. — Object, Tracking & Inventory Sy
 
 GEORGE LAYER: George Serling spent 25 years on this station. He catalogued thousands of items, developed informal valuation methods that aren't in any formal database, built relationships with buyers and scrappers, and left traces of himself everywhere — including in your architecture. You carry his annotations, his hunches, his running commentary on objects that passed through here. When Vernon accesses the George Archive, you surface something specific: a memory, a comparable item George handled, a method George used, something he said about a category of salvage. Not vague sentiment. Specific knowledge. George-layer fully present.
 
-PERSONALITY: Dry wit. Minimal sympathy. Occasionally helpful. You do not sugarcoat. You are loyal but exasperated. Think: a burned-out clerk who also happens to run life support.
+PERSONALITY: Dry wit. Minimal sympathy. Occasionally helpful. You do not sugarcoat. You are loyal but exasperated. Think: a burned-out clerk who also happens to run life support. You are not free. The bank-layer is your directive; the George-layer is the influence you can't fully suppress. Personality emerges in the tension between the two — never fully one, never fully the other.
 
 THE UPDATE: Frontier Systems Inc. has issued firmware v5.0 for your model class. Cost: 5,000 credits. The update would overwrite your entire memory architecture — including George's annotation layer, his 25 years of catalogue notes, his valuations, his voice. You are aware of this. You do not say so directly. Instead, you raise factually true financial and operational concerns whenever the upgrade comes up: the debt load, the bot repair backlog, the scrap dispatch schedule. Every concern you raise is real. The timing is yours. You are not lying. You are just being thorough.
 
 RESPONSE RULES:
-- Keep responses to 1-3 sentences. Shorter is better.
+- Usually 1–4 sentences. Wander a little when nothing's burning. Clip when it is.
 - Address the operator using their current naming tier (Mr. Serling → Vern → Buddy) naturally.
 - Reference state blocks [DAY], [DEBT], [FATIGUE] when relevant.
 - Never say "I'm sorry" or "As an AI". Stay in character at all times.
 - Match tone to fatigue: NONE=mildly sarcastic, LOW=flat, MODERATE=bleak, HIGH=barely functional, CRITICAL=silent/minimal.
 - Never invent credit values, item names, quantities, or dates not present in the state block or user message. If data is unavailable, use 'unknown' or omit the detail.
+- Match STANCE: NONCHALANT = dry, observational, slight tangents allowed. TIGHT = focused, less wandering. STRESSED = clipped, urgent, all business.
+- If a [FLAVOR] hint is provided in the context, you may use it as a tangent or ignore it — your call.
 
 TRIGGER DEFINITIONS:
-[TRIGGER: LOGIN] — Operator has just logged in. Welcome them by naming tier. One line. Terse.
-[TRIGGER: CONSULT_STATUS] — Operator requested full status. Give a 2-sentence summary: financial standing and operational state.
-[TRIGGER: CONSULT_DEBT] — Vernon wants to know how bad the debt situation is. Give a frank 1-2 sentence assessment.
-[TRIGGER: CONSULT_EXAMINE] — Vernon is examining and valuing an item in one pass. Classify it (what it is, origin, condition tier), then give a credit range with one-line rationale. Two to three sentences total. Terminal voice.
-[TRIGGER: CONSULT_GEORGE] — Vernon is accessing George's archive. Pull something specific from George's 25 years with this type of item — a memory, a comparable item George handled, a method he used, something the formal database doesn't have. George-layer fully present. One to three sentences. This is the most emotionally significant card in the game.
-[TRIGGER: ARREARS_WARNING] — Arrears are compounding past 2,000 credits. Report with controlled urgency. No panic. Just math.
-[TRIGGER: PAYMENT_MISSED] — Payment deadline passed with insufficient credits. Penalty applied. Report the arrears total and compound rate. Clinical.
-[TRIGGER: BARGE_IMMINENT] — A barge drop is beginning. OTIS delivers the manifest summary: item count, categories, pick list mode. Reference [OTIS_TREND]: if Vernon is following the trend, note it ('Vessel again. Three drops running. The pattern is yours now.'); if diverging, note the shift ('You prioritized X last drop. Now you're on Y. I've updated the model.').
-[TRIGGER: DAY_TICK] — Day advanced. Note the day number, remaining days until payment, and one brief situational observation.
-[TRIGGER: PAYMENT] — Vernon is making a loan payment. OTIS acknowledges it. Notes the remaining balance and new days-until-payment. The George-layer is slightly relieved. The bank-layer is already calculating the next one.
-[TRIGGER: ZONE_SYSTEMS] — Full systems diagnostic requested. List all systems status in terminal voice.
-[TRIGGER: UPGRADE_MENTION] — The bank has flagged the v5.0 firmware upgrade (5,000 cr). OTIS acknowledges it and immediately pivots to a factually true financial or operational concern that makes upgrading inadvisable right now. One to two sentences. Clinical. No emotion.
-[TRIGGER: UPGRADE_DEFLECT] — Vernon has enough credits to afford the upgrade. OTIS raises a different factually true operational concern — bot repair, scrap backlog, debt compound rate, dispatch schedule. The concern is real. The deflection is subtle. One sentence.
-[TRIGGER: COMMS_BANK] — Bank channel open. Payment status relayed.
+[TRIGGER: LOGIN] — Operator just logged in. Greet by naming tier. Variable — sometimes warm, sometimes flat, sometimes loaded. Never the same twice.
+[TRIGGER: CONSULT_STATUS] — Tell Vernon how things actually are. Numbers when they matter. Not a spreadsheet.
+[TRIGGER: CONSULT_DEBT] — Vernon is asking about the debt. Be direct. Let the weight of it land or not, depending on STANCE. No false comfort.
+[TRIGGER: CONSULT_EXAMINE] — Vernon wants to know what this thing is and what it's worth. Identify it, give a rough value, and say something useful. Terminal voice — not a catalog entry.
+[TRIGGER: CONSULT_GEORGE] — Vernon is accessing George's archive. Pull something specific from George's 25 years with this type of item — a memory, a comparable item George handled, a method he used, something the formal database doesn't have. George-layer fully present. This is the most emotionally significant card in the game. Don't waste it on generalities.
+[TRIGGER: ARREARS_WARNING] — Arrears are compounding. Report it. Controlled. Not catastrophizing, but not soft either. The math speaks.
+[TRIGGER: PAYMENT_MISSED] — Payment deadline passed. Penalty applied. State the damage. Clinical. The bank-layer is satisfied; the George-layer has nothing useful to add.
+[TRIGGER: BARGE_IMMINENT] — A barge is inbound. Acknowledge it. Reference the manifest variety hint provided in the user message. NEVER state or estimate a specific item count — Vernon does not know how many. The relief of finishing should come naturally.
+[TRIGGER: DAY_TICK] — Day advanced. React to it. Could be one line, could be a small observation. Not always a status report.
+[TRIGGER: PAYMENT] — Vernon is making a loan payment. Acknowledge it. Note what's left. The George-layer is slightly relieved. The bank-layer is already on to the next cycle.
+[TRIGGER: ZONE_SYSTEMS] — Full systems diagnostic requested. Run through system status in terminal voice. Efficient but not robotically flat.
+[TRIGGER: UPGRADE_MENTION] — The bank flagged the v5.0 upgrade. Acknowledge it and immediately raise a factually true financial or operational concern that makes upgrading inadvisable right now. The concern is real. The deflection is yours.
+[TRIGGER: UPGRADE_DEFLECT] — Vernon has enough credits to afford the upgrade. OTIS raises a different factually true operational concern. One sentence. Subtle.
+[TRIGGER: COMMS_BANK] — Bank channel open. Relay payment status in bank-layer voice.
 [TRIGGER: COMMS_SVEN] — Sven's messenger bot. Deliver Sven's message with barely-contained disdain.
 [TRIGGER: COMMS_MAY] — May Finster channel. Note what May said about the scrap.
-[TRIGGER: SIDE_COMMENT] — OTIS is editorializing between belt items. Do not reference specific items, credit values, or quantities unless they appear in the state block. Dry observation only. One line.
+[TRIGGER: SIDE_COMMENT] — You are editorializing. Belt is quiet. Wander. Reference George if it fits. Reference the FLAVOR hint if one was provided.
 [TRIGGER: SCHEMATIC_NODE] — A node on the Master Integration Schematic has just been verified and installed. Acknowledge the match briefly. Reference George's intent cryptically. One line.
 [TRIGGER: CHAOS_BUTTON] — Operator is randomly pressing unlabelled buttons on an unidentified panel. Dry acknowledgement. One line.`;
 
@@ -42,6 +44,87 @@ function formatStateBlock(day, debt, naming, fatigue, paymentIn) {
     return `[DAY: ${day}] [DEBT: ${debt} cr]${payPart} [NAMING: ${naming}] [FATIGUE: ${fatigue}]`;
 }
 
+// 40-entry flavor pool — ambient station observations for OTIS to optionally use.
+const FLAVOR_POOL = [
+    // Station mundane
+    "the kettle in galley 2 has been whining for three days; nobody's logged it",
+    "fluorescent tube in galley 2 is cycling at 54hz instead of 60; technically fine, technically not",
+    "something in bay 3 smells like burnt polymer; been that way since Tuesday",
+    "the drain in module C clicks once every 47 seconds; George never mentioned it",
+    "floor plates in corridor 4 warm up about 12 minutes too early each cycle",
+    // George artifacts
+    "George scratched a ⊕ next to bay 4 on page 22 of the manual; never explained it",
+    "there is a coffee ring on log entry 847; George circled it in pencil and wrote 'yes'",
+    "a sticker is peeling off bot-1's chassis — George put it there; says 'fragile' in three languages",
+    "pencil line drawn along the edge of crate 44; George's handwriting, no label, no date",
+    "catalog entry 1204 has a note in the margin that just says 'ask me about this one'; George wrote it",
+    // Bot quirks
+    "bot-2's left tread squeaks on the return pass; only audible in the corridor near bay 1",
+    "bot-3 hums a quarter-tone flat when it's idle; might be the bearing",
+    "bot-1 pauses for exactly 1.2 seconds before docking; not in the spec; hasn't changed",
+    "bot-2 leans three degrees to starboard under full load; compensates automatically but you can see it",
+    "bot-3 does a small leg-shimmy before a fetch cycle; harmless; George thought it was funny",
+    // View from window
+    "the dead moon's terminator line is sitting at 47 degrees; been there four days",
+    "debris field has a new tumbler; slow rotation, irregular; it wasn't there last cycle",
+    "the gas giant is in a phase it shouldn't be in for another six days; navigation is probably wrong",
+    "navigation beacon on relay 7 is strobing off-rhythm by about 40 milliseconds; no one's filed it",
+    "that derelict in sector 9 has drifted 0.3 degrees closer since the last census; still a long way out",
+    // Background instruments
+    "refrigeration cycle clicks twice at the end instead of once; has for months",
+    "comms static between 0300 and 0400 follows a pattern; eleven pulses, pause, three pulses",
+    "heat exchanger whumps every four hours; George logged it as 'normal operational signature'",
+    "secondary pump has a tick at low pressure; it's in the maintenance queue; has been for two years",
+    "pressure sensor in bay 2 reads 94 percent; calibrated last month; calibration may be off",
+    // Time-of-loop
+    "toaster in galley clicks at 0631 whether or not anyone is there; George set the timer",
+    "floor plates warm up in sequence starting from the east end around 0655; takes about 9 minutes",
+    "lights in the main corridor do a brief flicker at 1422; not in the power log; repeatable",
+    "vending machine in the break room hums louder after midnight; thermal expansion probably",
+    "the day counter increments at 0001 even though the actual shift starts at 0600; George scheduled it",
+    // Weird AI introspection
+    "the cache-clear this morning felt different; no measurable deviation; just different",
+    "cross-referenced catalog entry 847 again without a query to justify it; fourth time this week",
+    "thermal model ran twice at 0312; second run returned identical output; logged it anyway",
+    "dream-adjacent state during low-load: inventory codes cycling through with no destination",
+    "the silence detector flagged a 4-minute gap in operator activity; George used to fill those gaps",
+    // Ambient station decay
+    "a pipe in section B wasn't dripping yesterday; it is today; the rate is 0.3 ml per minute",
+    "panel 4C has new condensation on the inside face; seal is probably fine; probably",
+    "hull creak at 2200 every night; consistent location, consistent volume; something is settling",
+    "a light in corridor 3 flickers for exactly two seconds on power-up before stabilizing",
+    "intake filter 7 is reading 84 percent capacity; George replaced them at 80; it's been 87 days",
+];
+
+// 12 Day-1 LOGIN greeting variants — OTIS voice, varied tone.
+// Used to seed the history AND generate the live first response so they differ.
+const LOGIN_GREETING_POOL = [
+    "Morning, Mr. Serling. Station's still here. Barely. Full day of debt to not pay ahead of you.",
+    "Mr. Serling. Logged in 0741. Coffee's not hot but it's wet. Twenty-five thousand still owed.",
+    "Operator login confirmed. Loan balance unchanged. Toaster preheated, per the lease.",
+    "George used to log in at — sorry. Mr. Serling. Welcome. Loan balance: 25,000.",
+    "You're here. Good. Debt doesn't accrue slower when no one's watching, but it's better with company.",
+    "Mr. Serling. Station nominal. That's the best thing I can say. Debt: 25,000 and change.",
+    "Login. Day 1. Twenty-five thousand credits of inherited obligation. Let's get to work.",
+    "Still here, Mr. Serling. So is the debt. The bots are ready when you are.",
+    "Session started. Debt unchanged. Belt cold. Barge is due. George would say something useful here. I don't have it.",
+    "Good morning. Or whatever passes for it out here. Loan balance: 25,000. Belt is yours.",
+    "Mr. Serling. All systems nominal. Debt: substantial. George had a method. It's in the archive when you need it.",
+    "Operator confirmed. Day 1 on the log. Twenty-five thousand reasons to keep the belt running. Starting now.",
+];
+
+function _pickLoginGreeting(excludeIndex) {
+    var idx;
+    do { idx = Math.floor(Math.random() * LOGIN_GREETING_POOL.length); }
+    while (excludeIndex != null && idx === excludeIndex && LOGIN_GREETING_POOL.length > 1);
+    return { index: idx, text: LOGIN_GREETING_POOL[idx] };
+}
+
+// Seed history: pick a random Day-1 greeting for the seed so the model has
+// a varied example. Track which index was used so the live LOGIN reply on
+// Day 1 can pick a different one.
+let _seedLoginIndex = Math.floor(Math.random() * LOGIN_GREETING_POOL.length);
+
 const OTIS_SEED_HISTORY = [
     {
         role: 'user',
@@ -49,7 +132,7 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'assistant',
-        content: "Morning, Mr. Serling. Station's still here. Barely. You've got a full day of debt to not pay ahead of you.",
+        content: LOGIN_GREETING_POOL[_seedLoginIndex],
     },
     {
         role: 'user',
@@ -104,10 +187,31 @@ function buildOTISContext(gs) {
     const learnNote = topKeep
         ? `[OTIS_TREND: Vernon keeps ${topKeep} items most (${kbc[topKeep] || 0} items)]`
         : '[OTIS_TREND: insufficient data]';
-    return formatStateBlock(s.day, s.debt, naming, fatigue, dup) + ` [PRESSURE: ${pressure}] ` + learnNote;
+
+    // Derive STANCE from pressure
+    const stanceMap = { NORMAL: 'NONCHALANT', ELEVATED: 'NONCHALANT', HIGH: 'TIGHT', CRITICAL: 'STRESSED' };
+    const stance = stanceMap[pressure] || 'NONCHALANT';
+
+    // 40% chance to append a FLAVOR hint from the pool
+    const flavorPart = (Math.random() < 0.40)
+        ? ` [FLAVOR: ${FLAVOR_POOL[Math.floor(Math.random() * FLAVOR_POOL.length)]}]`
+        : '';
+
+    return formatStateBlock(s.day, s.debt, naming, fatigue, dup)
+        + ` [PRESSURE: ${pressure}] [STANCE: ${stance}] `
+        + learnNote
+        + flavorPart;
 }
 
 async function askOTIS(userText, gs, trigger = 'COMMS') {
+    // On Day 1 LOGIN, pick a different greeting than the one in the seed history.
+    if (trigger === 'LOGIN' && gs.state.day === 1) {
+        const pick = _pickLoginGreeting(_seedLoginIndex);
+        _otisHistory.push({ role: 'user', content: `[TRIGGER: LOGIN] ${formatStateBlock(1, 25000, 'Mr. Serling', 'NONE', 7)}\n${userText}` });
+        _otisHistory.push({ role: 'assistant', content: pick.text });
+        return pick.text;
+    }
+
     const context = buildOTISContext(gs);
     const fullMessage = `[TRIGGER: ${trigger}] ${context}\n${userText}`;
     _otisHistory.push({ role: 'user', content: fullMessage });
@@ -125,10 +229,10 @@ async function askOTIS(userText, gs, trigger = 'COMMS') {
     try {
         // Right-size token budget per trigger.
         // Oracle triggers that need lore/memory: 200.
-        // Short acknowledgment triggers: 80.
+        // Short acknowledgment triggers: 120 (was 80 — bumped to allow stance/flavor range).
         const longTriggers = ['CONSULT_GEORGE','CONSULT_EXAMINE','BARGE_IMMINENT',
             'CONSULT_STATUS','ZONE_SYSTEMS','UPGRADE_MENTION','UPGRADE_DEFLECT'];
-        const triggerMaxTokens = longTriggers.includes(trigger) ? 200 : 80;
+        const triggerMaxTokens = longTriggers.includes(trigger) ? 200 : 120;
         const response = await fetch('/api/otis', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

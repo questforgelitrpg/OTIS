@@ -30,6 +30,8 @@ export default async function handler(req, res) {
                 model: 'claude-haiku-4-5-20251001',
                 max_tokens: (typeof maxTokens === 'number' && maxTokens > 0 && maxTokens <= MAX_ALLOWED_TOKENS)
                     ? maxTokens : 250,
+                temperature: 1.0,
+                top_p: 0.95,
                 system: systemBlock,
                 messages,
             }),

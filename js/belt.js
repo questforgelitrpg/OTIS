@@ -62,6 +62,229 @@
     window.startBeltDelivery = startBeltDelivery;
     window.stopBeltDelivery = stopBeltDelivery;
 
+    // ── Per-bot fetch loop constants and state ────────────────────────────────
+    //
+    // Design math (8 real minutes per drop window = 2 in-game days × 4 min/day):
+    // Player decision time avg ≈ 8s/item.
+    //
+    // Scenario                    | Items | Bot arrival | Player time | Total | Fits 8min?
+    // Act 1 (10), 3 NOMINAL bots  |  10   | every 6s    | 80s         | ~80s  | ✅
+    // Act 2 (20), 3 NOMINAL bots  |  20   | every 6s    | 160s        | ~165s | ✅
+    // Act 3 (30), 3 NOMINAL bots  |  30   | every 6s    | 240s        | ~245s | ✅
+    // Act 3, 2 NOMINAL + 1 OFF    |  30   | every 9s    | 240s        | ~280s | ⚠ tight
+    // Act 3, all 3 RED (degr 6+)  |  30   | every ~11s  | 240s        | ~350s | ❌ fails
+    // Act 3, 3 NOMINAL + Belt G3  |  30   | every 3s    | 240s        | ~245s | ✅ trivial
+    //
+    var beltQueueCap = 3;
+    var botFetchTimer = null;
+    var _lastStallWarnAt = 0;
+
+    function computeFetchDuration(bot) {
+        var s = gameState.state;
+        var base = 12000;
+        if (TIMING.DEBUG_FAST_MODE) base = Math.floor(base / TIMING.DEBUG_SPEED_MULTIPLIER);
+        var degradationMult = 1 + (bot.degradation * 0.15);
+        var beltTier = (s.upgrades && s.upgrades.belt) || 0;
+        var beltMult = [1.0, 0.85, 0.70, 0.50][beltTier];
+        return Math.round(base * degradationMult * beltMult);
+    }
+
+    function computeReturnDuration(bot) {
+        var s = gameState.state;
+        var base = 6000;
+        if (TIMING.DEBUG_FAST_MODE) base = Math.floor(base / TIMING.DEBUG_SPEED_MULTIPLIER);
+        var degradationMult = 1 + (bot.degradation * 0.15);
+        var beltTier = (s.upgrades && s.upgrades.belt) || 0;
+        var beltMult = [1.0, 0.85, 0.70, 0.50][beltTier];
+        return Math.round(base * degradationMult * beltMult);
+    }
+
+    function computePickListFocus(s) {
+        var choice = s.confirmedPickChoice || s.pickListChoice || {};
+        if (choice.mode === 'DOUBLE_WEIGHT' && choice.category) return choice.category;
+        if (choice.mode === 'DROP' && choice.category) {
+            // DROP = exclude that category, so dominant focus is opposite
+            var cats = ['Industrial', 'Civilian', 'Vessel', 'Settlement'];
+            var others = cats.filter(function(c) { return c !== choice.category; });
+            return others.length === 1 ? others[0] : 'mixed';
+        }
+        return 'mixed';
+    }
+
+    function pushToBeltQueue(item) {
+        var s = gameState.state;
+        if (!s.beltQueue) s.beltQueue = [];
+        if (s.beltQueue.length >= beltQueueCap) return;
+        item = Object.assign({}, item);
+        s.beltQueue.push(item);
+        // Track delivery cadence for OTIS side comments
+        var deliveryCount = s.deliveryCount = (s.deliveryCount || 0) + 1;
+        if (deliveryCount % 7 === 0) fireOtisSideComment();
+        // If belt is empty, promote to display
+        if (currentItem === null) {
+            setItemInQueue(item);
+            updateBeltUI('DELIVERING');
+            if (window.innerWidth <= 600) openModal('belt');
+        }
+    }
+    window.pushToBeltQueue = pushToBeltQueue;
+
+    function advanceBeltQueue() {
+        var s = gameState.state;
+        if (!s.beltQueue) s.beltQueue = [];
+        // Shift out the item that was just declared
+        if (s.beltQueue.length > 0) s.beltQueue.shift();
+        // Promote next item if available
+        if (s.beltQueue.length > 0) {
+            setItemInQueue(s.beltQueue[0]);
+            updateBeltUI('DELIVERING');
+        }
+    }
+    window.advanceBeltQueue = advanceBeltQueue;
+
+    function stopBotFetch() {
+        if (botFetchTimer) { clearInterval(botFetchTimer); botFetchTimer = null; }
+    }
+    window.stopBotFetch = stopBotFetch;
+
+    function startBotFetch() {
+        stopBotFetch();
+        botFetchTimer = setInterval(botFetchTick, 250);
+    }
+    window.startBotFetch = startBotFetch;
+
+    function finishDrop() {
+        stopBotFetch();
+        stopBeltDelivery();
+        var s = gameState.state;
+        s.dropActive = false;
+        s.bargeActive = false;
+        s.dropItemsRemaining = 0;
+        s.dropCount = (s.dropCount || 0) + 1;
+        s.lastDropFillPct = (s.dropStartSize || 0) > 0
+            ? Math.round(((s.currentDropScrapped || 0) / s.dropStartSize) * 100) : 0;
+        s.currentDropScrapped = 0;
+        s.dropStartSize = 0;
+        // Reset all bot activities to IDLE after drop
+        (s.bots || []).forEach(function(bot) {
+            if (bot.activity !== 'OFFLINE') {
+                bot.activity = 'IDLE';
+                bot.activityRemainingMs = 0;
+                bot.carrying = null;
+            }
+        });
+        checkActProgression();
+        s.pickListChoice = { mode: 'DROP', category: null };
+        gameState._save();
+        updateBeltUI('DROP_COMPLETE');
+        setBotDots(false);
+        showBotAnimation(3000);
+        if (window.OtisSound) OtisSound.stopAmbient('conveyor');
+        renderPickList();
+        renderManifestSummary([]);
+        var daysLeft = (s.daysUntilNextDrop != null) ? s.daysUntilNextDrop : TIMING.DAYS_BETWEEN_DROPS;
+        narratorLine(DROP_COMPLETE_POOL, { DAYS: daysLeft });
+        AnimWindow.startBotsReturn();
+        onDropCompleteBotDegradation();
+        rollConveyorJam();
+        checkEasterEgg();
+        maybeSvenInterference();
+        if (typeof updateBotUI === 'function') updateBotUI();
+    }
+    window.finishDrop = finishDrop;
+
+    function botFetchTick() {
+        var s = gameState.state;
+        if (!s.dropActive) { stopBotFetch(); return; }
+        var dt = 250;
+        var anyChange = false;
+
+        (s.bots || []).forEach(function(bot) {
+            // OFFLINE bots do nothing
+            if (bot.status === 'OFFLINE') {
+                if (bot.activity !== 'OFFLINE') {
+                    // Return any carried item to fieldPool
+                    if (bot.carrying) { s.fieldPool.unshift(bot.carrying); bot.carrying = null; }
+                    bot.activity = 'OFFLINE';
+                    bot.activityRemainingMs = 0;
+                    anyChange = true;
+                }
+                return;
+            }
+
+            // Bot recovered from OFFLINE
+            if (bot.activity === 'OFFLINE') {
+                bot.activity = 'IDLE';
+                bot.activityRemainingMs = 0;
+                anyChange = true;
+            }
+
+            if (bot.activityRemainingMs > 0) {
+                bot.activityRemainingMs = Math.max(0, bot.activityRemainingMs - dt);
+                anyChange = true;
+                return;
+            }
+
+            // Activity completed — transition
+            switch (bot.activity) {
+                case 'IDLE':
+                    if (!s.fieldPool || s.fieldPool.length === 0) return;
+                    if ((s.beltQueue || []).length >= beltQueueCap) return;
+                    bot.carrying = s.fieldPool.shift();
+                    bot.carrying.condition = assignCondition();
+                    s.dropItemsRemaining = s.fieldPool.length;
+                    bot.activity = 'FETCHING';
+                    bot.activityRemainingMs = computeFetchDuration(bot);
+                    anyChange = true;
+                    break;
+                case 'FETCHING':
+                    bot.activity = 'CARRYING';
+                    bot.activityRemainingMs = computeReturnDuration(bot);
+                    anyChange = true;
+                    break;
+                case 'CARRYING':
+                    pushToBeltQueue(bot.carrying);
+                    bot.carrying = null;
+                    bot.activity = 'IDLE';
+                    bot.activityRemainingMs = 0;
+                    anyChange = true;
+                    break;
+            }
+        });
+
+        // All-bots-OFFLINE stall warning (once per 60s)
+        var allOffline = (s.bots || []).every(function(b) { return b.status === 'OFFLINE'; });
+        if (allOffline && (s.fieldPool || []).length > 0) {
+            var now = Date.now();
+            if (now - _lastStallWarnAt >= 60000) {
+                _lastStallWarnAt = now;
+                otisLines.push({ role: 'otis', text: 'All bots offline. Field items waiting. Repair the bots.' });
+                renderOTIS();
+            }
+        }
+
+        // Drop completion: field empty AND belt empty AND no bot carrying/fetching
+        var anyCarrying = (s.bots || []).some(function(b) {
+            return b.activity === 'FETCHING' || b.activity === 'CARRYING';
+        });
+        var fieldEmpty = !s.fieldPool || s.fieldPool.length === 0;
+        var beltEmpty = !s.beltQueue || s.beltQueue.length === 0;
+        if (fieldEmpty && beltEmpty && !anyCarrying && currentItem === null) {
+            finishDrop();
+            return;
+        }
+
+        if (anyChange) {
+            if (typeof updateBotUI === 'function') updateBotUI();
+            renderItemQueue();
+        }
+
+        // Throttled save: every 8 ticks (~2s)
+        s._botTickCounter = (s._botTickCounter || 0) + 1;
+        if (s._botTickCounter % 8 === 0) gameState._save();
+    }
+    window.botFetchTick = botFetchTick;
+
     function assignCondition() { var r = Math.random(); return r < 0.15 ? 'Broken' : r < 0.50 ? 'Poor' : r < 0.85 ? 'Used' : 'Excellent'; }
     window.assignCondition = assignCondition;
 
@@ -120,7 +343,41 @@
 
     window.deliverNextBeltItem = deliverNextBeltItem;
 
-    function handleBeltScan() { deliverNextBeltItem(); }
+    function handleBeltScan() {
+        var s = gameState.state;
+        // Bot-fetch mode: barge drop started via handleBargeArrival
+        // (manifestItems is empty; items are in fieldPool / beltQueue / bot carry slots)
+        if (s.dropActive && (!s.manifestItems || s.manifestItems.length === 0)) {
+            var bq = s.beltQueue || [];
+            var fp = s.fieldPool || [];
+            var botsActive = (s.bots || []).some(function(b) {
+                return b.activity === 'FETCHING' || b.activity === 'CARRYING';
+            });
+            if (bq.length > 1) {
+                // Multiple items queued — skip/advance current item
+                clearItemQueue();
+                advanceBeltQueue();
+            } else if (fp.length > 0 || botsActive) {
+                // One item on belt (or none), more in field/transit — show ETAs
+                var etaMsg = 'Bots still fielding. ' + (s.bots || []).map(function(b) {
+                    var eta = (b.activity === 'IDLE' || b.activity === 'OFFLINE')
+                        ? b.activity.toLowerCase()
+                        : Math.ceil(b.activityRemainingMs / 1000) + 's';
+                    return 'Bot-' + b.id + ': ' + eta;
+                }).join(', ');
+                otisLines.push({ role: 'otis', text: etaMsg }); renderOTIS();
+            } else {
+                // Drop winding down — advance if possible
+                if (bq.length > 0 || currentItem !== null) {
+                    clearItemQueue();
+                    advanceBeltQueue();
+                }
+            }
+            return;
+        }
+        // Fallback: old behaviour for Day-1 items / warehouse / storeroom
+        deliverNextBeltItem();
+    }
     window.handleBeltScan = handleBeltScan;
 
     function fireOtisSideComment() {
@@ -357,7 +614,7 @@
         checkActProgression();
         // Lock immediately to prevent double-firing during the staged delay windows
         gameState.state.dropActive = true;
-        // Build manifest synchronously so data is ready when belt eventually starts
+        // Build manifest synchronously so data is ready when bots start fetching
         var manifest = [];
         if (gameState.state.day === 1) {
             // Day 1 scripted drop: 4 Common items, all Used condition, no easter eggs
@@ -386,27 +643,34 @@
                 manifest.push(eeItem);
             }
         }
-        gameState.state.manifestItems = manifest.slice();
+        // Move all manifest items into fieldPool — bots will fetch them one by one.
+        gameState.state.fieldPool = manifest.slice();
+        gameState.state.beltQueue = [];
+        gameState.state.manifestItems = [];  // keep for backward compat
         gameState.state.bargeActive = true;
         gameState.state.dropItemsRemaining = manifest.length;
         gameState.state.dropStartSize = manifest.length;
         gameState.state.currentDropScrapped = 0;
+        // Reset bot activities to IDLE at drop start
+        (gameState.state.bots || []).forEach(function(bot) {
+            if (bot.status !== 'OFFLINE') {
+                bot.activity = 'IDLE';
+                bot.activityRemainingMs = 0;
+                bot.carrying = null;
+            }
+        });
         gameState._save();
 
         // Stage 1 — wait 3 s, then play bargedrop sound + show OTIS manifest summary
         setTimeout(function() {
             if (window.OtisSound) OtisSound.playSFX('bargedrop');
             AnimWindow.startBargeSequence();
-            var bargeSummary = buildManifestSummary(manifest);
-            // Append pick list status so OTIS can comment on whether Vernon confirmed it
-            var confirmed = gameState.state.confirmedPickChoice;
-            if (confirmed && confirmed.mode !== 'DROP') {
-                bargeSummary += ' Pick list confirmed: ' + confirmed.mode
-                    + (confirmed.category ? ' / ' + confirmed.category : '') + '.';
-            } else {
-                bargeSummary += ' No pick list confirmed for this drop.';
-            }
-            appendOTIS(bargeSummary, 'BARGE_IMMINENT');
+            // BARGE_IMMINENT: hint at variety without revealing count
+            var s = gameState.state;
+            var pickFocus = computePickListFocus(s);
+            var otisMsg = 'Barge inbound. Manifest looks '
+                + (pickFocus === 'mixed' ? 'varied.' : 'heavier on ' + pickFocus + ' — matches your pick list.');
+            appendOTIS(otisMsg, 'BARGE_IMMINENT');
             renderManifestSummary(manifest);
 
             // Stage 2 — wait 2 s, then deploy bots
@@ -417,11 +681,21 @@
                 showBotAnimation(4000);
                 renderPickList();
 
-                // Stage 3 — wait 2 s, then start belt
+                // Stage 3 — wait 2 s, then start bot fetch loop
                 setTimeout(function() {
                     updateBeltUI('DELIVERING');
-                    startBeltDelivery();
-                    deliverNextBeltItem();
+                    // Tutorial step 1: insta-move first item so tutorial UX isn't blocked
+                    if (gameState.state.tutorialStep === 1) {
+                        var fp = gameState.state.fieldPool;
+                        if (fp && fp.length > 0) {
+                            var firstItem = fp.shift();
+                            firstItem.condition = firstItem.condition || assignCondition();
+                            gameState.state.dropItemsRemaining = fp.length;
+                            pushToBeltQueue(firstItem);
+                        }
+                    }
+                    startBotFetch();
+                    if (typeof updateBotUI === 'function') updateBotUI();
                 }, 2000);
             }, 2000);
         }, 3000);
@@ -699,7 +973,7 @@
             gameState.state.mayBin = mayBin;
             gameState._save();
             trackOTISLearning('SELL', item);
-            clearItemQueue();
+            clearItemQueue(); advanceBeltQueue();
             renderBinPanel();
             recordOrderProgress(item.category, item.rarity);
             var binMsg = item.name.substring(0,22) + ' to May bin. ' + mayBin.length + '/12.';
@@ -716,7 +990,7 @@
             gameState.state.brokerBin = brokerBin;
             gameState._save();
             trackOTISLearning('SELL', item);
-            clearItemQueue();
+            clearItemQueue(); advanceBeltQueue();
             renderBinPanel();
             recordOrderProgress(item.category, item.rarity);
             var bbMsg = item.name.substring(0,22) + ' to broker. ' + brokerBin.length + '/10.';
@@ -747,7 +1021,7 @@
             gameState.state.svenBin = svenBin;
             gameState._save();
             trackOTISLearning('SELL', item);
-            clearItemQueue();
+            clearItemQueue(); advanceBeltQueue();
             renderBinPanel();
             recordOrderProgress(item.category, item.rarity);
             var svMsg = item.name.substring(0,22) + ' to Sven. His offer: ' + svenValue + ' cr. Bin: ' + svenBin.length + '/3.';
@@ -773,7 +1047,7 @@
             }
             gameState._save();
             trackOTISLearning('KEEP', item);
-            clearItemQueue();
+            clearItemQueue(); advanceBeltQueue();
             var kn = gameState.state.keepLog.length;
             if (kn >= getStorageCap() - 2) {
                 narratorLine(DECLARE_KEEP_FULL_POOL, { N: kn });
@@ -791,7 +1065,7 @@
             gameState.state.currentDropScrapped = (gameState.state.currentDropScrapped || 0) + 1;
             gameState._save();
             trackOTISLearning('SCRAP', item);
-            clearItemQueue();
+            clearItemQueue(); advanceBeltQueue();
             recordOrderProgress(item.category, item.rarity);
             var msg = SCRAP_SHORTS[Math.floor(Math.random() * SCRAP_SHORTS.length)];
             otisLines.push({ role: 'otis', text: msg }); renderOTIS();
@@ -823,12 +1097,14 @@
 
     function handleRouteToStoreroom() {
         var s = gameState.state;
-        var toBuffer = s.manifestItems.splice(0, TIMING.BUFFER_ROUTE_COUNT);
+        // In bot-fetch mode, route from fieldPool; otherwise from manifestItems.
+        var sourcePool = (s.fieldPool && s.fieldPool.length > 0) ? s.fieldPool : s.manifestItems;
+        var toBuffer = sourcePool.splice(0, TIMING.BUFFER_ROUTE_COUNT);
         toBuffer.forEach(function(item) {
-            item.condition = assignCondition();
+            if (!item.condition) item.condition = assignCondition();
             s.storeroomBuffer.push(item);
         });
-        s.dropItemsRemaining = s.manifestItems.length;
+        s.dropItemsRemaining = sourcePool.length;
         gameState._save();
         gameState._updateUI();
         renderStoreroomBuffer();
