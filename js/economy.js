@@ -352,7 +352,10 @@
             else if (bots[idx].degradation >= 3) bots[idx].status = 'AMBER';
         }
         // Replace one manifest item with lower value substitute
-        if ((s.manifestItems||[]).length > 0) {
+        if ((s.fieldPool||[]).length > 0) {
+            var fpIdx = Math.floor(Math.random() * s.fieldPool.length);
+            s.fieldPool[fpIdx] = weightedPickItem();
+        } else if ((s.manifestItems||[]).length > 0) {
             var mIdx = Math.floor(Math.random() * s.manifestItems.length);
             s.manifestItems[mIdx] = weightedPickItem();
         }

@@ -36,6 +36,31 @@
             if (d2) d2.className = 'dot' + dotClsMap[bot.status];
             var st = document.getElementById('sys-bot' + i);
             if (st) { st.textContent = statusMap[bot.status] || bot.status; st.className = clsMap[bot.status] || 'status-ok'; }
+            // Per-bot activity display (visible during drops)
+            var act = document.getElementById('sys-bot' + i + '-activity');
+            if (act) {
+                if (gameState.state.dropActive && bot.status !== 'OFFLINE') {
+                    var actText = '';
+                    switch (bot.activity) {
+                        case 'FETCHING':
+                            actText = '[OUT ' + Math.ceil((bot.activityRemainingMs || 0) / 1000) + 's]';
+                            break;
+                        case 'CARRYING':
+                            actText = '[RETURNING ' + Math.ceil((bot.activityRemainingMs || 0) / 1000) + 's]';
+                            break;
+                        case 'IDLE':
+                            actText = '[IDLE]';
+                            break;
+                        default:
+                            actText = '';
+                    }
+                    act.textContent = ' ' + actText;
+                    act.style.display = actText ? '' : 'none';
+                } else {
+                    act.textContent = '';
+                    act.style.display = 'none';
+                }
+            }
             var rep = document.getElementById('sys-bot' + i + '-repair');
             if (rep) rep.style.display = (bot.status !== 'NOMINAL') ? '' : 'none';
         });
