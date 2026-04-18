@@ -180,8 +180,9 @@
         var bd = document.getElementById('comms-dot-bank');
         if (bd) bd.className = 'comms-dot' + (bankLit ? (behindPayment || dup <= 2 ? ' dot-red' : dup <= 4 ? ' dot-amber' : ' dot-on') : '');
         var scrap = s.scrapFill || 0;
+        var mayMessages = (s.mayBin || []).length;
         var md = document.getElementById('comms-dot-may');
-        if (md) md.className = 'comms-dot' + (scrap >= 75 ? ' dot-amber' : scrap > 0 ? ' dot-on' : '');
+        if (md) md.className = 'comms-dot' + (mayMessages > 0 ? ' dot-on' : '');
     }
     window.updateCommsIndicators = updateCommsIndicators;
     function updateSystemsStatus() {

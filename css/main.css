@@ -254,7 +254,7 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 .item-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px solid var(--border-dim); }
 
 /* Login pulse animation */
-@keyframes login-pulse { 0%, 100% { border-color: var(--text-primary); color: var(--text-bright); text-shadow: 0 0 8px var(--text-primary); } 50% { border-color: var(--text-dim); color: var(--text-primary); text-shadow: none; } }
+@keyframes login-pulse { 0%, 100% { border-color: var(--ind-amber); color: var(--ind-amber); text-shadow: 0 0 10px var(--ind-amber); box-shadow: 0 0 8px var(--ind-amber); } 50% { border-color: #7a5500; color: #b87800; text-shadow: none; box-shadow: none; } }
 .login-pulse { animation: login-pulse 1.2s infinite; }
 
 /* Keep log */
@@ -393,7 +393,7 @@ body.kbd-glitch { animation: kbd-glitch 0.3s infinite; }
 .inspection-notice { border-left: 2px solid var(--ind-red); padding-left: 0.5rem; }
 
 /* ── Chaos Button Panel ──────────────────────────────────────────────────── */
-.chaos-btn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 0.8rem; width: 100%; padding: 0 4px; }
+.chaos-btn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 0.8rem; width: 100%; padding: 0 4px; justify-items: center; }
 .chaos-btn {
     width: 32px; height: 32px;
     border-radius: 50%;

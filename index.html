@@ -841,11 +841,78 @@
         var debt = gameState.state.outstandingDebt || 0;
         var pool = debt > 200 ? LOGOFF_LINES_DEBT : LOGOFF_LINES_CLEAR;
         var logoffMsg = pool[Math.floor(Math.random() * pool.length)];
+
+        // Save immediately before any visual changes
         gameState._save();
         otisLines.push({ role: 'otis', text: logoffMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(logoffMsg);
-        var ft = document.getElementById('terminal-footer');
-        if (ft) { var sp = ft.querySelector('span'); if (sp) { sp.textContent = 'O.T.I.S. v0.4 // SAVED'; setTimeout(function() { sp.textContent = 'O.T.I.S. v0.4 // PHASE 0'; }, 2000); } }
+
+        // Estimate speech duration: ~80ms per word, minimum 2s, cap at 6s
+        var wordCount = logoffMsg.split(/\s+/).length;
+        var speechDelay = Math.min(Math.max(wordCount * 80, 2000), 6000);
+
+        setTimeout(function() {
+            // Cut all audio
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
+            if (window.OtisTTS) OtisTTS.flush();
+            if (window.OtisSound) OtisSound.stopMusic();
+
+            // Close all open modals
+            document.querySelectorAll('.modal.open').forEach(function(m) { m.classList.remove('open'); });
+            document.body.classList.remove('panel-open');
+
+            // Stop belt timer
+            if (typeof stopBeltDelivery === 'function') stopBeltDelivery();
+
+            var term        = document.getElementById('terminal');
+            var grid        = document.getElementById('module-grid');
+            var arm         = document.getElementById('arm-panel');
+            var otisActions = document.getElementById('otis-actions');
+            var otisOutput  = document.getElementById('otis-output');
+            var animWindow  = document.getElementById('anim-window');
+
+            // Fade out module grid, arm panel, anim window
+            if (grid)       { grid.style.transition = 'opacity 0.8s';      grid.style.opacity       = '0'; }
+            if (arm)        { arm.style.transition  = 'opacity 0.8s';      arm.style.opacity        = '0'; }
+            if (animWindow) { animWindow.style.transition = 'opacity 0.8s'; animWindow.style.opacity = '0'; }
+            if (otisOutput) { otisOutput.style.transition = 'opacity 0.8s'; otisOutput.style.opacity = '0'; }
+
+            setTimeout(function() {
+                // Full blackout — hide faded elements
+                if (grid)       { grid.style.display = 'none';       grid.style.opacity = '';       grid.style.transition = ''; }
+                if (arm)        { arm.style.display  = 'none';       arm.style.opacity  = '';       arm.style.transition = ''; }
+                if (animWindow) { animWindow.style.display = 'none'; animWindow.style.opacity = ''; animWindow.style.transition = ''; }
+                if (otisOutput) { otisOutput.style.opacity = '0'; otisOutput.style.transition = ''; }
+
+                // Hide header stats, hide all action buttons except login
+                document.querySelectorAll('#hdr .hdr-stat').forEach(function(el) { el.style.display = 'none'; });
+                if (otisActions) {
+                    Array.from(otisActions.children).forEach(function(btn) {
+                        if (btn.id !== 'btn-login') btn.style.display = 'none';
+                    });
+                }
+
+                // Darken terminal
+                if (term) { term.style.transition = 'filter 0.6s'; term.style.filter = 'brightness(0.05)'; }
+
+                setTimeout(function() {
+                    // Restore brightness, show login gate
+                    if (term) { term.style.transition = ''; term.style.filter = ''; }
+                    if (otisOutput) { otisOutput.style.opacity = ''; }
+
+                    var loginBtn = document.getElementById('btn-login');
+                    if (loginBtn) {
+                        loginBtn.style.display = '';
+                        loginBtn.disabled = false;
+                        loginBtn.classList.add('login-pulse');
+                    }
+
+                    otisLines.length = 0;
+                    otisLines.push({ role: 'otis', text: 'Terminal offline. Click LOGIN to resume.' });
+                    renderOTIS();
+                }, 700);
+            }, 850);
+        }, speechDelay);
     }
     function handleTTSToggle() {
         if (!window.OtisTTS) return;
@@ -1216,6 +1283,7 @@
 
         otisLines.push({ role: 'otis', text: 'Maze sequence complete. Twenty mazes cleared. I have added something to the storeroom. George left a note.' });
         renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak('Maze sequence complete. Twenty mazes cleared. I have added something to the storeroom. George left a note.');
     }
 
     function mazeGrantMilestoneEgg(milestone) {
@@ -1243,6 +1311,7 @@
 
         otisLines.push({ role: 'otis', text: 'Maze milestone reached. I have added something to the storeroom.' });
         renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak('Maze milestone reached. I have added something to the storeroom.');
     }
 
     function mazeCheckOtisComment() {
@@ -1270,6 +1339,7 @@
         var msg = comments[Math.floor(Math.random() * comments.length)];
         otisLines.push({ role: 'otis', text: msg });
         renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(msg);
     }
 
     function mazeInit() {
@@ -1455,6 +1525,27 @@
                 loginBtn.disabled = true;
                 loginBtn.style.display = 'none';
             }
+
+            // Restore elements that may have been hidden by handleLogoff
+            var _grid  = document.getElementById('module-grid');
+            var _arm   = document.getElementById('arm-panel');
+            var _awin  = document.getElementById('anim-window');
+            if (_grid) { _grid.style.display = ''; _grid.style.opacity = ''; _grid.style.transition = ''; }
+            if (_arm)  { _arm.style.display  = ''; _arm.style.opacity  = ''; _arm.style.transition  = ''; }
+            if (_awin) { _awin.style.display = ''; _awin.style.opacity = ''; _awin.style.transition = ''; }
+            document.querySelectorAll('#hdr .hdr-stat').forEach(function(el) { el.style.display = ''; });
+            var _oa = document.getElementById('otis-actions');
+            if (_oa) Array.from(_oa.children).forEach(function(btn) { btn.style.display = ''; });
+            // Re-hide the login button itself (already hidden above)
+            if (loginBtn) loginBtn.style.display = 'none';
+            // Re-apply TTS/SFX button visibility based on support
+            var _ttsBtn = document.getElementById('tts-btn');
+            if (_ttsBtn && window.OtisTTS && !window.OtisTTS.isSupported()) _ttsBtn.style.display = 'none';
+            var _ttsSkip = document.getElementById('tts-skip-btn');
+            if (_ttsSkip && window.OtisTTS && !window.OtisTTS.isSupported()) _ttsSkip.style.display = 'none';
+            var _tutSkip = document.getElementById('tutorial-skip-btn');
+            if (_tutSkip) _tutSkip.style.display = 'none';
+
             checkScriptedComms();
             // Fire the daily toast first so it slides in before OTIS responds,
             // giving the correct sequence: toast → OTIS welcome.
