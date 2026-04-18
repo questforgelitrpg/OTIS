@@ -303,6 +303,8 @@
             otisLines.push({ role: 'otis', text: dayMsg }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(dayMsg);
         }
+        // Early-game debt pressure event: Day 2–4 collector ping (fires once)
+        checkEarlyDebtPressure();
         updateArmSprite('DAY_TICK');
         gameState._save();
         gameState._updateUI();
@@ -330,6 +332,40 @@
             }
         }
     }
+
+    // EARLY-GAME DEBT PRESSURE — fires once between Day 2 and Day 4.
+    // A collector ping surfaces in the comms panel and OTIS reacts, so the
+    // 25,000 cr debt feels real before Act 2 kicks in.
+    function checkEarlyDebtPressure() {
+        var s = gameState.state;
+        if (s.earlyDebtEventFired) return;
+        if (s.day < 2 || s.day > 4) return;
+        s.earlyDebtEventFired = true;
+        gameState._save();
+        // Collector ping in comms
+        var pingMsg = '[COLLECTOR NOTICE] Account VRN-001. Outstanding principal: '
+            + (s.debt || 0).toLocaleString()
+            + ' cr. First installment (' + (s.currentInstallment || 850) + ' cr) due in '
+            + ((s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS)
+            + ' days. Failure to pay will result in interest accrual. \u2014 UBC Collections';
+        setTimeout(function() {
+            appendHardcodedComm(pingMsg);
+            var bd = document.getElementById('comms-dot-bank');
+            if (bd) bd.className = 'comms-dot dot-amber';
+            s.bankNotifUnread = true;
+            gameState._save();
+            // OTIS reaction — sets emotional beat briefly to stay atmospheric
+            window.emotionalBeatActive = true;
+            var otisReaction = 'That is the collections division. They do not send these on Day ' + s.day
+                + ' unless the account is flagged. George had a system for this. You need credits on the belt before the first cycle closes.';
+            setTimeout(function() {
+                otisLines.push({ role: 'otis', text: otisReaction }); renderOTIS();
+                if (window.OtisTTS) OtisTTS.speak(otisReaction);
+                setTimeout(function() { window.emotionalBeatActive = false; }, 6000);
+            }, 2500);
+        }, 3000);
+    }
+    window.checkEarlyDebtPressure = checkEarlyDebtPressure;
 
     // SVEN INTERFERENCE — auto-fires after each drop completes
     function maybeSvenInterference() {
@@ -478,3 +514,4 @@
     window.triggerForeclosure = triggerForeclosure;
     window.checkActProgression = checkActProgression;
     window.spawnMcGuffin = spawnMcGuffin;
+    window.checkEarlyDebtPressure = checkEarlyDebtPressure;

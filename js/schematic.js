@@ -16,21 +16,27 @@
         s.warehouseSearching = true;
         gameState._save();
         var btn = document.getElementById("btn-search-warehouse");
-        if (btn) { btn.disabled = true; btn.textContent = "SEARCHING... (20s)"; }
+        if (btn) { btn.disabled = true; btn.textContent = "SEARCHING\u2026"; }
 
         var countdown = 20;
         var countEl = document.getElementById("warehouse-search-countdown");
+        var progressFill = document.getElementById("warehouse-search-progress-fill");
         if (countEl) countEl.textContent = countdown + "s";
+        if (progressFill) { progressFill.style.width = "0%"; progressFill.parentElement.style.display = ""; }
+
         var tick = setInterval(function() {
             countdown--;
+            var pct = Math.round(((20 - countdown) / 20) * 100);
             if (countEl) countEl.textContent = countdown + "s";
+            if (progressFill) progressFill.style.width = pct + "%";
             if (countdown <= 0) {
                 clearInterval(tick);
+                if (progressFill) progressFill.parentElement.style.display = "none";
                 resolveWarehouseSearch();
             }
         }, 1000);
 
-        var msg = "Searching George's warehouse. 20 seconds. He had a system. I have not fully decoded it.";
+        var msg = "Searching George\u2019s warehouse. 20 seconds. He had a system. I have not fully decoded it.";
         otisLines.push({ role:"otis", text: msg }); renderOTIS();
     }
     window.handleSearchWarehouse = handleSearchWarehouse;
@@ -46,6 +52,8 @@
         if (btn) { btn.disabled = false; btn.textContent = "SEARCH WAREHOUSE"; }
         var countEl = document.getElementById("warehouse-search-countdown");
         if (countEl) countEl.textContent = "";
+        var bargeHoldEl = document.getElementById('barge-hold-indicator');
+        if (bargeHoldEl) bargeHoldEl.style.display = 'none';
 
         var misses = s.warehouseMisses || 0;
         var findChance = misses >= 3 ? 0.90 : 0.70;
@@ -61,6 +69,13 @@
             ];
             var mmsg = missMessages[Math.min(misses, missMessages.length-1)];
             otisLines.push({ role:"otis", text: mmsg }); renderOTIS();
+            // Deploy held barge even on a miss
+            if (s.bargePendingDuringSearch) {
+                s.bargePendingDuringSearch = false;
+                gameState._save();
+                otisLines.push({ role: 'otis', text: 'Search done \u2014 deploying held barge.' }); renderOTIS();
+                setTimeout(function() { if (typeof _doBargeArrival === 'function') _doBargeArrival(); }, 1500);
+            }
             return;
         }
 
@@ -103,6 +118,14 @@
             gameState._save();
         }
         checkDiaryUnlocksFinal();
+
+        // Deploy any barge that was held while the search was running
+        if (s.bargePendingDuringSearch) {
+            s.bargePendingDuringSearch = false;
+            gameState._save();
+            otisLines.push({ role: 'otis', text: 'Search complete \u2014 deploying held barge now.' }); renderOTIS();
+            setTimeout(function() { if (typeof _doBargeArrival === 'function') _doBargeArrival(); }, 1500);
+        }
     }
     window.resolveWarehouseSearch = resolveWarehouseSearch;
 

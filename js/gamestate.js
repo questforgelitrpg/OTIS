@@ -33,7 +33,7 @@
     // STATE MANAGER
     // IMPORTANT: STATE_KEY is declared twice — once above in the redirect script and once here.
     // Both must be kept in sync. If you bump the key, update BOTH declarations.
-    const STATE_KEY = 'otis_state_v4';
+    const STATE_KEY = 'otis_state_v5';
     window.STATE_KEY = STATE_KEY;
 
     const stateManager = {
@@ -76,7 +76,7 @@
                 declarationBatch: [],
                 declarationBatchCount: 0,
                 deliveryCount: 0,
-                stateVersion: 6,
+                stateVersion: 7,
                 svenIgnoreDays: 0,
                 svenInterferencePct: 20,
                 recentBotConflict: false,
@@ -145,6 +145,11 @@
                 nextInspectionDay: 14,
                 // --- PENDING BOT REPAIRS ---
                 pendingBotRepairs: [],
+                // --- v7 FIELDS ---
+                earlyDebtEventFired: false,  // Day 2-4 collector ping
+                weighItShown: [],            // item names already shown weigh-it hint
+        orderFollowUpDay: {},        // last follow-up day per NPC (Sven/May) — used to
+                                     // rate-limit future NPC follow-up pings to once per day
             };
         },
         save: function(state) {
@@ -156,29 +161,15 @@
                 var raw = localStorage.getItem(STATE_KEY);
                 if (raw) {
                     var parsed = JSON.parse(raw);
-                    if (!parsed.stateVersion || parsed.stateVersion < 4) {
-                        console.log('Old save detected. Clearing for v4 economy.');
+                    // Solo-dev project: no active player saves to migrate.
+                    // Any save older than v7 is intentionally cleared — this is a
+                    // breaking reset, not a silent data loss.
+                    if (!parsed.stateVersion || parsed.stateVersion < 7) {
+                        console.log('Save version ' + (parsed.stateVersion || '?') + ' < 7 — clearing (intentional reset, no active saves).');
                         this.clear();
                         return null;
                     }
                     var result = Object.assign({}, this._default(), parsed);
-                    // Fields added in v5 that require special handling beyond Object.assign:
-                    // - pendingBotRepairs: always safe to default to []
-                    // - nextOrderId: must be initialized above the highest existing order id
-                    //   to prevent duplicate IDs across reloads
-                    if (!result.pendingBotRepairs) result.pendingBotRepairs = [];
-                    // nextOrderId: initialize to one above highest existing order id to avoid collisions
-                    if (!result.nextOrderId) {
-                        var maxId = (result.activeOrders || []).reduce(function(m, o) { return Math.max(m, o.id || 0); }, 0);
-                        result.nextOrderId = maxId + 1;
-                    }
-                    // Migrate per-bot activity fields (added in bot-fetch PR)
-                    if (result.bots) {
-                        result.bots = result.bots.map(function(b) {
-                            return Object.assign({ activity: 'IDLE', activityRemainingMs: 0, carrying: null }, b);
-                        });
-                    }
-                    // v6 migration: ensure anomalyLog exists
                     ensureStateDefaults(result);
                     return result;
                 }
@@ -190,17 +181,15 @@
     window.stateManager = stateManager;
 
     // ensureStateDefaults — applied after loading a saved state to guarantee all
-    // fields introduced in newer stateVersion bumps are present.  Add a guard here
-    // whenever a new persisted field is added so that old saves migrate cleanly.
-    // NOTE: Fields that have safe Object.assign defaults (e.g. numeric counters,
-    // booleans) are already covered by Object.assign({}, _default(), parsed) in
-    // stateManager.load().  Only fields that require Array/type checks need explicit
-    // guards below.  This function is the canonical place for those guards.
-    // v6 additions: anomalyLog, humanityLog, humanityArchive
+    // fields are present.  Add a guard here whenever a new Array/object field
+    // is added; scalar fields are covered by Object.assign({}, _default(), parsed).
     function ensureStateDefaults(state) {
         if (!Array.isArray(state.anomalyLog))  state.anomalyLog  = [];
         if (!Array.isArray(state.humanityLog)) state.humanityLog = [];
         if (typeof state.humanityArchive !== 'number') state.humanityArchive = 0;
+        if (typeof state.earlyDebtEventFired !== 'boolean') state.earlyDebtEventFired = false;
+        if (!Array.isArray(state.weighItShown)) state.weighItShown = [];
+        if (typeof state.orderFollowUpDay !== 'object' || state.orderFollowUpDay === null) state.orderFollowUpDay = {};
     }
     window.ensureStateDefaults = ensureStateDefaults;
 

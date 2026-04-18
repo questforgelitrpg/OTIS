@@ -7,7 +7,7 @@
     <!-- Redirect new players to the standalone intro page before the game renders. -->
     <script>
     (function () {
-        var STATE_KEY = 'otis_state_v4'; // IMPORTANT: must match stateManager STATE_KEY below — bump both if key changes
+        var STATE_KEY = 'otis_state_v5'; // IMPORTANT: must match stateManager STATE_KEY below — bump both if key changes
         try {
             var raw = localStorage.getItem(STATE_KEY);
             var state = raw != null ? JSON.parse(raw) : null;
@@ -151,6 +151,8 @@
                 </div>
                 <p id="conveyor-jam-warning">&#9888; CONVEYOR JAM &mdash; BELT STALLED</p>
                 <div id="conveyor-jam-clear" style="display:none"><button class="btn-danger" onclick="handleClearJam()">CLEAR JAM</button></div>
+                <div id="belt-stall-indicator">&#9888; BELT SATURATED &mdash; QUEUE FULL. BOTS DEGRADED.</div>
+                <div id="barge-hold-indicator">&#9888; BARGE HELD &mdash; WAREHOUSE SEARCH IN PROGRESS.</div>
             </div>
             <div class="modal-section">
                 <div class="modal-label">ITEM QUEUE</div>
@@ -166,6 +168,7 @@
                         <button class="consult-card btn-warn" onclick="handleSkip()">SKIP</button>
                     </div>
                     <div class="item-actions" id="item-declaration" style="display:none">
+                        <p id="weigh-it-hint" style="display:none"></p>
                         <button id="btn-to-may" onclick="handleDeclare('MAY_BIN')" title="Civilian and Settlement items only">TO MAY BIN</button>
                         <button id="btn-to-broker" onclick="handleDeclare('BROKER_BIN')" title="Industrial and Vessel items">TO BROKER BIN</button>
                         <button id="btn-to-sven" onclick="handleDeclare('SVEN_BIN')" title="Rare and Anomalous only — Sven pays 65%" style="color:var(--text-warn);border-color:#3a2a00">TO SVEN BIN</button>
@@ -288,6 +291,7 @@
             <div class="modal-section" id="george-warehouse-section">
                 <div class="modal-label">GEORGE&#39;S WAREHOUSE</div>
                 <div class="modal-row"><button id="btn-search-warehouse" onclick="handleSearchWarehouse()">SEARCH WAREHOUSE</button> <span id="warehouse-search-countdown" style="color:var(--text-dim);margin-left:0.5rem"></span></div>
+                <div class="warehouse-search-progress-track"><div id="warehouse-search-progress-fill"></div></div>
                 <p id="warehouse-search-status" style="color:var(--text-dim);font-size:14px;margin:0.2rem 0 0.4rem 0"></p>
                 <div id="george-warehouse-list" style="display:none;margin-top:0.5rem"></div>
             </div>

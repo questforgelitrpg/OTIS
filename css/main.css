@@ -380,6 +380,19 @@ body.kbd-glitch { animation: kbd-glitch 0.3s infinite; }
 @keyframes btn-flash-warn { 0%, 100% { border-color: var(--border); color: var(--text-primary); } 25%, 75% { border-color: var(--text-warn); color: var(--text-warn); box-shadow: 0 0 6px var(--ind-amber); } }
 .btn-flash-warn { animation: btn-flash-warn 0.4s ease 3; }
 
+/* Weigh-it competing-pressure hint — inline on declare card */
+#weigh-it-hint { display: none; font-size: 13px; color: var(--text-warn); margin: 0.3rem 0 0.1rem; line-height: 1.5; letter-spacing: 0.03em; }
+
+/* Belt stall indicator */
+#belt-stall-indicator { display: none; font-size: 13px; color: var(--ind-red); background: rgba(100,0,0,0.18); border: 1px solid var(--ind-red); padding: 0.25rem 0.5rem; margin: 0.3rem 0; }
+
+/* Barge-hold indicator (warehouse search conflict) */
+#barge-hold-indicator { display: none; font-size: 13px; color: var(--ind-amber); background: rgba(80,50,0,0.2); border: 1px solid var(--ind-amber); padding: 0.25rem 0.5rem; margin: 0.3rem 0; }
+
+/* Warehouse search progress bar */
+.warehouse-search-progress-track { display: none; height: 4px; background: var(--border); margin: 0.4rem 0 0; }
+#warehouse-search-progress-fill { height: 4px; background: var(--ind-amber); width: 0%; transition: width 0.9s linear; }
+
 /* Conveyor jam warning */
 #conveyor-jam-warning { color: var(--text-danger); font-size: 14px; margin: 0.3rem 0; display: none; }
 /* Floating OTIS bar (mobile, modal-cover fallback) */
@@ -525,7 +538,12 @@ body.chaos-shake { animation: chaos-shake 0.5s infinite, flicker 12s infinite; }
 /* Toggle button — hidden on desktop, visible on mobile */
 #chaos-drawer-toggle { display: none; }
 
-/* Mobile */
+/* ── Mobile layout (≤600px) ─────────────────────────────────────────────────
+ * Single-column stack; larger tap targets; collapsible comms / status panels.
+ * Replaces the old JS `if (window.innerWidth <= 600) openModal('belt')` band-aid.
+ * The belt panel auto-opens via the CSS .mobile-auto-open class toggled from JS
+ * when a new item arrives, keeping the JS side purely state-driven.
+ */
 @media (max-width: 600px) {
     #arm-panel { display: none; }
     #otis-float { display: block; }
@@ -533,8 +551,36 @@ body.chaos-shake { animation: chaos-shake 0.5s infinite, flicker 12s infinite; }
     #layout { height: auto; min-height: 100vh; }
     #terminal { height: auto; border-width: 4px; }
     #otis-output { min-height: 240px; max-height: 50vh; height: auto; flex: none; }
-    .module-btn { min-height: 48px; font-size: 15px; }
+
+    /* Larger tap targets on all interactive elements (WCAG min 44px) */
+    button, .module-btn, .consult-card, .picklist-btn {
+        min-height: 44px;
+        font-size: 15px;
+        padding: 0.5rem 0.8rem;
+    }
+
+    /* 5-tab module grid → single-column on mobile */
     #module-grid { grid-template-columns: 1fr; }
+    .module-btn { min-height: 48px; }
+
+    /* Item actions wrap cleanly so KEEP/SCRAP/ARCHIVE are never clipped */
+    .item-actions { flex-direction: column; gap: 0.4rem; }
+    .item-actions button { min-height: 44px; width: 100%; }
+
+    /* Consult cards stacked so they don't bleed off-screen */
+    .consult-cards { flex-direction: column; gap: 0.4rem; }
+    .consult-card { width: 100%; min-height: 44px; }
+
+    /* Weigh-it hint takes full width on mobile */
+    #weigh-it-hint { font-size: 13px; padding: 0.4rem 0; }
+
+    /* Belt panel auto-open on mobile: panel slides up when .mobile-item-active set */
+    #modal-belt .modal-inner { border-radius: 12px 12px 0 0; margin: 0; width: 100%; max-width: 100%; position: fixed; bottom: 0; left: 0; right: 0; padding: 1rem 0.8rem 1.5rem; }
+    #modal-belt.open { align-items: flex-end; padding: 0; }
+
+    /* Comms and status panels collapse to accordion on mobile */
+    .modal-section { padding-bottom: 0.4rem; }
+
     .modal.open { padding: 0.5rem; align-items: flex-start; }
     body.panel-open #terminal { margin-right: 0; }
     #maze-panel { flex-direction: column; }
@@ -542,4 +588,14 @@ body.chaos-shake { animation: chaos-shake 0.5s infinite, flicker 12s infinite; }
     .hdr-stat { font-size: clamp(11px, 2.6vw, 14px); border-left: none; padding: 0 0.3rem; }
     #hdr { gap: 0.3rem; padding: 0.3rem 0.5rem; }
     #chaos-drawer-toggle { display: inline-flex; align-items: center; justify-content: center; }
+
+    /* Belt stall and barge-hold indicators: full-width banner on mobile */
+    #belt-stall-indicator, #barge-hold-indicator { font-size: 13px; padding: 0.4rem 0.6rem; }
+}
+
+/* ── Tablet layout (601–900px) ──────────────────────────────────────────── */
+@media (min-width: 601px) and (max-width: 900px) {
+    #arm-panel { width: 100px; }
+    #module-grid { grid-template-columns: repeat(2, 1fr); }
+    button, .module-btn, .consult-card { min-height: 40px; }
 }

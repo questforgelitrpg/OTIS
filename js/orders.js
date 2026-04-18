@@ -4,6 +4,38 @@
     // Gated by Comm Boost Tier I. Arrive via COMMS with [STANDING ORDER] prefix.
     // Each order: { id, npc, desc, rewardCredits, rewardNote, expiresOnDay, accepted, requirementKey, requirementQty, fulfilled }
 
+    // NPC follow-up voice lines: separate pools per NPC — distinct voice, surfaces in comms panel.
+    var NPC_FOLLOWUP_FULFILLED = {
+        MAY: [
+            '[MAY] Goods received. Slot cleared \u2014 credits on the way. \u2014 M. Finster',
+            '[MAY] Good timing. Buyer window is closing. Credits posted. \u2014 Finster Recycling',
+            '[MAY] Exactly what I needed. Sending payment now. \u2014 May',
+        ],
+        SVEN: [
+            '[SVEN] Received. Transfers logged. Don\u2019t tell the bank. \u2014 Digut',
+            '[SVEN] Your cooperation is noted. Payment cleared. \u2014 S. Digut',
+            '[SVEN] Items confirmed. George never moved this fast. \u2014 Digut',
+        ],
+        BANK: [
+            '[UBC] Compliance confirmed. Reward credited. \u2014 United Belt Corp',
+            '[UBC] Review complete. Terms met. Reward applied. \u2014 UBC Oversight',
+        ],
+    };
+
+    var NPC_FOLLOWUP_MISSED = {
+        MAY: [
+            '[MAY] Window closed. Buyer moved on. If you can still get me 2 of the 3, I\u2019ll take them at 70 cr each \u2014 partial rate. \u2014 Finster',
+            '[MAY] Order lapsed. I\u2019ll take whatever you have at reduced rate (50 cr flat per item) if you can send today. \u2014 M. Finster',
+        ],
+        SVEN: [
+            '[SVEN] You missed my window. I\u2019ll extend 24 hours for a 15% cut on the reward. Your call. \u2014 Digut',
+            '[SVEN] Late. I can still take it \u2014 one-time extension, 200 cr flat. Last offer. \u2014 S. Digut',
+        ],
+        BANK: [
+            '[UBC] Deadline passed. Penalty applied. Maintain compliance going forward. \u2014 UBC Oversight',
+        ],
+    };
+
     // _orderIdCounter is initialized from gameState.state.nextOrderId in DOMContentLoaded
     // to survive page reloads. Mutate via _nextOrderId() only.
     function _nextOrderId() {
@@ -28,6 +60,18 @@
                 if (o.requirementKey === 'svenRareRefusal' && o.accepted) {
                     s.svenRareRefusalActive = false;
                     s.svenInterferencePct = 20;
+                }
+                // NPC missed follow-up with partial-fulfillment / extension offer in comms
+                var missPool = NPC_FOLLOWUP_MISSED[o.npc] || [];
+                if (missPool.length) {
+                    var missLine = missPool[Math.floor(Math.random() * missPool.length)];
+                    setTimeout(function() {
+                        appendHardcodedComm(missLine);
+                        var dot = document.getElementById('comms-dot-may');
+                        var svenDot = document.getElementById('comms-dot-sven');
+                        if (o.npc === 'MAY' && dot) dot.className = 'comms-dot dot-amber';
+                        if (o.npc === 'SVEN' && svenDot) svenDot.className = 'comms-dot dot-amber';
+                    }, 1500);
                 }
                 return false;
             }
@@ -112,6 +156,23 @@
         }
         otisLines.push({ role: 'otis', text: rewardMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(rewardMsg);
+
+        // NPC follow-up voice line in comms panel
+        var pool = NPC_FOLLOWUP_FULFILLED[order.npc] || [];
+        if (pool.length) {
+            var followUp = pool[Math.floor(Math.random() * pool.length)];
+            setTimeout(function() {
+                appendHardcodedComm(followUp);
+                var dot = document.getElementById('comms-dot-may');
+                var svenDot = document.getElementById('comms-dot-sven');
+                if (order.npc === 'MAY' && dot) dot.className = 'comms-dot dot-on';
+                if (order.npc === 'SVEN' && svenDot) svenDot.className = 'comms-dot dot-on';
+                s.orderFollowUpDay = s.orderFollowUpDay || {};
+                s.orderFollowUpDay[order.npc] = s.day;
+                gameState._save();
+            }, 2000);
+        }
+
         gameState._save();
         gameState._updateUI();
     }

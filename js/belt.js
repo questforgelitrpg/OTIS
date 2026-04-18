@@ -85,9 +85,10 @@
     // Act 2 (20), 3 NOMINAL bots  |  20   | every 6s    | 160s        | ~165s | ✅
     // Act 3 (30), 3 NOMINAL bots  |  30   | every 6s    | 240s        | ~245s | ✅
     // Act 3, 2 NOMINAL + 1 OFF    |  30   | every 9s    | 240s        | ~280s | ⚠ tight
-    // Act 3, all 3 RED (degr 6+)  |  30   | every ~11s  | 240s        | ~350s | ❌ fails
+    // Act 3, all 3 RED (degr 6+)  |  30   | every ~11s  | 240s        | ~350s | ⚠ resolved via dynamic cap + overflow buffer
     // Act 3, 3 NOMINAL + Belt G3  |  30   | every 3s    | 240s        | ~245s | ✅ trivial
     //
+    // Belt queue cap is now dynamic — see computeBeltQueueCap().
     var beltQueueCap = 3;
     var botFetchTimer = null;
     // _lastStallWarnAt is intentionally ephemeral (not persisted). Resetting on reload
@@ -115,6 +116,105 @@
         return Math.round(base * degradationMult * beltMult);
     }
 
+    // Dynamic belt queue cap — scales with drop size and degraded bot count so that
+    // large Act 3 drops with degraded bots don't silently stall the belt.
+    // Min 3 (original), max 8 — gives breathing room without unbounded memory use.
+    function computeBeltQueueCap() {
+        var s = gameState.state;
+        var dropSize = s.dropStartSize || (s.fieldPool && s.fieldPool.length) || 0;
+        var degradedBots = (s.bots || []).filter(function(b) { return b.status === 'RED' || b.status === 'OFFLINE'; }).length;
+        var base = Math.ceil(dropSize / 6);
+        if (degradedBots >= 2) base += 2;
+        return Math.min(8, Math.max(3, base));
+    }
+    window.computeBeltQueueCap = computeBeltQueueCap;
+
+    // Maximum number of recently-routed items tracked for CONSULT_GEORGE item callbacks.
+    var MAX_RECENT_ROUTED_ITEMS = 12;
+
+    // Track a routed item in the ephemeral recentRoutedItems list (last MAX_RECENT_ROUTED_ITEMS).
+    // Used by CONSULT_GEORGE to surface item-level callbacks and history.
+    function trackRecentRoutedItem(item, route) {
+        var s = gameState.state;
+        if (!s.recentRoutedItems) s.recentRoutedItems = [];
+        s.recentRoutedItems.unshift({
+            name: item.name.substring(0, 30),
+            rarity: item.rarity,
+            category: item.category,
+            route: route,
+            day: s.day,
+        });
+        s.recentRoutedItems = s.recentRoutedItems.slice(0, MAX_RECENT_ROUTED_ITEMS);
+    }
+    window.trackRecentRoutedItem = trackRecentRoutedItem;
+    window.MAX_RECENT_ROUTED_ITEMS = MAX_RECENT_ROUTED_ITEMS;
+
+    // ── WEIGH-IT competing-pressure hint ─────────────────────────────────────
+    // Fires on ~12% of items, or any item that matches a live standing order,
+    // has a Sven bid potential (Rare/Anomalous), or is Rare+ value.
+    // Shows a short inline hint on the declare card — non-blocking, resolvable
+    // from existing routing buttons.
+    function maybeShowWeighItHint(item) {
+        if (!item) return;
+        var s = gameState.state;
+        var hints = [];
+
+        // Standing order match?
+        var matchedOrder = null;
+        (s.activeOrders || []).forEach(function(o) {
+            if (o.fulfilled || !o.accepted) return;
+            var key = o.requirementKey;
+            if (key === 'settlementItems' && item.category === 'Settlement') matchedOrder = o;
+            if (key === 'vesselItems' && item.category === 'Vessel') matchedOrder = o;
+            if (key === 'industrialItems' && item.category === 'Industrial') matchedOrder = o;
+            if (key === 'anomalousItem' && item.rarity === 'Anomalous') matchedOrder = o;
+        });
+        if (matchedOrder) {
+            var remaining = matchedOrder.requirementQty - (matchedOrder.progressQty || 0);
+            hints.push('\u25B8 ' + matchedOrder.npc + ' standing order needs ' + remaining + ' more ' + (matchedOrder.npc === 'SVEN' ? 'item' : item.category) + '.');
+        }
+
+        // Sven bid potential (Rare/Anomalous)?
+        var isSvenEligible = (item.rarity === 'Rare' || item.rarity === 'Anomalous') && (s.svenBin || []).length < 3;
+        if (isSvenEligible && !matchedOrder) {
+            var svenEst = item.rarity === 'Anomalous'
+                ? Math.floor((TIMING.ANOMALOUS_RESERVE_MIN + TIMING.ANOMALOUS_RESERVE_MAX) / 2 * 0.65)
+                : Math.floor(getEffectiveValue(item) * 0.65);
+            hints.push('\u25B8 Sven offers ~' + svenEst + ' cr now (quick sale).');
+        }
+
+        // High base value worth flagging?
+        var ev = getEffectiveValue(item);
+        if (ev >= 500 && !isSvenEligible && !matchedOrder) {
+            hints.push('\u25B8 High-value item \u2014 broker bin pays full rate when full.');
+        }
+
+        // Random 12% chance on any item (if no structural signal above)
+        var alreadyShown = (s.weighItShown || []).indexOf(item.name) !== -1;
+        var showRandom = !alreadyShown && Math.random() < 0.12 && !hints.length;
+
+        if (!hints.length && !showRandom) return;
+        if (!hints.length) hints.push('\u25B8 Belt trend: ' + (s.otisLearning && s.otisLearning.keepByCategory ? 'KEEP' : 'mixed') + ' recently. Worth a second look?');
+
+        // Record so we don't re-show same item name
+        if (!alreadyShown) {
+            s.weighItShown = (s.weighItShown || []).concat([item.name]).slice(-30);
+        }
+
+        var hintEl = document.getElementById('weigh-it-hint');
+        if (hintEl) {
+            hintEl.textContent = hints.slice(0, 2).join('  ');
+            hintEl.style.display = '';
+        }
+    }
+    window.maybeShowWeighItHint = maybeShowWeighItHint;
+
+    function clearWeighItHint() {
+        var hintEl = document.getElementById('weigh-it-hint');
+        if (hintEl) { hintEl.textContent = ''; hintEl.style.display = 'none'; }
+    }
+    window.clearWeighItHint = clearWeighItHint;
+
     function computePickListFocus(s) {
         var choice = s.confirmedPickChoice || s.pickListChoice || {};
         if (choice.mode === 'DOUBLE_WEIGHT' && choice.category) return choice.category;
@@ -127,20 +227,43 @@
         return 'mixed';
     }
 
+    // Shared belt-saturation message generator.
+    function _beltSaturationMsg(queueCap) {
+        var s = gameState.state;
+        var degradedCount = (s.bots || []).filter(function(b) { return b.status === 'RED' || b.status === 'OFFLINE'; }).length;
+        return degradedCount >= 2
+            ? 'Belt saturated, boss \u2014 bots degraded. Queue full (' + queueCap + '). Repair bots to clear backlog.'
+            : 'Belt queue full (' + queueCap + '). Item held until belt clears.';
+    }
+
     function pushToBeltQueue(item) {
         var s = gameState.state;
         if (!s.beltQueue) s.beltQueue = [];
-        if (s.beltQueue.length >= beltQueueCap) return;
+        beltQueueCap = computeBeltQueueCap();
+        if (s.beltQueue.length >= beltQueueCap) {
+            // Belt saturated — surface stall state once per minute
+            var now = Date.now();
+            if (now - _lastStallWarnAt >= 60000) {
+                _lastStallWarnAt = now;
+                var stallMsg = _beltSaturationMsg(beltQueueCap);
+                otisLines.push({ role: 'otis', text: stallMsg }); renderOTIS();
+                var stalledEl = document.getElementById('belt-stall-indicator');
+                if (stalledEl) stalledEl.style.display = '';
+            }
+            return;
+        }
+        // Clear stall indicator when queue accepts items again
+        var stalledEl = document.getElementById('belt-stall-indicator');
+        if (stalledEl) stalledEl.style.display = 'none';
         item = Object.assign({}, item);
         s.beltQueue.push(item);
         // Track delivery cadence for OTIS side comments
         var deliveryCount = s.deliveryCount = (s.deliveryCount || 0) + 1;
         if (deliveryCount % 7 === 0) fireOtisSideComment();
-        // If belt is empty, promote to display
+        // If belt is empty, promote to display (CSS media query handles mobile open)
         if (currentItem === null) {
             setItemInQueue(item);
             updateBeltUI('DELIVERING');
-            if (window.innerWidth <= 600) openModal('belt');
         }
     }
     window.pushToBeltQueue = pushToBeltQueue;
@@ -338,6 +461,7 @@
             switch (bot.activity) {
                 case 'IDLE':
                     if (!s.fieldPool || s.fieldPool.length === 0) return;
+                    beltQueueCap = computeBeltQueueCap();
                     if ((s.beltQueue || []).length >= beltQueueCap) return;
                     bot.carrying = s.fieldPool.shift();
                     bot.carrying.condition = assignCondition();
@@ -367,8 +491,10 @@
             var now = Date.now();
             if (now - _lastStallWarnAt >= 60000) {
                 _lastStallWarnAt = now;
-                otisLines.push({ role: 'otis', text: 'All bots offline. Field items waiting. Repair the bots.' });
+                otisLines.push({ role: 'otis', text: _beltSaturationMsg(beltQueueCap) });
                 renderOTIS();
+                var stalledEl = document.getElementById('belt-stall-indicator');
+                if (stalledEl) stalledEl.style.display = '';
             }
         }
 
@@ -438,7 +564,7 @@
         var s = gameState.state;
         var deliveryCount = s.deliveryCount = (s.deliveryCount || 0) + 1;
         if (deliveryCount % 7 === 0) fireOtisSideComment();
-        if (window.innerWidth <= 600) openModal('belt');
+        // Mobile: CSS media query handles auto-opening the belt panel at ≤600px
     }
 
     window.deliverNextBeltItem = deliverNextBeltItem;
@@ -708,6 +834,22 @@
     window.AnimWindow = AnimWindow;
 
     function handleBargeArrival() {
+        // Bug #9 fix: if warehouse search is running, queue the barge and tell the player.
+        var s = gameState.state;
+        if (s.warehouseSearching) {
+            s.bargePendingDuringSearch = true;
+            gameState._save();
+            var conflictMsg = 'Barge inbound \u2014 search still running, holding belt. Barge will deploy when search resolves.';
+            otisLines.push({ role: 'otis', text: conflictMsg }); renderOTIS();
+            var bargeHoldEl = document.getElementById('barge-hold-indicator');
+            if (bargeHoldEl) bargeHoldEl.style.display = '';
+            return;
+        }
+        _doBargeArrival();
+    }
+    window.handleBargeArrival = handleBargeArrival;
+
+    function _doBargeArrival() {
         if (gameState.state.dropActive) return;
         // BUG 14 fix: call checkActProgression() BEFORE reading the act so that the
         // very first Act-3 barge uses Act-3 drop sizes (26–32 items) rather than
@@ -806,6 +948,7 @@
     }
 
     window.handleBargeArrival = handleBargeArrival;
+    window._doBargeArrival = _doBargeArrival;
 
     // Pull the next available item from the storeroom buffer onto the belt.
     function handlePullNextStoreroomItem() {
@@ -853,8 +996,9 @@
         gameState.state.beltJammed = false;
         renderItemQueue();
         _updatePullStoreroomBtn();
+        maybeShowWeighItHint(currentItem);
     }
-    function clearItemQueue() { currentItem = null; renderItemQueue(); _updatePullStoreroomBtn(); }
+    function clearItemQueue() { currentItem = null; renderItemQueue(); _updatePullStoreroomBtn(); clearWeighItHint(); }
 
     function renderItemQueue() {
         var emptyEl = document.getElementById('item-queue-empty');
@@ -1086,6 +1230,7 @@
             gameState.state.mayBin = mayBin;
             gameState._save();
             trackOTISLearning('SELL', item);
+            trackRecentRoutedItem(item, 'SELL');
             _dropRoutes.sold++;
             clearItemQueue(); advanceBeltQueue();
             renderBinPanel();
@@ -1104,6 +1249,7 @@
             gameState.state.brokerBin = brokerBin;
             gameState._save();
             trackOTISLearning('SELL', item);
+            trackRecentRoutedItem(item, 'SELL');
             _dropRoutes.sold++;
             clearItemQueue(); advanceBeltQueue();
             renderBinPanel();
@@ -1136,6 +1282,7 @@
             gameState.state.svenBin = svenBin;
             gameState._save();
             trackOTISLearning('SELL', item);
+            trackRecentRoutedItem(item, 'SVEN');
             _dropRoutes.sven++;
             clearItemQueue(); advanceBeltQueue();
             renderBinPanel();
@@ -1163,6 +1310,7 @@
             }
             gameState._save();
             trackOTISLearning('KEEP', item);
+            trackRecentRoutedItem(item, 'KEEP');
             _dropRoutes.kept++;
             clearItemQueue(); advanceBeltQueue();
             var kn = gameState.state.keepLog.length;
@@ -1190,6 +1338,7 @@
             }
             gameState._save();
             _dropRoutes.archived++;
+            trackRecentRoutedItem(item, 'ARCHIVE');
             window.emotionalBeatActive = true;
             clearItemQueue(); advanceBeltQueue();
             var archPool = window.ARCHIVE_DISCOVERY_POOL || ['Archived.'];
@@ -1205,6 +1354,7 @@
             gameState.state.currentDropScrapped = (gameState.state.currentDropScrapped || 0) + 1;
             gameState._save();
             trackOTISLearning('SCRAP', item);
+            trackRecentRoutedItem(item, 'SCRAP');
             _dropRoutes.scrap++;
             clearItemQueue(); advanceBeltQueue();
             recordOrderProgress(item.category, item.rarity);
