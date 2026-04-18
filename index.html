@@ -476,24 +476,11 @@
     <script src="js/naming.js"></script>
     <script src="js/debug.js"></script>
     <script>
-    // Moved to js/gamestate.js — see Phase 3 refactor
-    // Moved to js/data.js — see Phase 2 refactor
-    // Moved to js/data.js — see Phase 2 refactor
-    // Moved to js/data.js — see Phase 2 refactor
-    // Moved to js/data.js — see Phase 2 refactor
-    // Moved to js/data.js — see Phase 2 refactor
 
     // PICK LIST
     var PICK_CATEGORIES = ['Civilian','Industrial','Settlement','Vessel','Unknown'];    var PICK_MODE_IDS = { DROP: 'pl-mode-drop', PRIORITIZE: 'pl-mode-prioritize', DOUBLE_WEIGHT: 'pl-mode-dw' };
     var MANIFEST_BAR_MAX_PX = 120;
 
-    function setPickMode(mode) {
-        var s = gameState.state;
-        if (!s.pickListChoice) s.pickListChoice = { mode: 'DROP', category: null };
-        s.pickListChoice.mode = mode;
-        gameState._save();
-        renderPickList();
-    }
 
     function setPickCategory(cat) {
         var s = gameState.state;
@@ -583,47 +570,12 @@
         if (window.OtisTTS) OtisTTS.speak(otisMsg);
     }
 
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/naming.js — see Phase 12 refactor
 
-    function checkActProgression() {
-        var s = gameState.state;
-        var drops = s.dropCount || 0;
-        var newAct = drops < 3 ? 1 : drops < 7 ? 2 : 3;
-        if (newAct !== s.act) {
-            s.act = newAct;
-            gameState._save();
-            var actNames = { 2: 'PRESSURE', 3: 'THE FIND' };
-            appendOTIS('ACT ' + newAct + ': ' + (actNames[newAct] || ''), 'LOGIN');
-            // Act 3 start: schedule the one-time toaster incident (power-outage plot
-            // event).  Brief delay lets the act-transition OTIS message render first.
-            // This is the ONLY place fireToasterIncident() should be called from the
-            // normal game flow — never from autoToast() or any daily-toast path.
-            if (newAct === 3 && !s.toasterIncidentFired) {
-                setTimeout(fireToasterIncident, 4000);
-            }
-        }
-    }
 
-    // Moved to js/gamestate.js — see Phase 3 refactor
 
-    // Moved to js/ui.js — see Phase 4 refactor
-    // Moved to js/ui.js — see Phase 4 refactor
 
-    // Moved to js/upgrades.js — see Phase 11 refactor
-    // Moved to js/data.js — see Phase 2 refactor
-    // Moved to js/data.js — see Phase 2 refactor
 
-    // Moved to js/belt.js — see Phase 5 refactor
 
-    function getAppraisedValue(keepItem) {
-        var base = keepItem.baseValue || keepItem.otisValue || 0;
-        if (keepItem.rarity === 'Anomalous' || base === 0) return base;
-        var daysHeld = Math.max(0, (gameState.state.day || 1) - (keepItem.keepDay || keepItem.day || 1));
-        var mult = Math.pow(1.02, daysHeld);
-        return Math.floor(base * mult * (CONDITION_MULTIPLIERS[keepItem.condition] || 1.0));
-    }
 
     // OTIS TERMINAL
     var MAX_OTIS_LINES = 10;
@@ -634,26 +586,12 @@
 
     // SILENCE TIMER — OTIS fires a dad joke after 2 real minutes of silence
     var _lastOtisActivity = Date.now();
-    // Moved to js/narrative.js — see Phase 7 refactor
-
-    // Moved to js/ui.js — see Phase 4 refactor
 
 
-    // Moved to js/narrative.js — see Phase 7 refactor
-    // Moved to js/data.js — see Phase 2 refactor
 
-    // Moved to js/tutorial.js — see Phase 12 refactor
-    // Moved to js/tutorial.js — see Phase 12 refactor
-    // Moved to js/tutorial.js — see Phase 12 refactor
-    // Moved to js/tutorial.js — see Phase 12 refactor
-    // Moved to js/tutorial.js — see Phase 12 refactor
-    // Moved to js/tutorial.js — see Phase 12 refactor
-    // Moved to js/tutorial.js — see Phase 12 refactor
 
-    // Moved to js/ui.js — see Phase 4 refactor
-    // Moved to js/ui.js — see Phase 4 refactor
 
-    // Moved to js/ui.js — see Phase 4 refactor
+
 
     // BELT
     var currentItem = null;
@@ -661,86 +599,17 @@
     // Counter for belt jam check cadence — jam is evaluated every 2 in-game days
     var _beltJamDayCounter = 0;
 
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
 
-    // Moved to js/belt.js — see Phase 5 refactor
 
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
 
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
 
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
 
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
 
-    // Populate sidebar bot animation rows (inline — no iframe needed)
-    (function() {
-        var BOT_FRAMES = [' [o_o]>', ' [^_^]>', ' [-_-]>', ' [*_*]>'];
-        var CARRY_FRAMES = [' [o_o]>[=]', ' [^_^]>[#]', ' [-_-]>[~]'];
-        var LABELS = ['BOT-1', 'BOT-2', 'UNIT-A', 'UNIT-B', 'DRONE'];
-        var ROW_SPACING_PCT = 20;
-        function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-        function randInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
-        function makeBotStr() {
-            var n = randInt(2, 4);
-            var parts = [];
-            for (var i = 0; i < n; i++) {
-                var frame = Math.random() < 0.25 ? rand(CARRY_FRAMES) : rand(BOT_FRAMES);
-                parts.push(rand(LABELS) + ':' + frame + '  ');
-            }
-            return parts.join('');
-        }
-        var container = document.getElementById('arm-bot-anim');
-        if (!container) return;
-        var rows = [];
-        for (var r = 0; r < 5; r++) {
-            var el = document.createElement('div');
-            el.className = 'bot-row';
-            el.style.top = (r * ROW_SPACING_PCT + randInt(1, 4)) + '%';
-            var dur = randInt(4, 8);
-            el.style.animationDuration = dur + 's';
-            el.style.animationDelay = (-randInt(0, dur)) + 's';
-            el.textContent = makeBotStr();
-            container.appendChild(el);
-            rows.push({ el: el, dur: dur, timer: null });
-        }
-        rows.forEach(function(row) {
-            row.timer = setInterval(function() { row.el.textContent = makeBotStr(); }, row.dur * 1000);
-        });
-        container._botTimers = rows.map(function(row) { return row.timer; });
-    }());
 
-    // Moved to js/ui.js — see Phase 4 refactor
 
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/data.js — see Phase 2 refactor
-    // Moved to js/data.js — see Phase 2 refactor
 
-    // Moved to js/belt.js — see Phase 5 refactor
 
-    // Moved to js/belt.js — see Phase 5 refactor
 
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
-    // Moved to js/belt.js — see Phase 5 refactor
 
     function handleReturnToBelt(index) {
         var item = gameState.state.keepLog[index]; if (!item) return;
@@ -789,10 +658,7 @@
         otisMsg: "Final tier. 1,500 credits a week. You are close enough that they want it faster. That is either good news or bad news depending on the week."
       }
     ];
-    // Moved to js/data.js — see Phase 2 refactor
-    // Moved to js/data.js — see Phase 2 refactor
 
-    // Moved to js/narrative.js — see Phase 7 refactor
 
     // COMMS
     function handleComms(channel) {
@@ -810,17 +676,10 @@
     }
 
     // PAYMENT
-    // Moved to js/economy.js — see Phase 6 refactor
-    // Moved to js/economy.js — see Phase 6 refactor
 
     // SCRAP
-    // Moved to js/economy.js — see Phase 6 refactor
 
-    // Moved to js/economy.js — see Phase 6 refactor
-    // Moved to js/economy.js — see Phase 6 refactor
-    // Moved to js/economy.js — see Phase 6 refactor
 
-    // Moved to js/belt.js — see Phase 5 refactor
 
     function renderBinPanel() {
         var s = gameState.state;
@@ -879,17 +738,10 @@
         _updatePullStoreroomBtn();
     }
 
-    // Moved to js/bots.js — see Phase 8 refactor
-    // Moved to js/bots.js — see Phase 8 refactor
-    // Moved to js/bots.js — see Phase 8 refactor
-    // Moved to js/bots.js — see Phase 8 refactor
-    // Moved to js/bots.js — see Phase 8 refactor
 
     // CONVEYOR JAM
-    // Moved to js/belt.js — see Phase 5 refactor
 
     // AUXILIARY CHANNEL
-    // Moved to js/comms.js — see Phase 10 refactor
 
     // KEYBOARD EASTER EGG
     function checkEasterEgg() {
@@ -907,17 +759,13 @@
         setLight('light-auxiliary', 'light-amber');
     }
 
-    // Moved to js/schematic.js — see Phase 9 refactor
 
-    // Moved to js/schematic.js — see Phase 9 refactor
 
     // =====================================================================
     // MASTER INTEGRATION SCHEMATIC — Phase 2/3/4/7
     // =====================================================================
-    // Moved to js/data.js — see Phase 2 refactor
 
     // Time penalty (in sessionHours minutes) for a failed verification attempt
-    // Moved to js/gamestate.js — see Phase 3 refactor
 
     // State for the node installation modal
     var _sniNodeID = null;
@@ -925,7 +773,6 @@
     var _sniSelectedDiaryID = null;
 
     // Render the schematic board in the Storeroom modal
-    // Moved to js/schematic.js — see Phase 9 refactor
 
     // MODULE BUTTON DISABLE HELPER
     function setModuleButtonsEnabled(belt, comms, store, systems) {
@@ -939,20 +786,10 @@
         });
     }
 
-    // Moved to js/narrative.js — see Phase 7 refactor
 
-    // Moved to js/debug.js — see Phase 12 refactor
 
-    // Moved to js/debug.js — see Phase 12 refactor
 
-    // Moved to js/ui.js — see Phase 4 refactor
-    // Moved to js/ui.js — see Phase 4 refactor
-    // Moved to js/ui.js — see Phase 4 refactor
-    // Moved to js/ui.js — see Phase 4 refactor
-    // Moved to js/ui.js — see Phase 4 refactor
 
-    // Moved to js/ui.js — see Phase 4 refactor
-    // Moved to js/ui.js — see Phase 4 refactor
 
     // LOGOFF / TTS / DEBUG
     function handleLogoff() {
@@ -1005,12 +842,8 @@
         var muted = window.OtisSound.toggleMute();
         var btn = document.getElementById('sfx-btn'); if (btn) btn.textContent = muted ? 'SFX: OFF' : 'SFX: ON';
     }
-    // Moved to js/debug.js — see Phase 12 refactor
-    // Moved to js/data.js — see Phase 2 refactor
 
-    // Moved to js/upgrades.js — see Phase 11 refactor
 
-    // Moved to js/upgrades.js — see Phase 11 refactor
 
     // ── STANDING ORDERS ───────────────────────────────────────────────────────
     // Gated by Comm Boost Tier I. Arrive via COMMS with [STANDING ORDER] prefix.
@@ -1019,31 +852,18 @@
     // _orderIdCounter is initialized from gameState.state.nextOrderId in DOMContentLoaded
     // to survive page reloads. Mutate via _nextOrderId() only.
     var _orderIdCounter = 1;
-    // Moved to js/orders.js — see Phase 11 refactor
-    // Moved to js/data.js — see Phase 2 refactor
 
-    // Moved to js/orders.js — see Phase 11 refactor
 
-    // Moved to js/orders.js — see Phase 11 refactor
 
-    // Moved to js/orders.js — see Phase 11 refactor
 
-    // Moved to js/orders.js — see Phase 11 refactor
 
-    // Moved to js/orders.js — see Phase 11 refactor
 
-    // Moved to js/orders.js — see Phase 11 refactor
 
-    // Moved to js/orders.js — see Phase 11 refactor
 
     // ── BANK INSPECTIONS ──────────────────────────────────────────────────────
-    // Moved to js/economy.js — see Phase 6 refactor
 
-    // Moved to js/economy.js — see Phase 6 refactor
 
-    // Moved to js/economy.js — see Phase 6 refactor
 
-    // Moved to js/bots.js — see Phase 8 refactor
 
     var UPGRADE_DEFLECT_MESSAGES = [
         'Firmware v5.0 install requires full memory wipe. Current debt load recommends deferral.',
@@ -1084,36 +904,20 @@
         }
     }
 
-    // Moved to js/debug.js — see Phase 12 refactor
-    // Moved to js/debug.js — see Phase 12 refactor
-    // Moved to js/debug.js — see Phase 12 refactor
-    // Moved to js/debug.js — see Phase 12 refactor
-    // Moved to js/debug.js — see Phase 12 refactor
-    // Moved to js/debug.js — see Phase 12 refactor
-    // Moved to js/debug.js — see Phase 12 refactor
-    // Moved to js/debug.js — see Phase 12 refactor
 
     // COMMS — ANSWER BANK (scripted, no API)
-    // Moved to js/comms.js — see Phase 10 refactor
 
     // COMMS — ANSWER SVEN (scripted, no API)
-    // Moved to js/comms.js — see Phase 10 refactor
 
     // COMMS — IGNORE SVEN
-    // Moved to js/comms.js — see Phase 10 refactor
 
     // COMMS — FILE COMPLAINT (running counter, never acknowledged)
-    // Moved to js/comms.js — see Phase 10 refactor
 
     // COMMS — ANSWER MAY (behavior-keyed, intel reward at 75%+ fill)
-    // Moved to js/comms.js — see Phase 10 refactor
 
     // SVEN INTERFERENCE — auto-fires after each drop completes
-    // Moved to js/economy.js — see Phase 6 refactor
 
     // FORECLOSURE CUTSCENE
-    // Moved to js/economy.js — see Phase 6 refactor
-    // Moved to js/data.js — see Phase 2 refactor
 
     function handleUpgradeDecision(decision) {
         var s = gameState.state;
@@ -1155,10 +959,6 @@
         openModal('upgrade');
     }
 
-    // Moved to js/narrative.js — see Phase 7 refactor
-    // Moved to js/narrative.js — see Phase 7 refactor
-    // Moved to js/ui.js — see Phase 4 refactor
-    // Moved to js/ui.js — see Phase 4 refactor
 
     // BELT ANIMATION — ASCII grid renderer
     (function() {
@@ -1243,7 +1043,6 @@
       var _oc=window.closeModal;
       window.closeModal=function(name){if(_oc)_oc(name);if(name==='belt'||name==='items')window.stopBeltAnim();};
     })();
-    // Moved to js/data.js — see Phase 2 refactor
     var _mazePaused = false;
     var _mazeOtisLastComment = 0;
 

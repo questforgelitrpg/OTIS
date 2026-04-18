@@ -258,3 +258,43 @@
         if (el) el.src = src;
     }
     window.updateArmSprite = updateArmSprite;
+
+    // Sidebar bot animation — self-contained eye-candy (arm-bot-anim element in sidebar).
+    // Wrapped in DOMContentLoaded because ui.js loads in <head>, before the element exists.
+    document.addEventListener('DOMContentLoaded', function() {
+        (function() {
+            var BOT_FRAMES = [' [o_o]>', ' [^_^]>', ' [-_-]>', ' [*_*]>'];
+            var CARRY_FRAMES = [' [o_o]>[=]', ' [^_^]>[#]', ' [-_-]>[~]'];
+            var LABELS = ['BOT-1', 'BOT-2', 'UNIT-A', 'UNIT-B', 'DRONE'];
+            var ROW_SPACING_PCT = 20;
+            function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+            function randInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
+            function makeBotStr() {
+                var n = randInt(2, 4);
+                var parts = [];
+                for (var i = 0; i < n; i++) {
+                    var frame = Math.random() < 0.25 ? rand(CARRY_FRAMES) : rand(BOT_FRAMES);
+                    parts.push(rand(LABELS) + ':' + frame + '  ');
+                }
+                return parts.join('');
+            }
+            var container = document.getElementById('arm-bot-anim');
+            if (!container) return;
+            var rows = [];
+            for (var r = 0; r < 5; r++) {
+                var el = document.createElement('div');
+                el.className = 'bot-row';
+                el.style.top = (r * ROW_SPACING_PCT + randInt(1, 4)) + '%';
+                var dur = randInt(4, 8);
+                el.style.animationDuration = dur + 's';
+                el.style.animationDelay = (-randInt(0, dur)) + 's';
+                el.textContent = makeBotStr();
+                container.appendChild(el);
+                rows.push({ el: el, dur: dur, timer: null });
+            }
+            rows.forEach(function(row) {
+                row.timer = setInterval(function() { row.el.textContent = makeBotStr(); }, row.dur * 1000);
+            });
+            container._botTimers = rows.map(function(row) { return row.timer; });
+        }());
+    });

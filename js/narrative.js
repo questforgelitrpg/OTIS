@@ -1,14 +1,9 @@
 // OTIS narrative subsystem — appendOTIS, narratorLine, scripted comms, toaster/power-outage cutscenes, ending dispatcher. Extracted from index.html in Phase 7 of the monolith refactor.
 
-    // Patch appendOTIS and appendHardcodedComm to reset the silence clock
-    var _origAppendOTIS = appendOTIS;
-    appendOTIS = async function(userText, trigger) {
-        _lastOtisActivity = Date.now();
-        return await _origAppendOTIS(userText, trigger);
-    };
+    // Patch appendHardcodedComm to reset the silence clock
     var _origAppendHardcoded = appendHardcodedComm;
     appendHardcodedComm = function(text) {
-        _lastOtisActivity = Date.now();
+        window._lastOtisActivity = Date.now();
         return _origAppendHardcoded(text);
     };
 
@@ -54,6 +49,7 @@
     }, 30000); // check every 30 seconds
 
     async function appendOTIS(userText, trigger) {
+        window._lastOtisActivity = Date.now();
         var statusEl = document.getElementById('sys-otis');
         if (statusEl) { statusEl.textContent = 'ACTIVE'; statusEl.className = 'status-warn'; }
         if (userText) otisLines.push({ role: 'user', text: userText });

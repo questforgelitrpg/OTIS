@@ -367,6 +367,25 @@
         }, 16000);
     }
 
+    function checkActProgression() {
+        var s = gameState.state;
+        var drops = s.dropCount || 0;
+        var newAct = drops < 3 ? 1 : drops < 7 ? 2 : 3;
+        if (newAct !== s.act) {
+            s.act = newAct;
+            gameState._save();
+            var actNames = { 2: 'PRESSURE', 3: 'THE FIND' };
+            appendOTIS('ACT ' + newAct + ': ' + (actNames[newAct] || ''), 'LOGIN');
+            // Act 3 start: schedule the one-time toaster incident (power-outage plot
+            // event).  Brief delay lets the act-transition OTIS message render first.
+            // This is the ONLY place fireToasterIncident() should be called from the
+            // normal game flow — never from autoToast() or any daily-toast path.
+            if (newAct === 3 && !s.toasterIncidentFired) {
+                setTimeout(fireToasterIncident, 4000);
+            }
+        }
+    }
+
     window.handleMakePayment = handleMakePayment;
     window.handleClearArrears = handleClearArrears;
     window.handleDispatchMay = handleDispatchMay;
@@ -378,3 +397,4 @@
     window.advanceDay = advanceDay;
     window.maybeSvenInterference = maybeSvenInterference;
     window.triggerForeclosure = triggerForeclosure;
+    window.checkActProgression = checkActProgression;
