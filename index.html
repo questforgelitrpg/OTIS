@@ -57,7 +57,7 @@
             <div id="anim-window" aria-hidden="true">
               <pre id="anim-barge"></pre>
               <div id="anim-bots-layer"></div>
-              <div id="maze-panel" style="display:none">
+              <div id="maze-panel" style="display:none;pointer-events:auto;touch-action:none">
                 <div id="maze-left-text">Finished All Your Items?<br>Solve A Maze</div>
                 <div style="display:flex;flex-direction:column;align-items:center;">
                   <div id="maze-hud"></div>
@@ -107,9 +107,19 @@
                 <span style="display:flex;gap:0.4rem;align-items:center">
                     <button onclick="toggleDebug()">DBG</button>
                     <button id="clear-save-btn" onclick="handleClearSave(this)">CLEAR SAVE</button>
+                    <button id="chaos-drawer-toggle" title="Chaos Panel" onclick="toggleChaosDrawer()">!</button>
                 </span>
             </footer>
         </div>
+    </div>
+
+    <!-- Chaos Drawer (mobile slide-up) -->
+    <div id="chaos-drawer" aria-hidden="true">
+        <div id="chaos-drawer-header">
+            <span>CHAOS PANEL</span>
+            <button id="chaos-drawer-close" onclick="toggleChaosDrawer()" aria-label="Close chaos panel">&#x00D7;</button>
+        </div>
+        <div id="chaos-drawer-grid"></div>
     </div>
 
     <!-- BELT / ITEMS MODAL -->
@@ -212,7 +222,7 @@
                 <div class="modal-label">SHIPPING BINS</div>
                 <!-- MAY BIN -->
                 <div style="margin-bottom:0.5rem">
-                    <div class="modal-label" style="font-size:11px">
+                    <div class="modal-label" style="font-size:13px">
                         MAY BIN — Civilian / Settlement
                         <span id="may-bin-count" style="color:var(--text-primary)">0/12</span>
                         <span id="may-bin-total" class="bin-total"></span>
@@ -220,35 +230,35 @@
                     <div class="scrap-bar-track" style="height:4px">
                         <div id="may-bin-bar" class="scrap-bar-fill" style="width:0%;height:4px"></div>
                     </div>
-                    <div id="may-bin-list" style="font-size:11px;color:var(--text-dim);max-height:80px;overflow-y:auto;word-break:break-word"></div>
+                    <div id="may-bin-list" style="font-size:13px;color:var(--text-dim);max-height:80px;overflow-y:auto;word-break:break-word"></div>
                     <div class="modal-row"><button onclick="shipMayBin()">SHIP MAY BIN</button></div>
                 </div>
                 <!-- BROKER BIN -->
                 <div style="margin-bottom:0.5rem">
-                    <div class="modal-label" style="font-size:11px">
+                    <div class="modal-label" style="font-size:13px">
                         BROKER BIN — Industrial / Vessel
                         <span id="broker-bin-count" style="color:var(--text-primary)">0/10</span>
-                        <span id="broker-bin-rate" style="font-size:10px;color:var(--text-warn)"></span>
+                        <span id="broker-bin-rate" style="font-size:12px;color:var(--text-warn)"></span>
                         <span id="broker-bin-total" class="bin-total"></span>
                     </div>
                     <div class="scrap-bar-track" style="height:4px">
                         <div id="broker-bin-bar" class="scrap-bar-fill" style="width:0%;height:4px"></div>
                     </div>
-                    <div id="broker-bin-list" style="font-size:11px;color:var(--text-dim);max-height:80px;overflow-y:auto;word-break:break-word"></div>
+                    <div id="broker-bin-list" style="font-size:13px;color:var(--text-dim);max-height:80px;overflow-y:auto;word-break:break-word"></div>
                     <div class="modal-row"><button onclick="handleBrokerBinShip()">SHIP BROKER BIN</button></div>
                 </div>
                 <!-- SVEN BIN -->
                 <div style="margin-bottom:0.5rem">
-                    <div class="modal-label" style="font-size:11px;color:var(--text-warn)">
+                    <div class="modal-label" style="font-size:13px;color:var(--text-warn)">
                         SVEN BIN — Rare / Anomalous (65% value — auto-ships at 2)
                         <span id="sven-bin-count" style="color:var(--text-warn)">0/3</span>
                         <span id="sven-bin-total" class="bin-total"></span>
                     </div>
-                    <div id="sven-bin-list" style="font-size:11px;color:var(--text-warn);max-height:60px;overflow-y:auto;word-break:break-word"></div>
+                    <div id="sven-bin-list" style="font-size:13px;color:var(--text-warn);max-height:60px;overflow-y:auto;word-break:break-word"></div>
                 </div>
                 <!-- SCRAP CHANNEL -->
                 <div style="margin-bottom:0.5rem">
-                    <div class="modal-label" style="font-size:11px">SCRAP CHANNEL: <span id="scrap-pct">0%</span></div>
+                    <div class="modal-label" style="font-size:13px">SCRAP CHANNEL: <span id="scrap-pct">0%</span></div>
                     <div class="scrap-bar-track" style="height:4px"><div class="scrap-bar-fill" id="scrap-bar-fill" style="width:0%;height:4px"></div></div>
                     <div class="modal-row"><button onclick="handleDispatchMay()">SHIP SCRAP</button></div>
                 </div>
@@ -1093,7 +1103,7 @@
         hud.textContent = '';
 
         if (!s.mazeActive) {
-            pre.textContent = '[ PRESS SPACE TO START ]';
+            pre.textContent = '[ TAP / CLICK / SPACE TO START ]';
             return;
         }
 
@@ -1295,6 +1305,56 @@
             mazeTryMove(dx, dy);
         }
     });
+
+    // Maze tap-to-start and swipe movement
+    (function () {
+        var _touchStartX = 0, _touchStartY = 0;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var mazePanel = document.getElementById('maze-panel');
+            if (!mazePanel) return;
+
+            // Click/tap to start the maze
+            mazePanel.addEventListener('click', function () {
+                var s = gameState && gameState.state;
+                if (!s || s.mazeActive) return;
+                if (mazePanel.style.display === 'none') return;
+                mazeStart();
+            });
+
+            // Touch-start: record position and prevent page scroll inside maze
+            mazePanel.addEventListener('touchstart', function (e) {
+                if (e.touches.length !== 1) return;
+                _touchStartX = e.touches[0].clientX;
+                _touchStartY = e.touches[0].clientY;
+                e.preventDefault();
+            }, { passive: false });
+
+            // Touch-end: compute swipe direction and move player
+            mazePanel.addEventListener('touchend', function (e) {
+                if (e.changedTouches.length !== 1) return;
+                var dx = e.changedTouches[0].clientX - _touchStartX;
+                var dy = e.changedTouches[0].clientY - _touchStartY;
+                var adx = Math.abs(dx), ady = Math.abs(dy);
+                if (adx < 20 && ady < 20) return; // too small — treat as tap
+                var s = gameState && gameState.state;
+                if (s && !s.mazeActive) { mazeStart(); return; }
+                if (adx > ady) {
+                    mazeTryMove(dx > 0 ? 1 : -1, 0);
+                } else {
+                    mazeTryMove(0, dy > 0 ? 1 : -1);
+                }
+            });
+        });
+    }());
+
+    // Chaos drawer toggle
+    window.toggleChaosDrawer = function () {
+        var drawer = document.getElementById('chaos-drawer');
+        if (!drawer) return;
+        var isOpen = drawer.classList.toggle('open');
+        drawer.setAttribute('aria-hidden', String(!isOpen));
+    };
 
     </script>
 

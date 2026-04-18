@@ -206,44 +206,76 @@
 
     // ---------------------------------------------------------------------------
     // DOM injection — run after DOMContentLoaded.
+    // Mounts the grid in #arm-panel (desktop) and clones it into #chaos-drawer-grid
+    // (mobile drawer). A single shared `active[]` array drives both copies so
+    // toggling one always keeps the other copy in sync.
     // ---------------------------------------------------------------------------
     document.addEventListener('DOMContentLoaded', function () {
-        var armPanel = document.getElementById('arm-panel');
-        if (!armPanel) return;
+        var armPanel    = document.getElementById('arm-panel');
+        var drawerGrid  = document.getElementById('chaos-drawer-grid');
 
-        // Build the grid wrapper
-        var grid = document.createElement('div');
-        grid.className = 'chaos-btn-grid';
-        grid.setAttribute('aria-hidden', 'true');
+        // We need at least one mount point.
+        if (!armPanel && !drawerGrid) return;
 
-        // Track active state for each button
+        // Track active state for each button — shared across all mounted copies.
         var active = [false, false, false, false, false, false, false, false, false, false];
 
-        for (var i = 0; i < 10; i++) {
-            (function (idx) {
-                var btn = document.createElement('button');
-                btn.className = 'chaos-btn';
-                btn.type = 'button';
-                btn.setAttribute('aria-label', 'Chaos button ' + (idx + 1));
+        // All button elements across every copy, grouped by index.
+        // btns[idx] is an array of elements (one per mounted copy).
+        var btns = [];
+        for (var k = 0; k < 10; k++) { btns.push([]); }
 
-                btn.addEventListener('click', function () {
-                    active[idx] = !active[idx];
-                    if (active[idx]) {
-                        btn.classList.add('active');
-                        EFFECTS[idx].apply();
-                        _pushLine(_onLine(idx));
-                    } else {
-                        btn.classList.remove('active');
-                        EFFECTS[idx].revert();
-                        _pushLine(CHAOS_DIALOG[idx].off);
-                    }
-                });
-
-                grid.appendChild(btn);
-            }(i));
+        function _syncActive(idx) {
+            btns[idx].forEach(function (el) {
+                if (active[idx]) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
         }
 
-        armPanel.appendChild(grid);
+        function _buildGrid() {
+            var grid = document.createElement('div');
+            grid.className = 'chaos-btn-grid';
+            grid.setAttribute('aria-hidden', 'true');
+
+            for (var i = 0; i < 10; i++) {
+                (function (idx) {
+                    var btn = document.createElement('button');
+                    btn.className = 'chaos-btn';
+                    btn.type = 'button';
+                    btn.setAttribute('aria-label', 'Chaos button ' + (idx + 1));
+
+                    btn.addEventListener('click', function () {
+                        active[idx] = !active[idx];
+                        _syncActive(idx);
+                        if (active[idx]) {
+                            EFFECTS[idx].apply();
+                            _pushLine(_onLine(idx));
+                        } else {
+                            EFFECTS[idx].revert();
+                            _pushLine(CHAOS_DIALOG[idx].off);
+                        }
+                    });
+
+                    btns[idx].push(btn);
+                    grid.appendChild(btn);
+                }(i));
+            }
+
+            return grid;
+        }
+
+        // Mount in sidebar (desktop)
+        if (armPanel) {
+            armPanel.appendChild(_buildGrid());
+        }
+
+        // Mount in mobile drawer
+        if (drawerGrid) {
+            drawerGrid.appendChild(_buildGrid());
+        }
     });
 
 }());

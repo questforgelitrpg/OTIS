@@ -97,7 +97,8 @@ body.panel-open #terminal { margin-right: min(640px, 60vw); }
   justify-content: center;
   z-index: 5;
   padding: 4px 8px;
-  pointer-events: none;
+  pointer-events: auto;
+  touch-action: none;
 }
 #maze-left-text {
   font-family: 'Courier New', monospace;
@@ -125,7 +126,7 @@ body.panel-open #terminal { margin-right: min(640px, 60vw); }
   color: #33ff66;
   margin: 0;
   white-space: pre;
-  pointer-events: none;
+  pointer-events: auto;
   overflow-x: auto;
   max-width: 100%;
 }
@@ -319,18 +320,6 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 /* Fatigue pulse animation */
 @keyframes fatigue-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 .fatigue-pulse { animation: fatigue-pulse 0.9s infinite; }
-
-/* Mobile */
-@media (max-width: 600px) {
-    #arm-panel { display: none; }
-    #otis-float { display: block; }
-    html, body { font-size: 14px; overflow: auto; }
-    #layout { height: auto; min-height: 100vh; }
-    #terminal { height: auto; border-width: 4px; }
-    #otis-output { height: 200px; flex: none; }
-    .module-btn { font-size: 14px; min-height: 44px; }
-    .modal.open { padding: 0.5rem; align-items: flex-start; }
-}
 /* Bot status dots */
 .dot.red     { background: var(--ind-red);   box-shadow: 0 0 6px 2px var(--ind-red); }
 .dot.offline { background: var(--text-muted); }
@@ -404,26 +393,34 @@ body.kbd-glitch { animation: kbd-glitch 0.3s infinite; }
 .inspection-notice { border-left: 2px solid var(--ind-red); padding-left: 0.5rem; }
 
 /* ── Chaos Button Panel ──────────────────────────────────────────────────── */
-.chaos-btn-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 0.8rem; width: 100%; padding: 0 4px; }
+.chaos-btn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 0.8rem; width: 100%; padding: 0 4px; }
 .chaos-btn {
-    width: 20px; height: 20px;
+    width: 32px; height: 32px;
     border-radius: 50%;
-    border: 1px solid var(--border);
-    background: #0d1a0d;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.8), inset 0 1px 2px rgba(0,0,0,0.6);
+    border: none;
+    background: radial-gradient(circle at 30% 25%, #66ff88 0%, #33ff66 35%, #1f7a3f 75%, #0f4020 100%);
+    box-shadow: 0 0 0 2px #0a1a0a, 0 3px 5px rgba(0,0,0,0.85), 0 0 6px rgba(51,255,102,0.25),
+                inset 0 -2px 3px rgba(0,0,0,0.5), inset 0 2px 2px rgba(255,255,255,0.15);
     cursor: pointer;
     padding: 0;
     transition: box-shadow 0.08s, transform 0.08s, background 0.08s;
     display: block;
 }
-.chaos-btn:hover { background: #122012; border-color: #2a4a2a; }
-.chaos-btn:focus-visible { outline: 2px solid var(--ind-on); outline-offset: 2px; }
-.chaos-btn.active {
-    background: #0a1f0a;
-    border-color: var(--ind-on);
-    box-shadow: 0 0 6px var(--ind-on), inset 0 2px 4px rgba(0,0,0,0.9);
-    transform: translateY(1px);
+.chaos-btn:hover {
+    transform: translateY(-1px);
+    background: radial-gradient(circle at 30% 25%, #88ffaa 0%, #55ff88 35%, #28944d 75%, #154d28 100%);
+    box-shadow: 0 0 0 2px #0a1a0a, 0 4px 7px rgba(0,0,0,0.85), 0 0 10px rgba(51,255,102,0.4),
+                inset 0 -2px 3px rgba(0,0,0,0.5), inset 0 2px 2px rgba(255,255,255,0.2);
 }
+.chaos-btn:focus-visible { outline: 2px solid var(--ind-on); outline-offset: 3px; }
+.chaos-btn.active, .chaos-btn:active {
+    transform: translateY(2px);
+    background: radial-gradient(circle at 70% 75%, #66ff88 0%, #33ff66 35%, #1f7a3f 75%, #0f4020 100%);
+    box-shadow: 0 0 0 2px #0a1a0a, 0 1px 2px rgba(0,0,0,0.85), 0 0 6px rgba(51,255,102,0.25),
+                inset 0 3px 5px rgba(0,0,0,0.85), inset 0 0 8px var(--ind-on);
+}
+/* Drawer buttons are larger for touch */
+#chaos-drawer .chaos-btn { width: 44px; height: 44px; }
 
 /* ── Chaos Effect Classes ────────────────────────────────────────────────── */
 /* 0 — blue palette */
@@ -475,6 +472,60 @@ html.chaos-bigfont { font-size: 22px; }
 }
 body.chaos-shake { animation: chaos-shake 0.5s infinite, flicker 12s infinite; }
 /* 8 — blur terminal */
-#terminal.chaos-blur { filter: blur(4px); transition: filter 0.3s; }
+#terminal.chaos-blur { filter: blur(10px) saturate(1.4); transition: filter 0.3s; }
 /* 9 — hide scanlines */
 #crt-overlay.chaos-hidden { display: none; }
+
+/* ── Chaos Drawer (mobile slide-up panel) ───────────────────────────────── */
+#chaos-drawer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 500;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border);
+    padding: 0.5rem 0.8rem 1rem;
+    transform: translateY(100%);
+    transition: transform 0.25s ease;
+}
+#chaos-drawer.open { transform: translateY(0); }
+#chaos-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+}
+#chaos-drawer-close {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 0.4rem;
+    min-height: 28px;
+    line-height: 1;
+}
+/* Toggle button — hidden on desktop, visible on mobile */
+#chaos-drawer-toggle { display: none; }
+
+/* Mobile */
+@media (max-width: 600px) {
+    #arm-panel { display: none; }
+    #otis-float { display: block; }
+    html, body { font-size: 14px; overflow: auto; }
+    #layout { height: auto; min-height: 100vh; }
+    #terminal { height: auto; border-width: 4px; }
+    #otis-output { min-height: 240px; max-height: 50vh; height: auto; flex: none; }
+    .module-btn { min-height: 48px; font-size: 15px; }
+    #module-grid { grid-template-columns: 1fr; }
+    .modal.open { padding: 0.5rem; align-items: flex-start; }
+    body.panel-open #terminal { margin-right: 0; }
+    #maze-panel { flex-direction: column; }
+    #maze-left-text { margin-right: 0; margin-bottom: 4px; }
+    .hdr-stat { font-size: clamp(11px, 2.6vw, 14px); border-left: none; padding: 0 0.3rem; }
+    #hdr { gap: 0.3rem; padding: 0.3rem 0.5rem; }
+    #chaos-drawer-toggle { display: inline-flex; align-items: center; justify-content: center; }
+}
