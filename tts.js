@@ -41,7 +41,7 @@
     let _watchdogTimer = null;
 
     function _isFemale(name) {
-        var lower = name.toLowerCase();
+        const lower = name.toLowerCase();
         return FEMALE_NAMES.some(function (f) { return lower.indexOf(f) !== -1; });
     }
 

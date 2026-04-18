@@ -223,7 +223,7 @@
         // All button elements across every copy, grouped by index.
         // btns[idx] is an array of elements (one per mounted copy).
         var btns = [];
-        for (var k = 0; k < 10; k++) { btns.push([]); }
+        for (let k = 0; k < 10; k++) { btns.push([]); }
 
         function _syncActive(idx) {
             btns[idx].forEach(function (el) {
