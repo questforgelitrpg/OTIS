@@ -145,12 +145,11 @@
         var keep = s.keepLog.length;
         setLight('light-belt',    s.dropActive ? 'light-on' : currentItem ? 'light-amber' : '');
         var brokerFull = (s.brokerBin||[]).length >= 8;
-        var mayFull = (s.mayBin||[]).length >= 10;
         var behindPayment = arrears > 0 || dup <= 0;
         var bankLit = behindPayment || s.bankNotifUnread;
         setLight('light-comms',
             (arrears > 0 || dup <= 3 || brokerFull) ? 'light-red' :
-            (bankLit || scrap >= 75 || mayFull) ? 'light-amber' : '');
+            (bankLit || scrap >= 75) ? 'light-amber' : '');
         var bufLen = (s.storeroomBuffer || []).length;
         setLight('light-store',   scrap >= 90 || bufLen >= 4 ? 'light-red' : (scrap >= 75 || bufLen > 0 || keep >= 10) ? 'light-amber' : '');
         setLight('light-systems', (s.missedPayments > 0 || arrears > 2000) ? 'light-red' : '');
@@ -174,15 +173,13 @@
     function updateCommsIndicators() {
         var s = gameState.state;
         var dup = (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS;
-        var arrears = s.outstandingDebt || 0;
-        var behindPayment = arrears > 0 || dup <= 0;
-        var bankLit = behindPayment || s.bankNotifUnread;
+        var bankNotif = !!s.bankNotifUnread;
+        var bankUrgent = (s.outstandingDebt || 0) > 0 || dup <= 2;
+        var bankWarn = dup <= 4;
         var bd = document.getElementById('comms-dot-bank');
-        if (bd) bd.className = 'comms-dot' + (bankLit ? (behindPayment || dup <= 2 ? ' dot-red' : dup <= 4 ? ' dot-amber' : ' dot-on') : '');
-        var scrap = s.scrapFill || 0;
-        var mayMessages = (s.mayBin || []).length;
+        if (bd) bd.className = 'comms-dot' + (bankNotif ? (bankUrgent ? ' dot-red' : bankWarn ? ' dot-amber' : ' dot-on') : '');
         var md = document.getElementById('comms-dot-may');
-        if (md) md.className = 'comms-dot' + (mayMessages > 0 ? ' dot-on' : '');
+        if (md) md.className = 'comms-dot' + (s.mayNotifUnread ? ' dot-on' : '');
     }
     window.updateCommsIndicators = updateCommsIndicators;
     function updateSystemsStatus() {

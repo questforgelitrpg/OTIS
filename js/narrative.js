@@ -165,7 +165,11 @@
         }
         if (s.day >= 3 && !s.scriptedCommsFired.may) {
             s.scriptedCommsFired.may = true;
+            s.mayNotifUnread = true;
             appendHardcodedComm(SCRIPTED_COMMS.may);
+            var mayDot = document.getElementById('comms-dot-may');
+            if (mayDot) mayDot.className = 'comms-dot dot-on';
+            setLight('light-comms', 'light-amber');
             gameState._save();
         }
     }

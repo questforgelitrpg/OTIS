@@ -1223,6 +1223,29 @@
         }
     }
 
+    var MAZE_COMPLETE_COMMENTS = [
+        'Oh look, you finished a maze. Tell me again how this affects your debt.',
+        'Maze complete. Debt remains. These two facts are related.',
+        'Congratulations. Your debt did not notice.',
+        'You solved the maze. The debt has not.',
+        'Maze cleared. I have noted the time spent. The creditors will not, but I will.',
+        'Maze complete. Outstanding balance: unchanged. Morale: marginally higher. Net outcome: unclear.',
+        'You escaped the maze. Unfortunately the debt is not structured as a maze. There is no exit.',
+        'I logged your completion. The bank does not have a maze module. Unclear how this helps.',
+        'Maze solved. I did not think you would. I was not betting on it. I was just noting the odds.',
+        'Completion recorded. George finished 47. You should know where you stand.',
+        'That is one maze. It is not clear to me why I am counting. I am counting.',
+        'You finished. I am unsure what you expected me to say. I said nothing. This is me saying nothing.',
+        'Maze cleared. The belt queue has not cleared. Just for reference.',
+        'Noted. George used to pause between mazes and look at the belt. I am not suggesting anything.',
+        'Maze complete. Your spatial reasoning is apparently functional. Debt management: pending review.',
+        'I could tell you how many you have done. I could also tell you the debt total. I will tell you both if you ask.',
+        'You found the exit. There is always an exit from a maze. The financial structure of this station does not work the same way.',
+        'Maze done. I have been watching. I always watch. This is my function. Also the debt is still there.',
+        'Completion logged. George left a note that he found these relaxing. I never asked him if they helped.',
+        'That was a maze. You completed it. I have been running this station for a long time. I have never seen a maze payment.'
+    ];
+
     function mazeComplete() {
         var s = gameState && gameState.state;
         if (!s || !s.mazeActive) return;
@@ -1241,6 +1264,12 @@
         }
         s.mazePlayerPos = null;
         gameState._save();
+
+        // Fire a random scripted OTIS completion comment
+        var completionMsg = MAZE_COMPLETE_COMMENTS[Math.floor(Math.random() * MAZE_COMPLETE_COMMENTS.length)];
+        otisLines.push({ role: 'otis', text: completionMsg });
+        renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(completionMsg);
 
         if (s.mazesCompletedTotal >= 20 && !s.mazeRewardGiven) {
             mazeGrantReward();

@@ -111,6 +111,8 @@
                 // --- BANK NOTIFICATION THROTTLE ---
                 bankNotifUnread: false,
                 lastBankNotifDay: 0,
+                // --- MAY NOTIFICATION ---
+                mayNotifUnread: false,
                 // --- MAZE MINI-GAME ---
                 mazeCurrentIndex: 0,
                 mazesCompletedTotal: 0,

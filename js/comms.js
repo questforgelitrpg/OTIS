@@ -53,12 +53,11 @@
         }
         otisLines.push({ role:'otis', text: msg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(msg);
-        // Dismiss notification — keep dot lit only if behind in payment
+        // Dismiss notification — dot clears when message is read
         s.bankNotifUnread = false;
         gameState._save();
-        var behindPayment = arrears > 0 || dup <= 0;
         var dot = document.getElementById('comms-dot-bank');
-        if (dot) dot.className = 'comms-dot' + (behindPayment ? ' dot-red' : '');
+        if (dot) dot.className = 'comms-dot';
         if (s.tutorialStep === 4) tutorialAdvance();
     }
     window.handleAnswerBank = handleAnswerBank;
@@ -139,7 +138,9 @@
         }
         otisLines.push({ role:'otis', text: msg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(msg);
+        s.mayNotifUnread = false;
+        gameState._save();
         var dot = document.getElementById('comms-dot-may');
-        if (dot) dot.className = 'comms-dot dot-on';
+        if (dot) dot.className = 'comms-dot';
     }
     window.handleAnswerMay = handleAnswerMay;
