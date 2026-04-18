@@ -2,8 +2,26 @@
 // Exposes window.OtisTTS for use by index.html
 
 (function () {
-    const STORAGE_KEY = 'otis_tts_muted';
-    const PREFERRED_VOICE_NAME = 'Google UK English Male';
+    const STORAGE_KEY     = 'otis_tts_muted';
+    const VOICE_OVERRIDE_KEY = 'otis_tts_voice';
+
+    // Prioritized list of known UK male voices across platforms.
+    // First exact match in this list wins.
+    const PREFERRED_VOICE_NAMES = [
+        'Google UK English Male',                                     // Chrome/Edge desktop
+        'Microsoft Ryan Online (Natural) - English (United Kingdom)', // Edge neural
+        'Microsoft Ryan - English (United Kingdom)',                   // Edge classic
+        'Microsoft George - English (United Kingdom)',                 // Win10/11
+        'Daniel (Enhanced)',                                          // Safari macOS/iOS enhanced
+        'Daniel',                                                     // Safari macOS/iOS
+        'en-gb-x-rjs-network',                                        // Android Google TTS male UK
+        'en-gb-x-gbb-network',                                        // Android Google TTS UK
+        'en-gb-x-gbc-network',                                        // Android Google TTS UK
+    ];
+
+    // Female-name fragments to exclude from fallback searches (case-insensitive).
+    const FEMALE_NAMES = ['female', 'woman', 'samantha', 'karen', 'serena', 'moira', 'tessa', 'fiona', 'kate', 'martha', 'hazel', 'susan'];
+
     let _rate = 1.2;
     const PITCH = 1.0;
     const VOLUME = 1.0;
@@ -22,6 +40,11 @@
     let _expectedDuration = 12000; // estimated ms for current utterance, updated per-speak
     let _watchdogTimer = null;
 
+    function _isFemale(name) {
+        const lower = name.toLowerCase();
+        return FEMALE_NAMES.some(function (f) { return lower.indexOf(f) !== -1; });
+    }
+
     function _resolveVoice() {
         if (_resolvedVoice) return _resolvedVoice;
         if (!window.speechSynthesis) return null;
@@ -29,15 +52,37 @@
         const voices = window.speechSynthesis.getVoices();
         if (!voices || voices.length === 0) return null;
 
-        // 1. Exact name match
-        const preferred = voices.find(v => v.name === PREFERRED_VOICE_NAME);
-        if (preferred) { _resolvedVoice = preferred; return _resolvedVoice; }
+        // 0. localStorage override — lets any device pin a specific voice via console.
+        let overrideName = null;
+        try { overrideName = localStorage.getItem(VOICE_OVERRIDE_KEY); } catch (e) { /* storage unavailable */ }
+        if (overrideName) {
+            const overrideVoice = voices.find(v => v.name === overrideName);
+            if (overrideVoice) { _resolvedVoice = overrideVoice; return _resolvedVoice; }
+        }
 
-        // 2. Any English voice
+        // 1. Iterate preferred names in order; first exact match wins.
+        for (let i = 0; i < PREFERRED_VOICE_NAMES.length; i++) {
+            const match = voices.find(v => v.name === PREFERRED_VOICE_NAMES[i]);
+            if (match) { _resolvedVoice = match; return _resolvedVoice; }
+        }
+
+        // 2. Any en-GB voice whose name does NOT contain a female-name fragment.
+        const ukMale = voices.find(v => v.lang === 'en-GB' && !_isFemale(v.name));
+        if (ukMale) { _resolvedVoice = ukMale; return _resolvedVoice; }
+
+        // 3. Any en-GB voice (fallback).
+        const ukAny = voices.find(v => v.lang && v.lang.startsWith('en-GB'));
+        if (ukAny) { _resolvedVoice = ukAny; return _resolvedVoice; }
+
+        // 4. Any English voice whose name contains "male" but NOT "female".
+        const enMale = voices.find(v => v.lang && v.lang.startsWith('en') && /male/i.test(v.name) && !/female/i.test(v.name));
+        if (enMale) { _resolvedVoice = enMale; return _resolvedVoice; }
+
+        // 5. Any English voice.
         const english = voices.find(v => v.lang && v.lang.startsWith('en'));
         if (english) { _resolvedVoice = english; return _resolvedVoice; }
 
-        // 3. Any voice
+        // 6. First available voice.
         _resolvedVoice = voices[0];
         return _resolvedVoice;
     }
@@ -181,5 +226,34 @@
         _queue.length = 0;
     }
 
-    window.OtisTTS = { speak, interrupt, flush, isSupported, isMuted, toggleMute, setMuted, setRate };
+    // ── Debug / console helpers ──────────────────────────────────────────────
+    // Returns all available voices with metadata — useful for pinning a voice on any device.
+    function listVoices() {
+        if (!window.speechSynthesis) return [];
+        return window.speechSynthesis.getVoices().map(function (v) {
+            return { name: v.name, lang: v.lang, default: v.default, localService: v.localService };
+        });
+    }
+
+    // Returns the currently resolved voice's name and lang.
+    function getCurrentVoice() {
+        const v = _resolveVoice();
+        if (!v) return null;
+        return { name: v.name, lang: v.lang };
+    }
+
+    // Saves a voice name override to localStorage and resets resolution so the
+    // next speak() call picks it up. Pass null to clear the override.
+    function setVoice(nameOrNull) {
+        try {
+            if (nameOrNull == null) {
+                localStorage.removeItem(VOICE_OVERRIDE_KEY);
+            } else {
+                localStorage.setItem(VOICE_OVERRIDE_KEY, String(nameOrNull));
+            }
+        } catch (e) { /* storage unavailable */ }
+        _resolvedVoice = null; // force re-resolution on next speak()
+    }
+
+    window.OtisTTS = { speak, interrupt, flush, isSupported, isMuted, toggleMute, setMuted, setRate, listVoices, getCurrentVoice, setVoice };
 })();
