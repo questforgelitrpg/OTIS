@@ -215,7 +215,7 @@
                     <div class="modal-label" style="font-size:11px">
                         MAY BIN — Civilian / Settlement
                         <span id="may-bin-count" style="color:var(--text-primary)">0/12</span>
-                        <span id="may-bin-total" style="font-size:10px;color:var(--text-warn)"></span>
+                        <span id="may-bin-total" class="bin-total"></span>
                     </div>
                     <div class="scrap-bar-track" style="height:4px">
                         <div id="may-bin-bar" class="scrap-bar-fill" style="width:0%;height:4px"></div>
@@ -229,7 +229,7 @@
                         BROKER BIN — Industrial / Vessel
                         <span id="broker-bin-count" style="color:var(--text-primary)">0/10</span>
                         <span id="broker-bin-rate" style="font-size:10px;color:var(--text-warn)"></span>
-                        <span id="broker-bin-total" style="font-size:10px;color:var(--text-warn)"></span>
+                        <span id="broker-bin-total" class="bin-total"></span>
                     </div>
                     <div class="scrap-bar-track" style="height:4px">
                         <div id="broker-bin-bar" class="scrap-bar-fill" style="width:0%;height:4px"></div>
@@ -242,7 +242,7 @@
                     <div class="modal-label" style="font-size:11px;color:var(--text-warn)">
                         SVEN BIN — Rare / Anomalous (65% value — auto-ships at 2)
                         <span id="sven-bin-count" style="color:var(--text-warn)">0/3</span>
-                        <span id="sven-bin-total" style="font-size:10px;color:var(--text-warn)"></span>
+                        <span id="sven-bin-total" class="bin-total"></span>
                     </div>
                     <div id="sven-bin-list" style="font-size:11px;color:var(--text-warn);max-height:60px;overflow-y:auto;word-break:break-word"></div>
                 </div>
@@ -694,7 +694,7 @@
         setEl('may-bin-count', may.length + '/12');
         var mayBar = document.getElementById('may-bin-bar');
         if (mayBar) mayBar.style.width = Math.round(may.length/12*100) + '%';
-        var mayTotal = may.reduce(function(s, i){ return s + Math.floor(getEffectiveValue(i)); }, 0);
+        var mayTotal = may.reduce(function(s, i){ return s + getEffectiveValue(i); }, 0);
         setEl('may-bin-total', may.length ? '\u2248 ' + mayTotal + ' cr' : '');
         var mayList = document.getElementById('may-bin-list');
         if (mayList) mayList.innerHTML = may.map(function(i){
@@ -718,7 +718,7 @@
         setEl('broker-bin-total', broker.length ? '\u2248 ' + brokerTotal + ' cr' : '');
         var brokerList = document.getElementById('broker-bin-list');
         if (brokerList) brokerList.innerHTML = broker.map(function(i){
-            return '<div>' + escapeHtml(i.name) + ' \u2014 ' + getEffectiveValue(i) + ' cr</div>';
+            return '<div>' + escapeHtml(i.name) + ' \u2014 ' + Math.floor(getEffectiveValue(i) * (i.eeMultiplier||1)) + ' cr</div>';
         }).join('');
         // Sven bin
         setEl('sven-bin-count', sven.length + '/3');
