@@ -470,6 +470,8 @@
     <script src="js/bots.js"></script>
     <script src="js/schematic.js"></script>
     <script src="js/comms.js"></script>
+    <script src="js/upgrades.js"></script>
+    <script src="js/orders.js"></script>
     <script>
     // Moved to js/gamestate.js — see Phase 3 refactor
     // Moved to js/data.js — see Phase 2 refactor
@@ -631,35 +633,7 @@
     // Moved to js/ui.js — see Phase 4 refactor
     // Moved to js/ui.js — see Phase 4 refactor
 
-    // ── UPGRADE HELPERS — centralized lookups, never scatter state.upgrades refs ──
-    function getScannerBonus() {
-        var t = ((gameState.state.upgrades)||{}).scanner||0;
-        return [0, 0.08, 0.18, 0.30][t] || 0;
-    }
-    function getStorageCap() {
-        var t = ((gameState.state.upgrades)||{}).storeroom||0;
-        return 12 + ([0, 3, 7, 12][t] || 0);
-    }
-    function getJamRateMultiplier() {
-        var t = ((gameState.state.upgrades)||{}).belt||0;
-        return [1.0, 0.85, 0.70, 0.50][t] || 1.0;
-    }
-    function getDegradationMultiplier() {
-        var t = ((gameState.state.upgrades)||{}).power||0;
-        return [1.0, 0.90, 0.80, 0.67][t] || 1.0;
-    }
-    function getCommOrderCap() {
-        var t = ((gameState.state.upgrades)||{}).comm||0;
-        return [0, 3, 4, 5][t] || 0;
-    }
-    function getHullPatchFactor() {
-        var t = ((gameState.state.upgrades)||{}).hull||0;
-        return [1.0, 0.75, 0.50, 0.25][t] || 1.0;
-    }
-    function getCoolingBonus() {
-        var t = ((gameState.state.upgrades)||{}).cooling||0;
-        return [0, 0.15, 0.30, 0.50][t] || 0;
-    }
+    // Moved to js/upgrades.js — see Phase 11 refactor
     // Moved to js/data.js — see Phase 2 refactor
     // Moved to js/data.js — see Phase 2 refactor
 
@@ -1154,72 +1128,9 @@
     function toggleDebug() { var p = document.getElementById('debug-panel'); if (p) p.style.display = p.style.display !== 'block' ? 'block' : 'none'; }
     // Moved to js/data.js — see Phase 2 refactor
 
-    function renderUpgrades() {
-        var el = document.getElementById('upgrades-list');
-        if (!el) return;
-        var upgrades = gameState.state.upgrades || {};
-        var credits = gameState.state.credits || 0;
-        el.innerHTML = UPGRADE_CATALOG.map(function(upg) {
-            var tier = upgrades[upg.key] || 0;
-            var tierLabel = tier === 0 ? 'NOT INSTALLED' : ('TIER ' + ['I','II','III'][tier-1] + ' / III');
-            var nextTier = tier + 1;
-            var canUpgrade = nextTier <= 3;
-            var cost = canUpgrade ? upg.costs[nextTier - 1] : 0;
-            var effectStr = tier > 0 ? upg.effects[tier - 1] : '—';
-            var loreStr = tier < 3 ? upg.lore[tier] : upg.lore[2];
-            var costHtml = canUpgrade
-                ? '<div class="upgrade-cost">TIER ' + ['I','II','III'][nextTier-1] + ': ' + cost.toLocaleString() + ' cr'
-                    + '<button style="margin-left:0.5rem;font-size:13px;padding:0.1rem 0.4rem;min-height:22px"'
-                    + (credits < cost ? ' disabled' : '')
-                    + ' onclick="handlePurchaseUpgrade(\'' + upg.key + '\')">'
-                    + (credits < cost ? 'NEED ' + (cost - credits) + ' cr' : 'INSTALL')
-                    + '</button></div>'
-                : '<div class="upgrade-maxed">FULLY UPGRADED</div>';
-            return '<div class="upgrade-entry">'
-                + '<div class="upgrade-name">' + escapeHtml(upg.name) + '</div>'
-                + '<div class="upgrade-tier">' + tierLabel + (tier > 0 ? ' — ' + escapeHtml(effectStr) : '') + '</div>'
-                + '<div class="upgrade-lore">' + escapeHtml(loreStr) + '</div>'
-                + costHtml
-                + '</div>';
-        }).join('');
-    }
+    // Moved to js/upgrades.js — see Phase 11 refactor
 
-    function handlePurchaseUpgrade(key) {
-        var s = gameState.state;
-        if (!s.upgrades) s.upgrades = { scanner: 0, belt: 0, storeroom: 0, comm: 0, power: 0, hull: 0, cooling: 0 };
-        var upg = UPGRADE_CATALOG.find(function(u) { return u.key === key; });
-        if (!upg) return;
-        var currentTier = s.upgrades[key] || 0;
-        var nextTier = currentTier + 1;
-        if (nextTier > 3) return;
-        var cost = upg.costs[nextTier - 1];
-        if (s.credits < cost) {
-            var msg = 'Insufficient credits. ' + upg.name + ' Tier ' + ['I','II','III'][nextTier-1] + ': ' + cost.toLocaleString() + ' cr required.';
-            otisLines.push({ role: 'otis', text: msg }); renderOTIS();
-            return;
-        }
-        s.credits -= cost;
-        s.upgrades[key] = nextTier;
-        gameState._save();
-        gameState._updateUI();
-        renderUpgrades();
-        var tierRoman = ['I','II','III'][nextTier-1];
-        // LORE — installation acknowledgement
-        var installLines = {
-            scanner: 'Scanner Sensitivity upgraded to Tier ' + tierRoman + '. Detection range adjusted. George would have noted this in the maintenance log.',
-            belt:    'Belt Governor upgraded to Tier ' + tierRoman + '. Jam probability reduced. George never got around to this. You did.',
-            storeroom: 'Storeroom Expansion completed. Tier ' + tierRoman + '. George drew up those plans in year 11. The chalk is finally gone.',
-            comm:    nextTier === 1
-                ? 'Comm Boost Tier I installed. Standing Orders channel now active. NPCs can reach you directly. George had this. He used it constantly.'
-                : 'Comm Boost upgraded to Tier ' + tierRoman + '. Order capacity increased. More channels open.',
-            power:   'Power Regulator upgraded to Tier ' + tierRoman + '. Bot degradation rate reduced. George would have called this overdue.',
-            hull:    'Hull Patch upgraded to Tier ' + tierRoman + '. Inspection penalty reduction active. George patched the rest. You patched the last section.',
-            cooling: 'Cooling Loop upgraded to Tier ' + tierRoman + '. Bot thermal tolerance improved. The refrigeration unit George used is finally retired.',
-        };
-        var installMsg = installLines[key] || (upg.name + ' Tier ' + tierRoman + ' installed.');
-        otisLines.push({ role: 'otis', text: installMsg }); renderOTIS();
-        if (window.OtisTTS) OtisTTS.speak(installMsg);
-    }
+    // Moved to js/upgrades.js — see Phase 11 refactor
 
     // ── STANDING ORDERS ───────────────────────────────────────────────────────
     // Gated by Comm Boost Tier I. Arrive via COMMS with [STANDING ORDER] prefix.
@@ -1228,201 +1139,22 @@
     // _orderIdCounter is initialized from gameState.state.nextOrderId in DOMContentLoaded
     // to survive page reloads. Mutate via _nextOrderId() only.
     var _orderIdCounter = 1;
-    function _nextOrderId() {
-        var id = _orderIdCounter++;
-        gameState.state.nextOrderId = _orderIdCounter;
-        gameState._save();
-        return id;
-    }
+    // Moved to js/orders.js — see Phase 11 refactor
     // Moved to js/data.js — see Phase 2 refactor
 
-    function checkStandingOrders() {
-        var s = gameState.state;
-        var cap = getCommOrderCap();
-        if (cap === 0) return; // Comm Boost not installed
-        if (!s.activeOrders) s.activeOrders = [];
+    // Moved to js/orders.js — see Phase 11 refactor
 
-        // Expire old orders; clean up side-effects
-        s.activeOrders = s.activeOrders.filter(function(o) {
-            if (s.day > o.expiresOnDay && !o.fulfilled) {
-                var expMsg = '[STANDING ORDER EXPIRED] ' + o.npc + ': ' + o.desc.substring(0, 60) + '...';
-                otisLines.push({ role: 'otis', text: expMsg }); renderOTIS();
-                // Reset Sven interference when his rare refusal order expires
-                if (o.requirementKey === 'svenRareRefusal' && o.accepted) {
-                    s.svenRareRefusalActive = false;
-                    s.svenInterferencePct = 20;
-                }
-                return false;
-            }
-            return true;
-        });
+    // Moved to js/orders.js — see Phase 11 refactor
 
-        // Check fulfilment on active orders
-        s.activeOrders.forEach(function(o) {
-            if (o.fulfilled || o.requirementKey === 'svenRareRefusal') return;
-            var fulfilled = checkOrderFulfilment(o, s);
-            if (fulfilled) {
-                o.fulfilled = true;
-                applyOrderReward(o, s);
-            }
-        });
+    // Moved to js/orders.js — see Phase 11 refactor
 
-        // Possibly generate a new order
-        if (s.activeOrders.length < cap && Math.random() < 0.5) {
-            // Pick a template at random (avoid duplicating active npc/key combos)
-            var activeKeys = s.activeOrders.map(function(o) { return o.requirementKey; });
-            var available = STANDING_ORDER_TEMPLATES.filter(function(t) {
-                return activeKeys.indexOf(t.requirementKey) === -1;
-            });
-            if (available.length > 0) {
-                var tmpl = available[Math.floor(Math.random() * available.length)];
-                var newOrder = {
-                    id: _nextOrderId(),
-                    npc: tmpl.npc,
-                    desc: tmpl.makeDesc(s.day),
-                    rewardCredits: tmpl.rewardCredits,
-                    rewardNote: tmpl.rewardNote || '',
-                    expiresOnDay: s.day + tmpl.durationDays,
-                    accepted: !tmpl.hasAcceptDecline, // auto-accepted unless it has explicit accept/decline
-                    requirementKey: tmpl.requirementKey,
-                    requirementQty: tmpl.requirementQty,
-                    fulfilled: false,
-                    hasAcceptDecline: !!tmpl.hasAcceptDecline,
-                    progressQty: 0,
-                };
-                s.activeOrders.push(newOrder);
-                var soMsg = '[STANDING ORDER] ' + newOrder.desc + ' Expires: Day ' + newOrder.expiresOnDay + '.';
-                if (newOrder.rewardNote) soMsg += ' Note: ' + newOrder.rewardNote + '.';
-                otisLines.push({ role: 'otis', text: soMsg }); renderOTIS();
-                if (window.OtisTTS) OtisTTS.speak('[STANDING ORDER] ' + newOrder.npc + ' — ' + newOrder.desc.substring(0, 60));
-                setLight('light-comms', 'light-amber');
-            }
-        }
+    // Moved to js/orders.js — see Phase 11 refactor
 
-        gameState._save();
-        renderActiveOrders();
-    }
+    // Moved to js/orders.js — see Phase 11 refactor
 
-    function checkOrderFulfilment(order, s) {
-        var key = order.requirementKey;
-        if (key === 'allBotsNominal') {
-            return (s.bots || []).every(function(b) { return b.status === 'NOMINAL'; });
-        }
-        if (key === 'processedItems') {
-            return (order.progressQty || 0) >= order.requirementQty;
-        }
-        if (key === 'settlementItems' || key === 'vesselItems' || key === 'industrialItems' || key === 'anomalousItem') {
-            return (order.progressQty || 0) >= order.requirementQty;
-        }
-        return false;
-    }
+    // Moved to js/orders.js — see Phase 11 refactor
 
-    function applyOrderReward(order, s) {
-        var rewardMsg = '[STANDING ORDER COMPLETE] ' + order.npc + ': ' + order.desc.substring(0, 50) + '...';
-        if (order.rewardCredits > 0) {
-            if (order.rewardNote && order.rewardNote.indexOf('arrears') !== -1) {
-                s.outstandingDebt = Math.max(0, (s.outstandingDebt || 0) - order.rewardCredits);
-                rewardMsg += ' ' + order.rewardCredits + ' cr arrears waived.';
-            } else if (order.rewardNote && order.rewardNote.indexOf('debt') !== -1) {
-                s.debt = Math.max(0, (s.debt || 0) - order.rewardCredits);
-                rewardMsg += ' ' + order.rewardCredits + ' cr debt reduction.';
-            } else {
-                s.credits = (s.credits || 0) + order.rewardCredits;
-                rewardMsg += ' +' + order.rewardCredits + ' cr.';
-            }
-        }
-        otisLines.push({ role: 'otis', text: rewardMsg }); renderOTIS();
-        if (window.OtisTTS) OtisTTS.speak(rewardMsg);
-        gameState._save();
-        gameState._updateUI();
-    }
-
-    function handleAcceptStandingOrder(orderId) {
-        var s = gameState.state;
-        var order = (s.activeOrders || []).find(function(o) { return o.id === orderId; });
-        if (!order) return;
-        order.accepted = true;
-        if (order.requirementKey === 'svenRareRefusal') {
-            // Drop interference; complicity is tracked when Rare items are actually routed to Sven
-            s.svenInterferencePct = 5;
-            s.svenRareRefusalActive = true;
-            s.svenRareRefusalExpiresDay = order.expiresOnDay;
-            // LORE
-            var acceptMsg = '[STANDING ORDER ACCEPTED] Sven: First refusal on Rares active. Interference at 5% for 7 days. Route Rare items to Sven this cycle to honour the deal. George never made this agreement. He said the interference was the honest version of the relationship.';
-            otisLines.push({ role: 'otis', text: acceptMsg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(acceptMsg);
-        }
-        gameState._save();
-        renderActiveOrders();
-    }
-
-    function handleDeclineStandingOrder(orderId) {
-        var s = gameState.state;
-        s.activeOrders = (s.activeOrders || []).filter(function(o) { return o.id !== orderId; });
-        // LORE
-        var declineMsg = 'Standing order declined. Sven will note it. George used to say no to him once a month on principle. I do not know if it helped.';
-        otisLines.push({ role: 'otis', text: declineMsg }); renderOTIS();
-        gameState._save();
-        renderActiveOrders();
-    }
-
-    function recordOrderProgress(category, rarity) {
-        var s = gameState.state;
-        if (!s.activeOrders) return;
-        s.activeOrders.forEach(function(o) {
-            if (o.fulfilled || !o.accepted) return;
-            var key = o.requirementKey;
-            var matched = false;
-            if (key === 'settlementItems' && category === 'Settlement') matched = true;
-            if (key === 'vesselItems' && category === 'Vessel') matched = true;
-            if (key === 'industrialItems' && category === 'Industrial') matched = true;
-            if (key === 'anomalousItem' && rarity === 'Anomalous') matched = true;
-            if (key === 'processedItems') matched = true;
-            if (matched) {
-                o.progressQty = (o.progressQty || 0) + 1;
-                if (checkOrderFulfilment(o, s)) {
-                    o.fulfilled = true;
-                    applyOrderReward(o, s);
-                }
-            }
-        });
-        gameState._save();
-        renderActiveOrders();
-    }
-
-    function renderActiveOrders() {
-        var section = document.getElementById('active-orders-section');
-        var list = document.getElementById('active-orders-list');
-        if (!section || !list) return;
-        var s = gameState.state;
-        var cap = getCommOrderCap();
-        if (cap === 0) { section.style.display = 'none'; return; }
-        var orders = (s.activeOrders || []).filter(function(o) { return !o.fulfilled; });
-        section.style.display = '';
-        if (orders.length === 0) {
-            list.innerHTML = '<p class="zone-hint">No active orders.</p>';
-            return;
-        }
-        list.innerHTML = orders.map(function(o) {
-            var daysLeft = Math.max(0, o.expiresOnDay - s.day);
-            var progressStr = (o.requirementQty > 1)
-                ? ' [' + (o.progressQty || 0) + '/' + o.requirementQty + ']'
-                : '';
-            var actionsHtml = '';
-            if (o.hasAcceptDecline && !o.accepted) {
-                actionsHtml = '<div class="so-actions">'
-                    + '<button onclick="handleAcceptStandingOrder(' + o.id + ')">ACCEPT</button>'
-                    + '<button class="btn-warn" onclick="handleDeclineStandingOrder(' + o.id + ')">DECLINE</button>'
-                    + '</div>';
-            }
-            return '<div class="standing-order-entry">'
-                + '<div class="so-header">[STANDING ORDER] ' + escapeHtml(o.npc) + '</div>'
-                + '<div class="so-desc">' + escapeHtml(o.desc) + progressStr + '</div>'
-                + '<div class="so-meta">Reward: ' + (o.rewardCredits > 0 ? o.rewardCredits + ' cr' : '') + (o.rewardNote ? ' ' + escapeHtml(o.rewardNote) : '') + ' — Expires Day ' + o.expiresOnDay + ' (' + daysLeft + 'd)</div>'
-                + actionsHtml
-                + '</div>';
-        }).join('');
-    }
+    // Moved to js/orders.js — see Phase 11 refactor
 
     // ── BANK INSPECTIONS ──────────────────────────────────────────────────────
     // Moved to js/economy.js — see Phase 6 refactor
