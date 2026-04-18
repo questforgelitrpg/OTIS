@@ -207,8 +207,6 @@
             if (term) term.style.filter = 'brightness(0.15)';
             appendOTIS('Bank protocol engaged. Running power restoration sequence.', 'COMMS_BANK');
             appendHardcodedComm('[BANK-OTIS] Step 1: isolate main breaker. Step 2: reroute to secondary bus.');
-            gameState.state.toasterIncidentFired = true;
-            gameState._save();
 
             // STAGE 3 — SYSTEMS RESTORE (delay 6000ms from stage 2)
             setTimeout(function() {
@@ -256,6 +254,10 @@
     // from any daily-toast code path — the two events are intentionally separate.
     function fireToasterIncident() {
         if (gameState.state.toasterIncidentFired) return;
+        // BUG 4 fix: set fired guard synchronously at the very start, before any
+        // setTimeout chain, so re-entry is impossible even if called again quickly.
+        gameState.state.toasterIncidentFired = true;
+        gameState._save();
         if (window.OtisSound) OtisSound.startMusic('music3');
         var s = gameState.state;
         if (s.credits >= 6) s.credits -= 6;
@@ -272,34 +274,65 @@
         setTimeout(function() { closeModal('toast'); runPowerOutageSequence(); }, 2000);
     }
 
-    function triggerEnding() {
+    // Shared helper: renders the ending screen for any ending key.
+    // Handles {{ARCHIVE}} / {{CREDITS}} substitution, shows restart or acknowledge
+    // button based on whether the ending has restart: true, and fires an optional
+    // scripted OTIS line (ending.otisLine) for failure endings.
+    function renderEndingScreen(endingKey) {
         var s = gameState.state;
-        if (s.endingTriggered) return;
-        s.endingTriggered = true;
-        gameState._save();
+        var ending = ENDINGS[endingKey];
+        if (!ending) return;
         var archive = s.humanityArchive || 0;
         var credits = s.credits || 0;
-        var endingKey;
-        if (s.upgradeDecision === 'install') {
-            endingKey = 'COMMERCE';
-        } else if (s.upgradeDecision === 'decline') {
-            endingKey = archive >= 5 ? 'HUMANITY' : 'COMPROMISE';
-        } else {
-            endingKey = archive >= 5 ? 'HUMANITY' : 'COMPROMISE';
-        }
-        var ending = ENDINGS[endingKey];
         var titleEl = document.getElementById('ending-title');
         var bodyEl  = document.getElementById('ending-body');
         if (titleEl) titleEl.textContent = ending.title;
         if (bodyEl)  bodyEl.textContent = ending.body
             .replace('{{ARCHIVE}}', archive)
             .replace('{{CREDITS}}', credits);
+        var restartBtn = document.getElementById('btn-ending-restart');
+        var ackBtn     = document.getElementById('btn-ending-ack');
+        var needsRestart = !!ending.restart;
+        if (restartBtn) restartBtn.style.display = needsRestart ? '' : 'none';
+        if (ackBtn)     ackBtn.style.display     = needsRestart ? 'none' : '';
+        // Scripted OTIS line for failure endings (not FORECLOSURE, LEGACY, or MAZE_MASTER)
+        if (ending.otisLine) {
+            otisLines.push({ role: 'otis', text: ending.otisLine }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(ending.otisLine);
+        }
         openModal('ending');
+    }
+
+    function triggerEnding(overrideKey) {
+        var s = gameState.state;
+        if (s.endingTriggered) return;
+        s.endingTriggered = true;
+        gameState._save();
+        var endingKey;
+        if (overrideKey) {
+            endingKey = overrideKey;
+        } else {
+            var archive = s.humanityArchive || 0;
+            if (s.upgradeDecision === 'install') {
+                endingKey = 'COMMERCE';
+            } else {
+                // 'decline' and null both produce the same ending — player did not install v5.0
+                endingKey = archive >= 5 ? 'HUMANITY' : 'COMPROMISE';
+            }
+        }
+        renderEndingScreen(endingKey);
     }
 
     function handleEndingClose() {
         closeModal('ending');
         handleLogoff();
+    }
+
+    function handleEndingRestart() {
+        closeModal('ending');
+        gameState.state = stateManager._default();
+        stateManager.clear();
+        location.reload();
     }
 
     window.appendOTIS = appendOTIS;
@@ -309,5 +342,7 @@
     window.autoToast = autoToast;
     window.fireToasterIncident = fireToasterIncident;
     window.runPowerOutageSequence = runPowerOutageSequence;
+    window.renderEndingScreen = renderEndingScreen;
     window.triggerEnding = triggerEnding;
     window.handleEndingClose = handleEndingClose;
+    window.handleEndingRestart = handleEndingRestart;

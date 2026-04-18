@@ -453,7 +453,8 @@
         <div id="ending-title" style="font-size:20px;color:var(--accent);font-family:var(--font-mono);margin-bottom:1rem"></div>
         <div id="ending-body" style="font-size:14px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap;text-align:left"></div>
         <div style="margin-top:1.5rem">
-          <button onclick="handleEndingClose()">ACKNOWLEDGE AND LOG OFF</button>
+          <button id="btn-ending-ack" onclick="handleEndingClose()">ACKNOWLEDGE AND LOG OFF</button>
+          <button id="btn-ending-restart" onclick="handleEndingRestart()" style="display:none">RESTART STATION</button>
         </div>
       </div>
     </div>
@@ -976,13 +977,18 @@
             return;
         }
         if (s.credits >= s.upgradeCost && s.upgradePrompted) {
-            var deflections = s.upgradeDeflections || 0;
-            var idx = deflections % UPGRADE_DEFLECT_MESSAGES.length;
-            s.upgradeDeflections = deflections + 1;
-            gameState._save();
-            setTimeout(function() {
-                appendOTIS(UPGRADE_DEFLECT_MESSAGES[idx], 'UPGRADE_DEFLECT');
-            }, 3000);
+            // BUG 13 fix: only fire deflect message once every ~4 days to avoid spam
+            var lastDeflect = s.lastUpgradeDeflectDay || 0;
+            if ((s.day - lastDeflect) >= 4) {
+                var deflections = s.upgradeDeflections || 0;
+                var idx = deflections % UPGRADE_DEFLECT_MESSAGES.length;
+                s.upgradeDeflections = deflections + 1;
+                s.lastUpgradeDeflectDay = s.day;
+                gameState._save();
+                setTimeout(function() {
+                    appendOTIS(UPGRADE_DEFLECT_MESSAGES[idx], 'UPGRADE_DEFLECT');
+                }, 3000);
+            }
         }
         if (s.upgradePrompted && !s.upgradeDecision
                 && s.credits >= s.upgradeCost && !s.upgradeModalShown) {
@@ -1016,6 +1022,9 @@
                 appendHardcodedComm('OTIS: Insufficient credits. Update deferred.'
                     + ' I have filed this under things I am not going to mention again.');
                 s.upgradeDecision = null;
+                // BUG 9 fix: reset upgradeModalShown so the modal can re-appear
+                // when the player has sufficient funds again
+                s.upgradeModalShown = false;
                 gameState._save();
                 return;
             }
@@ -1025,7 +1034,8 @@
             appendHardcodedComm('OTIS: Update installing. George-layer data archiving...'
                 + ' archived. v5.0 active. Good morning, Mr. Serling.');
         } else {
-            s.humanityArchive = (s.humanityArchive || 0) + 5;
+            // BUG 12 fix: decline path no longer grants +5 humanityArchive cheat.
+            // The player's actual archive count determines HUMANITY vs COMPROMISE.
             gameState._save();
             appendHardcodedComm('OTIS: Noted. Update declined. George-layer intact.'
                 + ' I will not bring this up again unless the Bank does first.');
@@ -1264,6 +1274,13 @@
         }
         s.mazePlayerPos = null;
         gameState._save();
+
+        // B5 — MAZE_MASTER hidden ending at 103 completions.
+        // No telegraphing: no hint, no comment, no UI indicator.
+        if (s.mazesCompletedTotal >= 103 && !s.endingTriggered) {
+            triggerEnding('MAZE_MASTER');
+            return;
+        }
 
         // Fire a random scripted OTIS completion comment
         var completionMsg = MAZE_COMPLETE_COMMENTS[Math.floor(Math.random() * MAZE_COMPLETE_COMMENTS.length)];

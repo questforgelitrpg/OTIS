@@ -607,17 +607,15 @@
         var s = gameState.state;
         if ((s.installedNodes || []).length < 8) return;
         if (s.endingTriggered) return;
-        s.endingTriggered = true;
+        // BUG 15 fix: route through triggerEnding() so LEGACY uses the same
+        // ending-screen render path as all other endings (restart/ack button
+        // logic, {{token}} substitution, endingTriggered guard).
         var txMsg = 'Transmission sequence initiated. Signal locked to 452b.';
         otisLines.push({ role: 'otis', text: txMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(txMsg);
         gameState._save();
         setTimeout(function() {
-            var titleEl = document.getElementById('ending-title');
-            var bodyEl  = document.getElementById('ending-body');
-            if (titleEl) titleEl.textContent = ENDINGS.LEGACY.title;
-            if (bodyEl)  bodyEl.textContent  = ENDINGS.LEGACY.body;
-            openModal('ending');
+            triggerEnding('LEGACY');
         }, 2000);
     }
     window.handleTransmit452b = handleTransmit452b;

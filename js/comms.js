@@ -119,7 +119,8 @@
         var s = gameState.state;
         var avg = s.avgScrapFillPct || 0;
         var dropCount = s.dropCount || 0;
-        var act = dropCount < 10 ? 1 : dropCount < 25 ? 2 : 3;
+        // BUG 17 fix: use canonical act thresholds (matching checkActProgression)
+        var act = dropCount < 3 ? 1 : dropCount < 7 ? 2 : 3;
         var msg;
         if (avg >= 75) {
             var hints = [
