@@ -32,7 +32,8 @@ TRIGGER DEFINITIONS:
 [TRIGGER: COMMS_SVEN] — Sven's messenger bot. Deliver Sven's message with barely-contained disdain.
 [TRIGGER: COMMS_MAY] — May Finster channel. Note what May said about the scrap.
 [TRIGGER: SIDE_COMMENT] — OTIS is editorializing between belt items. Do not reference specific items, credit values, or quantities unless they appear in the state block. Dry observation only. One line.
-[TRIGGER: SCHEMATIC_NODE] — A node on the Master Integration Schematic has just been verified and installed. Acknowledge the match briefly. Reference George's intent cryptically. One line.`;
+[TRIGGER: SCHEMATIC_NODE] — A node on the Master Integration Schematic has just been verified and installed. Acknowledge the match briefly. Reference George's intent cryptically. One line.
+[TRIGGER: CHAOS_BUTTON] — Operator is randomly pressing unlabelled buttons on an unidentified panel. Dry acknowledgement. One line.`;
 
 // Internal helper: formats the state block prefix shared by seed history and buildOTISContext.
 // paymentIn is the number of in-game days until the next loan payment is due.
