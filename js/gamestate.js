@@ -120,6 +120,16 @@
                 mazeRewardGiven: false,
                 mazePlayerPos: null,
                 mazeActive: false,
+                // --- MCGUFFIN ---
+                mcguffinFired: false,
+                pendingMcGuffin: false,
+                // --- UPGRADE DEFLECT THROTTLE ---
+                lastUpgradeDeflectDay: 0,
+                // --- SCRAP HEAP COUNTERS ---
+                georgeItemsSold: 0,
+                civilianScrapped: 0,
+                // --- POWER FAILURE COUNTER ---
+                consecutiveArrearsCycles: 0,
                 // --- STATION UPGRADES ---
                 upgrades: { scanner: 0, belt: 0, storeroom: 0, comm: 0, power: 0, hull: 0, cooling: 0 },
                 // --- SVEN COMPLICITY ---

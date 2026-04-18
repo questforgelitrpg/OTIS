@@ -9,32 +9,13 @@
     }
     window.handleToasterIncident = handleToasterIncident;
 
-    // MCGUFFIN SEQUENCE
+    // McGUFFIN debug button — resets the fired guard so the button works even
+    // after the McGuffin has already fired in a normal game session, then calls
+    // the shared spawnMcGuffin() helper (B1: auto-sell, no belt placement).
     function handleMcGuffin() {
-        var out = document.getElementById('otis-output');
-        if (out) out.classList.add('mcguffin-blur');
-        document.body.style.filter = 'blur(0.5px) contrast(0.9)';
-        var term = document.getElementById('terminal');
-        if (term) term.style.filter = 'blur(0.8px)';
-        if (window.OtisTTS && OtisTTS.setRate) OtisTTS.setRate(0.8);
-        appendHardcodedComm('\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 \u2588\u2588 \u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588 \u2588\u2588 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588');
-        setTimeout(function() {
-            document.body.style.filter = '';
-            if (term) term.style.filter = '';
-            if (window.OtisTTS && OtisTTS.setRate) OtisTTS.setRate(1.0);
-            if (out) out.classList.remove('mcguffin-blur');
-            var ttsText = "George would have known what to call it. I don't.";
-            if (window.OtisTTS) window.OtisTTS.speak(ttsText);
-            setItemInQueue(Object.assign({}, MCGUFFIN_ITEM));
-            setTimeout(function() {
-                if (otisLines.length > 0) {
-                    var last = otisLines[otisLines.length - 1];
-                    if (last.text && last.text.indexOf('\u2588') !== -1) otisLines.pop();
-                }
-                otisLines.push({ role: 'otis', text: '[SIGNAL RESTORED]' });
-                renderOTIS();
-            }, 4000);
-        }, 8000);
+        gameState.state.mcguffinFired = false;
+        gameState._save();
+        spawnMcGuffin();
     }
     window.handleMcGuffin = handleMcGuffin;
 

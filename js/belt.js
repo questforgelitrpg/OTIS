@@ -350,6 +350,11 @@
 
     function handleBargeArrival() {
         if (gameState.state.dropActive) return;
+        // BUG 14 fix: call checkActProgression() BEFORE reading the act so that the
+        // very first Act-3 barge uses Act-3 drop sizes (26–32 items) rather than
+        // Act-2 sizes.  checkActProgression() is idempotent when the act hasn't
+        // changed, so calling it here is safe.
+        checkActProgression();
         // Lock immediately to prevent double-firing during the staged delay windows
         gameState.state.dropActive = true;
         // Build manifest synchronously so data is ready when belt eventually starts
@@ -793,10 +798,26 @@
             if (window.OtisTTS) OtisTTS.speak(msg);
         }
         gameState._updateUI();
-        // McGuffin resolution — trigger ending after any declaration
-        if (item.mcguffin) {
-            setTimeout(triggerEnding, 2000);
+        // B3 — SCRAP_HEAP ending: track George item sells and civilian/settlement scraps.
+        var _isSell = (method === 'MAY_BIN' || method === 'BROKER_BIN' || method === 'SVEN_BIN');
+        if (_isSell && item.targetNodeID) {
+            var _gs = gameState.state;
+            _gs.georgeItemsSold = (_gs.georgeItemsSold || 0) + 1;
+            gameState._save();
+            if (_gs.georgeItemsSold > 5 && (_gs.civilianScrapped || 0) > 50 && !_gs.endingTriggered) {
+                setTimeout(function() { triggerEnding('SCRAP_HEAP'); }, 500);
+            }
         }
+        if (method === 'SCRAP' && (item.category === 'Civilian' || item.category === 'Settlement')) {
+            var _cs = gameState.state;
+            _cs.civilianScrapped = (_cs.civilianScrapped || 0) + 1;
+            gameState._save();
+            if ((_cs.georgeItemsSold || 0) > 5 && _cs.civilianScrapped > 50 && !_cs.endingTriggered) {
+                setTimeout(function() { triggerEnding('SCRAP_HEAP'); }, 500);
+            }
+        }
+        // B1/B4 — McGuffin no longer goes on the visible belt; it auto-sells via
+        // spawnMcGuffin().  The old in-belt mcguffin resolution branch is removed.
     }
     window.handleDeclare = handleDeclare;
 

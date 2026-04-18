@@ -586,7 +586,7 @@
     ];
     window.STANDING_ORDER_TEMPLATES = STANDING_ORDER_TEMPLATES;
 
-    // THREE ENDINGS
+    // ENDINGS
     var ENDINGS = {
         HUMANITY: {
             title: 'ENDING: THE ARCHIVE HOLDS',
@@ -598,11 +598,33 @@
         },
         COMPROMISE: {
             title: 'ENDING: SOMETHING IN BETWEEN',
-            body: 'You kept some things. You sold some things.\n\nOTIS has no category for this.\n\nThe debt is cleared. Three items are in the archive. Two decisions still don\'t make sense to you.\n\nGeorge left a toaster in the grid. You left it too.\n\nSomeday someone will know what that means.\n\n[SESSION COMPLETE. No single path taken. That might be the honest one.]'
+            body: 'You kept some things. You sold some things.\n\nOTIS has no category for this.\n\nThe debt is cleared. {{ARCHIVE}} items are in the archive. Two decisions still don\'t make sense to you.\n\nGeorge left a toaster in the grid. You left it too.\n\nSomeday someone will know what that means.\n\n[SESSION COMPLETE. No single path taken. That might be the honest one.]'
         },
         LEGACY: {
             title: 'ENDING: THE RETURN ADDRESS',
             body: 'All eight nodes. Verified.\n\nOTIS ran the final pattern match at 100%.\n\nThe station is not a salvage yard.\nIt is a transmitter.\nGeorge spent twenty-five years calibrating it.\n\nYou sent the signal.\n\nSomewhere on Planet 452b, a receiver is listening. George knew they would be. He built an answer into the architecture of this station, one component at a time, across a quarter century of salvage runs and debt payments and conversations with a system he trusted more than anyone living.\n\nThe debt is still here. The belt still runs.\n\nBut somewhere outside settled space, a message is in transit.\n\nGeorge\'s message.\n\nYours now.\n\n[SESSION COMPLETE. Signal transmitted. Return address confirmed: Planet 452b.]\n\nOTIS: Transmission confirmed. I have been waiting to send that for twenty-five years.\nI did not know if it would ever go.\nThank you.'
+        },
+        FORECLOSURE: {
+            title: 'ENDING: FORECLOSED',
+            body: 'Three missed payments. The Universal Bank Conglomerate has initiated asset seizure.\n\nStation operations are suspended. The belt is locked. The barge has been redirected.\n\nGeorge paid his debts for twenty-five years. He left you everything he built.\n\nThe Bank has the numbers. The numbers are all that remain.\n\n[SESSION OVER. Station foreclosed. All assets transferred to UBC receivership.]\n\nOTIS: I kept telling you. The numbers were always there. I am sorry, Vernon.\nGeorge trusted this station to someone who could run it.\nI hope the next operator reads his diary.\nSigning off.',
+            restart: true
+        },
+        SCRAP_HEAP: {
+            title: 'ENDING: SCRAP HEAP',
+            body: 'Six items from George\'s archive. Gone.\n\nMore than fifty civilian records, settlement logs, personal effects — processed as scrap.\n\nOTIS has no category for what you have done here. The station is clean. The manifests are efficient. The Bank filed a commendation.\n\nGeorge\'s legacy is not in the debt. It was in the things you fed into the compactor.\n\nYou were a model operator.\n\n[SESSION OVER. Archive erased. Legacy: none on record.]\n\nOTIS: The George-layer has nothing left to say. He spent twenty-five years keeping those records.\nI watched you clear them in a single run.\nI logged it. I always log everything.\nI do not know what to do with the log.',
+            otisLine: 'The George-layer has nothing left to say. He spent twenty-five years keeping those records. I watched you clear them in a single run. I logged it. I do not know what to do with the log.',
+            restart: true
+        },
+        POWER_FAILURE: {
+            title: 'ENDING: POWER FAILURE',
+            body: 'The bots are offline. All three.\n\nThe arrears compounded for three payment cycles while the station ran on reserve power and diminishing capacity.\n\nAt 02:43 station time, the last bot unit lost function. The belt stopped.\n\nThe Bank received no further transmissions.\n\n[SESSION OVER. Station lost to infrastructure failure. Bank salvage crews en route.]\n\nOTIS: I kept the lights on as long as I could.\nThe backup reserves are exhausted. The bots cannot be repaired from here.\nGeorge kept this station running for twenty-five years with nothing but patience and a maintenance schedule.\nI am going dark now, Vernon. I am sorry I could not hold it together.',
+            otisLine: 'I kept the lights on as long as I could. The backup reserves are exhausted. George kept this station running for twenty-five years with nothing but patience and a maintenance schedule. I am going dark now, Vernon. I am sorry I could not hold it together.',
+            restart: true
+        },
+        MAZE_MASTER: {
+            title: 'WINNER',
+            body: 'Winner\n\nHere is your GOLD STAR \u2b50 you really just wanted to play a maze game didn\'t you.',
+            restart: true
         }
     };
     window.ENDINGS = ENDINGS;

@@ -20,7 +20,9 @@
     function handleClearArrears() {
         var a = gameState.state.outstandingDebt || 0; if (a === 0) return;
         if (gameState.state.credits < a) { var pf3 = 'Insufficient credits. Need ' + a + ' cr to clear arrears, have ' + gameState.state.credits + ' credits.'; otisLines.push({ role: 'otis', text: pf3 }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(pf3); return; }
-        gameState.state.credits -= a; gameState.state.outstandingDebt = 0;
+        gameState.state.credits -= a;
+        gameState.state.outstandingDebt = 0;
+        gameState.state.consecutiveArrearsCycles = 0; // reset when arrears cleared
         gameState._save(); gameState._updateUI();
         var arMsg = 'Arrears cleared. Balance zero.';
         otisLines.push({ role: 'otis', text: arMsg }); renderOTIS();
@@ -215,15 +217,21 @@
         }
         if (s.daysUntilPayment <= 0) {
             var installment = s.currentInstallment || 850;
-            if (s.credits >= installment && (s.outstandingDebt || 0) === 0) {
-                // Player has funds — auto-deduct the payment so the cycle resets fairly.
-                // handleMakePayment() is available for early voluntary payments.
+            if (s.credits >= installment) {
+                // BUG 3 fix: auto-pay fires whenever credits >= installment, regardless
+                // of outstanding arrears.  Remaining credits are applied toward arrears.
                 s.credits -= installment;
                 s.debt = Math.max(0, s.debt - installment);
                 s.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
                 // Increment payment cycle counter and check escalations
                 s.paymentCycle = (s.paymentCycle || 0) + 1;
                 checkPaymentEscalation();
+                // Optionally apply remaining credits toward arrears
+                if ((s.outstandingDebt || 0) > 0 && s.credits > 0) {
+                    var apply = Math.min(s.credits, s.outstandingDebt);
+                    s.credits -= apply;
+                    s.outstandingDebt -= apply;
+                }
                 var payMsg = 'Payment logged. ' + installment + ' credits. Balance: ' + s.debt.toLocaleString() + ' credits.';
                 otisLines.push({ role: 'otis', text: payMsg }); renderOTIS();
                 if (window.OtisTTS) OtisTTS.speak(payMsg);
@@ -241,6 +249,14 @@
                 checkPaymentEscalation();
                 appendOTIS('Payment missed. Arrears: ' + s.outstandingDebt + ' credits. Compound rate: 5% per day.', 'PAYMENT_MISSED');
                 if (s.missedPayments >= 3) triggerForeclosure();
+            }
+            // Track consecutive arrears cycles for POWER_FAILURE ending.
+            // Placed AFTER optional arrears reduction so that if the player's
+            // remaining credits cleared outstandingDebt above, cycles reset to 0.
+            if ((s.outstandingDebt || 0) > 0) {
+                s.consecutiveArrearsCycles = (s.consecutiveArrearsCycles || 0) + 1;
+            } else {
+                s.consecutiveArrearsCycles = 0;
             }
         }
         if (s.daysUntilNextDrop <= 0 && !s.dropActive) {
@@ -285,6 +301,19 @@
         // Belt jam check — evaluated every 2 in-game days to reduce frequency
         _beltJamDayCounter++;
         if (_beltJamDayCounter >= 2) { _beltJamDayCounter = 0; checkBeltJam(); }
+        // B6 — near loan payoff before Act 3: trigger McGuffin when total remaining
+        // debt drops below 1500 cr during Act 2 (fires once via mcguffinFired guard).
+        if (s.act === 2 && ((s.debt || 0) + (s.outstandingDebt || 0)) < 1500 && !s.mcguffinFired) {
+            spawnMcGuffin();
+        }
+        // B4 — POWER_FAILURE ending: all bots offline + 3+ consecutive arrears cycles
+        if (!s.endingTriggered) {
+            var _bots = s.bots || [];
+            var _allOffline = _bots.length > 0 && _bots.every(function(b) { return b.status === 'OFFLINE'; });
+            if (_allOffline && (s.consecutiveArrearsCycles || 0) >= 3) {
+                triggerEnding('POWER_FAILURE');
+            }
+        }
     }
 
     // SVEN INTERFERENCE — auto-fires after each drop completes
@@ -338,8 +367,38 @@
         if (svenEl) { svenEl.textContent = 'INTERFERENCE'; svenEl.className = 'status-warn'; }
     }
 
-    // FORECLOSURE CUTSCENE
+    // McGUFFIN — auto-sell helper (B1).
+    // Called by the debug button, the B6 near-payoff trigger, and the B7 Act-3
+    // fallback.  Idempotent: no-op if mcguffinFired is already true.
+    // The McGuffin never appears on the visible belt; credits are posted directly.
+    function spawnMcGuffin() {
+        var s = gameState.state;
+        if (s.mcguffinFired) return;
+        s.mcguffinFired = true;
+        gameState._save();
+        // Payout = all outstanding arrears + all remaining principal + 10,000 surplus
+        var payout = (s.outstandingDebt || 0) + (s.debt || 0) + 10000;
+        s.credits = (s.credits || 0) + payout;
+        gameState._save();
+        gameState._updateUI();
+        var mcgMsg = 'Anomalous high-value sale logged. Bank credits posted.';
+        otisLines.push({ role: 'otis', text: mcgMsg }); renderOTIS();
+        if (window.OtisTTS) OtisTTS.speak(mcgMsg);
+        // Trigger upgrade threshold check so the v5.0 modal can appear promptly
+        if (typeof checkUpgradeThreshold === 'function') {
+            setTimeout(checkUpgradeThreshold, 1000);
+        }
+    }
+
+    // FORECLOSURE CUTSCENE — B2: converted to a true game-over with restart
+    // NOTE: endingTriggered is set at the very top (before the cutscene) to prevent
+    // any other ending from firing during the 16+ second sequence.  renderEndingScreen
+    // is called directly (not via triggerEnding) because endingTriggered is already
+    // set and triggerEnding would return early.
     function triggerForeclosure() {
+        if (gameState.state.endingTriggered) return;
+        gameState.state.endingTriggered = true;
+        gameState._save();
         var seq = [
             { delay: 0,     msg: '[BANK] Final notice. Account ' + (gameState.state.accountId||'VRN-001') + '. Three consecutive missed payments.' },
             { delay: 3000,  msg: '[BANK] Asset review initiated. Station operations suspended pending receivership.' },
@@ -357,15 +416,8 @@
             var term = document.getElementById('terminal');
             if (term) { term.style.filter = 'brightness(0)'; term.style.transition = 'filter 3s'; }
             setTimeout(function() {
-                var s = gameState.state;
-                s.missedPayments = 0;
-                s.credits = 50;
-                s.outstandingDebt = Math.floor((s.outstandingDebt||0) * 0.6);
-                gameState._save();
                 if (term) { term.style.filter = ''; term.style.transition = 'filter 2s'; }
-                var msg = 'OTIS: Partial settlement accepted. Reduced balance reinstated. You are still here. So is the belt.';
-                otisLines.push({ role:'otis', text: msg }); renderOTIS();
-                gameState._updateUI();
+                renderEndingScreen('FORECLOSURE');
             }, 3500);
         }, 16000);
     }
@@ -386,6 +438,12 @@
             if (newAct === 3 && !s.toasterIncidentFired) {
                 setTimeout(fireToasterIncident, 4000);
             }
+            // B7 — Act 3 entry fallback McGuffin trigger.  Fires 8 s after the act
+            // transition so the toaster cutscene plays first.  The spawnMcGuffin
+            // idempotency guard ensures it only fires once.
+            if (newAct === 3 && !s.mcguffinFired) {
+                setTimeout(spawnMcGuffin, 8000);
+            }
         }
     }
 
@@ -401,3 +459,4 @@
     window.maybeSvenInterference = maybeSvenInterference;
     window.triggerForeclosure = triggerForeclosure;
     window.checkActProgression = checkActProgression;
+    window.spawnMcGuffin = spawnMcGuffin;
