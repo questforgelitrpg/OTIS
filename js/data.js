@@ -364,6 +364,59 @@
     // ── END NARRATOR POOLS ────────────────────────────────────────────────────
     window.DAY_TICK_POOL = DAY_TICK_POOL;
 
+    // DEBRIEF OTIS LINES — shown at end-of-drop debrief. Three tiers based on routing efficiency.
+    // "good"    = processed rate >= 70% (low skip/scrap, high sell/keep)
+    // "neutral" = processed rate 40–69%
+    // "poor"    = processed rate < 40% (too many skips/scraps)
+    var DEBRIEF_OTIS_LINES = {
+        good: [
+            "Clean drop. Routing was sharp. Debt noticed.",
+            "Efficient. George would have counted that twice. I already did.",
+            "Belt cleared. Numbers are moving. That is the job.",
+            "That is what a good drop looks like. Keep that pace.",
+            "Processed well. The debt math is watching you in a good way.",
+            "Strong routing. The ledger shifted. George would have approved.",
+            "Output solid. Every item you moved is a day closer to clear.",
+        ],
+        neutral: [
+            "Drop closed. Adequate. The belt does not care about adequate.",
+            "Items through. Routing was functional. Room to improve.",
+            "Closed out. Not your best, not your worst. George had those too.",
+            "Drop complete. Middle-of-the-road routing. The debt is not middle.",
+            "Belt cleared. Moderate output. The debt is not moderate.",
+            "Done. Neither bad nor good. The debt will not say the same.",
+        ],
+        poor: [
+            "Drop closed. The routing was scattered. Debt did not move much.",
+            "Belt cleared. That was a low-yield drop. The debt noticed.",
+            "Items processed. Efficiency was low. George had bad drops. He did not have a deadline.",
+            "Closed. Numbers are not moving. The belt will come back. The debt always does.",
+            "Drop done. Skips and stalls cost you. Watch the next one.",
+            "Low routing efficiency this drop. The payment window is not adjusting on your behalf.",
+        ],
+    };
+    window.DEBRIEF_OTIS_LINES = DEBRIEF_OTIS_LINES;
+
+    // ARCHIVE DISCOVERY POOL — shown when an anomalous item is routed to the humanity archive.
+    // Discovery-flavored, not dad jokes. George-adjacent. These are evocative, not clinical.
+    var ARCHIVE_DISCOVERY_POOL = [
+        "Logged. No catalogue match. Filed under what we do not know yet.",
+        "Archived. George held items like this for years. Never explained why. I am starting to understand.",
+        "No value assigned. Filed under standing unknown. That is a category now.",
+        "Logged to archive. I have no data on its origin. That is rare for me.",
+        "Filed. The archive is for things the market cannot price. This qualifies.",
+        "Archived. Whatever this is, it arrived here for a reason I cannot determine.",
+        "Filed under Unknown. Anomalous. Archived. That last word is new. It fits.",
+        "Logged. No comparable. No precedent. That is interesting. George found those interesting too.",
+        "No catalogue entry. Archived. Some things matter precisely because they cannot be catalogued.",
+        "Filed. The archive holds what the belt cannot resolve. This is one of those.",
+        "Archived. George used to set things like this aside without a note. I understand that now.",
+        "Logged. I have run twelve identification passes. Nothing. That is not nothing.",
+        "No market value. Archive value: unknown. I am keeping it anyway.",
+        "Archived. Whatever it is, the grid has been holding it a long time. Now we are.",
+    ];
+    window.ARCHIVE_DISCOVERY_POOL = ARCHIVE_DISCOVERY_POOL;
+
     var INSTALLMENT_DUE_POOL = [
       "Installment due. {AMT} credits. Seven days.",
       "Weekly installment: {AMT} cr. Clock is running.",

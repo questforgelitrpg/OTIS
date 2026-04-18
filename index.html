@@ -44,6 +44,7 @@
                 <span class="hdr-stat" id="hdr-barge">BARGE: 7d</span>
                 <span class="hdr-stat" id="hdr-hours">SESSION: 0h 0m</span>
                 <span class="hdr-stat" id="hdr-naming">MR. SERLING</span>
+                <span class="hdr-stat" id="hdr-archive" style="color:#cc77ff;display:none" title="Items in the Humanity Archive">&#x25C6; ARCHIVE: 0</span>
                 <button id='fatigue-warn-btn' onclick='handleLogoff()'
                     style='display:none; border-color:#ffb700; color:#ffb700; animation:none'
                     class='payment-warn'>
@@ -168,6 +169,7 @@
                         <button id="btn-to-may" onclick="handleDeclare('MAY_BIN')" title="Civilian and Settlement items only">TO MAY BIN</button>
                         <button id="btn-to-broker" onclick="handleDeclare('BROKER_BIN')" title="Industrial and Vessel items">TO BROKER BIN</button>
                         <button id="btn-to-sven" onclick="handleDeclare('SVEN_BIN')" title="Rare and Anomalous only — Sven pays 65%" style="color:var(--text-warn);border-color:#3a2a00">TO SVEN BIN</button>
+                        <button id="btn-to-archive" onclick="handleDeclare('ARCHIVE')" title="Route to Humanity Archive — Anomalous items only" style="display:none;color:#cc77ff;border-color:#5a2a7a">ARCHIVE</button>
                         <button onclick="handleDeclare('KEEP')">KEEP</button>
                         <button class="btn-warn" onclick="handleDeclare('SCRAP')">SCRAP</button>
                     </div>
@@ -455,6 +457,42 @@
         <div style="margin-top:1.5rem">
           <button id="btn-ending-ack" onclick="handleEndingClose()">ACKNOWLEDGE AND LOG OFF</button>
           <button id="btn-ending-restart" onclick="handleEndingRestart()" style="display:none">RESTART STATION</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DROP DEBRIEF MODAL -->
+    <div id="modal-debrief" class="modal" role="dialog" aria-label="Drop Debrief" aria-modal="true">
+      <div class="modal-inner" style="max-width:480px;margin-top:10vh">
+        <div class="modal-header">
+          <span>// DROP DEBRIEF</span>
+        </div>
+        <div class="modal-section">
+          <div class="modal-label">ITEMS PROCESSED</div>
+          <p style="font-size:20px;color:var(--text-bright);font-family:var(--font-mono);margin:0.2rem 0 0.1rem"><span id="debrief-total">0</span></p>
+        </div>
+        <div class="modal-section">
+          <div class="modal-label">ROUTING SPLIT</div>
+          <div id="debrief-routes" style="font-size:14px;line-height:1.8;margin-top:0.3rem"></div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-label">CREDITS THIS DROP</div>
+          <p style="font-size:15px;color:var(--text-primary);margin:0.2rem 0 0" id="debrief-credits"></p>
+        </div>
+        <div class="modal-section">
+          <div class="modal-label">DEBT STATUS</div>
+          <p style="font-size:15px;color:var(--text-warn);margin:0.2rem 0 0.1rem" id="debrief-debt"></p>
+          <p style="font-size:14px;color:var(--text-dim);margin:0" id="debrief-cycles"></p>
+        </div>
+        <div class="modal-section" id="debrief-archive-section" style="display:none">
+          <p style="font-size:14px;color:#cc77ff;margin:0" id="debrief-archive-count"></p>
+        </div>
+        <div class="modal-section" style="border-bottom:none;margin-bottom:0">
+          <p id="debrief-otis-line" style="font-size:14px;color:var(--text-dim);font-style:italic;margin:0 0 0.8rem;line-height:1.6"></p>
+          <div class="modal-row">
+            <button id="debrief-continue-btn" onclick="continueAfterDebrief()" style="min-width:120px">CONTINUE</button>
+          </div>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:0.5rem">Press Enter or Esc to continue</p>
         </div>
       </div>
     </div>
@@ -1399,6 +1437,16 @@
         var tag = document.activeElement ? document.activeElement.tagName : '';
         if (tag === 'INPUT' || tag === 'TEXTAREA') return;
         if (_mazePaused) return;
+
+        // Debrief modal keyboard handler: Enter or Esc to continue
+        var debriefModal = document.getElementById('modal-debrief');
+        if (debriefModal && debriefModal.classList.contains('open')) {
+            if (e.key === 'Enter' || e.key === 'Escape') {
+                e.preventDefault();
+                if (typeof continueAfterDebrief === 'function') continueAfterDebrief();
+            }
+            return;
+        }
 
         var s = gameState && gameState.state;
         if (!s) return;

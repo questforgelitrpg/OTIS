@@ -62,6 +62,19 @@
     window.startBeltDelivery = startBeltDelivery;
     window.stopBeltDelivery = stopBeltDelivery;
 
+    // Maximum characters to store for archived item names (keeps log sizes bounded)
+    var MAX_ARCHIVE_NAME_LENGTH = 30;
+
+    // ── Per-drop routing stats (ephemeral — reset each drop, never persisted) ──
+    // Used to populate the end-of-drop debrief modal.
+    var _dropRoutes = { kept: 0, sold: 0, sven: 0, archived: 0, scrap: 0, skip: 0 };
+    var _dropCreditsStart = 0;
+
+    function _resetDropRoutes() {
+        _dropRoutes = { kept: 0, sold: 0, sven: 0, archived: 0, scrap: 0, skip: 0 };
+        _dropCreditsStart = gameState.state.credits || 0;
+    }
+
     // ── Per-bot fetch loop constants and state ────────────────────────────────
     //
     // Design math (8 real minutes per drop window = 2 in-game days × 4 min/day):
@@ -181,11 +194,104 @@
         gameState._save();
         updateBeltUI('DROP_COMPLETE');
         setBotDots(false);
-        showBotAnimation(3000);
         if (window.OtisSound) OtisSound.stopAmbient('conveyor');
-        renderPickList();
         renderManifestSummary([]);
+        // Show debrief before bot animation and post-drop events
+        showDebrief();
+    }
+    window.finishDrop = finishDrop;
+
+    // ── END-OF-DROP DEBRIEF MODAL ─────────────────────────────────────────────
+    // Populated from _dropRoutes / _dropCreditsStart, then dismissed via
+    // continueAfterDebrief() which runs the original post-drop sequence.
+    function showDebrief() {
+        var s = gameState.state;
+        var routes = _dropRoutes;
+        var total = routes.kept + routes.sold + routes.sven + routes.archived + routes.scrap + routes.skip;
+        var productive = routes.kept + routes.sold + routes.sven + routes.archived;
+        var efficiency = total > 0 ? productive / total : 0;
+
+        // Credits earned during this drop window
+        var creditsEarned = (s.credits || 0) - _dropCreditsStart;
+
+        // Cycles-to-payoff estimate at current installment rate
+        var installment = s.currentInstallment || 850;
+        var debt = s.debt || 0;
+        var cyclesToPayoff = installment > 0 ? Math.ceil(debt / installment) : '—';
+
+        // Choose OTIS performance line
+        var tier = efficiency >= 0.70 ? 'good' : efficiency >= 0.40 ? 'neutral' : 'poor';
+        var pool = (window.DEBRIEF_OTIS_LINES && window.DEBRIEF_OTIS_LINES[tier]) || [];
+        var otisLine = pool.length ? pool[Math.floor(Math.random() * pool.length)] : 'Drop complete.';
+
+        // Build routing rows
+        function routeRow(label, count, cls) {
+            if (count === 0) return '';
+            var pct = total > 0 ? Math.round((count / total) * 100) : 0;
+            return '<div class="debrief-route-row' + (cls ? ' ' + cls : '') + '">' +
+                '<span class="debrief-route-label">' + label + '</span>' +
+                '<span class="debrief-route-count">' + count + '</span>' +
+                '<span class="debrief-route-pct">(' + pct + '%)</span>' +
+                '</div>';
+        }
+
+        var routeHtml =
+            routeRow('SELL', routes.sold) +
+            routeRow('SVEN', routes.sven, 'debrief-sven') +
+            routeRow('KEEP', routes.kept) +
+            routeRow('ARCHIVE', routes.archived, 'debrief-archive') +
+            routeRow('SCRAP', routes.scrap) +
+            routeRow('SKIP',  routes.skip,  'debrief-skip');
+
+        var archiveCount = s.humanityArchive || 0;
+
+        // Populate the modal
+        var el = function(id) { return document.getElementById(id); };
+        var totalEl      = el('debrief-total');
+        var creditsEl    = el('debrief-credits');
+        var debtEl       = el('debrief-debt');
+        var cyclesEl     = el('debrief-cycles');
+        var routeEl      = el('debrief-routes');
+        var otisEl       = el('debrief-otis-line');
+        var archiveEl    = el('debrief-archive-count');
+
+        if (totalEl)   totalEl.textContent   = total;
+        if (creditsEl) creditsEl.textContent = (creditsEarned >= 0 ? '+' : '') + creditsEarned + ' cr (running: ' + (s.credits || 0).toLocaleString() + ' cr)';
+        if (debtEl)    debtEl.textContent    = (debt).toLocaleString() + ' cr remaining';
+        if (cyclesEl) {
+            if (typeof cyclesToPayoff === 'number') {
+                cyclesEl.textContent = cyclesToPayoff + ' payment cycle' + (cyclesToPayoff === 1 ? '' : 's') + ' at current rate';
+            } else {
+                cyclesEl.textContent = '\u2014 cycles to payoff unknown';
+            }
+        }
+        if (routeEl)   routeEl.innerHTML     = routeHtml || '<span style="color:var(--text-dim)">No items routed.</span>';
+        if (otisEl)    otisEl.textContent    = otisLine;
+        var archiveSection = el('debrief-archive-section');
+        if (archiveEl && archiveCount > 0) {
+            archiveEl.textContent = '\u25C6 ARCHIVE: ' + archiveCount + ' item' + (archiveCount === 1 ? '' : 's') + ' total';
+            if (archiveSection) archiveSection.style.display = '';
+        } else if (archiveSection) {
+            archiveSection.style.display = 'none';
+        }
+
+        openModal('debrief');
+        // Mark emotional beat active to suppress dad jokes
+        window.emotionalBeatActive = true;
+        // Focus the continue button for keyboard accessibility
+        var contBtn = el('debrief-continue-btn');
+        if (contBtn) setTimeout(function() { contBtn.focus(); }, 80);
+    }
+    window.showDebrief = showDebrief;
+
+    function continueAfterDebrief() {
+        closeModal('debrief');
+        window.emotionalBeatActive = false;
+        // Run the original post-drop sequence
+        var s = gameState.state;
         var daysLeft = (s.daysUntilNextDrop != null) ? s.daysUntilNextDrop : TIMING.DAYS_BETWEEN_DROPS;
+        showBotAnimation(3000);
+        renderPickList();
         narratorLine(DROP_COMPLETE_POOL, { DAYS: daysLeft });
         AnimWindow.startBotsReturn();
         onDropCompleteBotDegradation();
@@ -194,7 +300,7 @@
         maybeSvenInterference();
         if (typeof updateBotUI === 'function') updateBotUI();
     }
-    window.finishDrop = finishDrop;
+    window.continueAfterDebrief = continueAfterDebrief;
 
     function botFetchTick() {
         var s = gameState.state;
@@ -309,18 +415,9 @@
             gameState._save();
             updateBeltUI('DROP_COMPLETE');
             setBotDots(false);
-            showBotAnimation(3000);
             if (window.OtisSound) OtisSound.stopAmbient('conveyor');
-            renderPickList();
             renderManifestSummary([]);
-            var daysLeft = (gameState.state.daysUntilNextDrop != null)
-                ? gameState.state.daysUntilNextDrop : TIMING.DAYS_BETWEEN_DROPS;
-            narratorLine(DROP_COMPLETE_POOL, { DAYS: daysLeft });
-            AnimWindow.startBotsReturn();
-            onDropCompleteBotDegradation();
-            rollConveyorJam();
-            checkEasterEgg();
-            maybeSvenInterference();
+            showDebrief();
             return;
         }
         if (currentItem !== null) {
@@ -664,6 +761,8 @@
                 bot.carrying = null;
             }
         });
+        // Reset per-drop routing stats for the debrief
+        _resetDropRoutes();
         gameState._save();
 
         // Stage 1 — wait 3 s, then play bargedrop sound + show OTIS manifest summary
@@ -811,6 +910,7 @@
                 var mayBtn    = document.getElementById('btn-to-may');
                 var brokerBtn = document.getElementById('btn-to-broker');
                 var svenBtn   = document.getElementById('btn-to-sven');
+                var archiveBtn = document.getElementById('btn-to-archive');
                 if (mayBtn) {
                     var mayOk = (itemCat === 'Civilian' || itemCat === 'Settlement');
                     mayBtn.disabled = !mayOk || (s.mayBin||[]).length >= 12;
@@ -824,6 +924,13 @@
                     var svenOk = (itemRar === 'Rare' || itemRar === 'Anomalous');
                     svenBtn.disabled = !svenOk || (s.svenBin||[]).length >= 3;
                     svenBtn.title = svenOk ? 'Sven bin: ' + (s.svenBin||[]).length + '/3 \u2014 auto-ships at 2' : 'Sven only takes Rare and Anomalous';
+                }
+                // ARCHIVE button: only available for Anomalous items
+                if (archiveBtn) {
+                    var isAnomalous = (itemRar === 'Anomalous');
+                    archiveBtn.style.display = isAnomalous ? '' : 'none';
+                    archiveBtn.disabled = !isAnomalous;
+                    archiveBtn.title = isAnomalous ? 'Route to Humanity Archive — no market value, permanent record' : '';
                 }
             }
         } else {
@@ -852,6 +959,7 @@
         gameState.state.skipCount = (gameState.state.skipCount || 0) + 1;
         gameState.state.beltJammed = false;
         gameState.state.itemDisplayedAt = null;
+        _dropRoutes.skip++;
         gameState._save();
         var declEl = document.getElementById('item-declaration'); if (declEl) declEl.style.display = 'flex';
         var n = gameState.state.skipCount;
@@ -978,6 +1086,7 @@
             gameState.state.mayBin = mayBin;
             gameState._save();
             trackOTISLearning('SELL', item);
+            _dropRoutes.sold++;
             clearItemQueue(); advanceBeltQueue();
             renderBinPanel();
             recordOrderProgress(item.category, item.rarity);
@@ -995,6 +1104,7 @@
             gameState.state.brokerBin = brokerBin;
             gameState._save();
             trackOTISLearning('SELL', item);
+            _dropRoutes.sold++;
             clearItemQueue(); advanceBeltQueue();
             renderBinPanel();
             recordOrderProgress(item.category, item.rarity);
@@ -1026,6 +1136,7 @@
             gameState.state.svenBin = svenBin;
             gameState._save();
             trackOTISLearning('SELL', item);
+            _dropRoutes.sven++;
             clearItemQueue(); advanceBeltQueue();
             renderBinPanel();
             recordOrderProgress(item.category, item.rarity);
@@ -1047,11 +1158,12 @@
                 gameState.state.humanityArchive = (gameState.state.humanityArchive || 0) + 1;
                 gameState.state.humanityLog = gameState.state.humanityLog || [];
                 if (gameState.state.humanityLog.length < 50) {
-                    gameState.state.humanityLog.push(item.name.substring(0, 30));
+                    gameState.state.humanityLog.push(item.name.substring(0, MAX_ARCHIVE_NAME_LENGTH));
                 }
             }
             gameState._save();
             trackOTISLearning('KEEP', item);
+            _dropRoutes.kept++;
             clearItemQueue(); advanceBeltQueue();
             var kn = gameState.state.keepLog.length;
             if (kn >= getStorageCap() - 2) {
@@ -1065,11 +1177,35 @@
                 otisLines.push({ role: 'otis', text: keepMsg }); renderOTIS();
                 if (window.OtisTTS) OtisTTS.speak(keepMsg);
             }
+        } else if (method === 'ARCHIVE') {
+            // ARCHIVE: dedicated route for Anomalous items — feeds the humanity archive.
+            // Triggers a unique discovery-flavored OTIS line (never a dad joke).
+            var archLog = gameState.state.anomalyLog || [];
+            if (archLog.length < 100) archLog.push(item.name.substring(0, MAX_ARCHIVE_NAME_LENGTH));
+            gameState.state.anomalyLog = archLog;
+            gameState.state.humanityArchive = (gameState.state.humanityArchive || 0) + 1;
+            gameState.state.humanityLog = gameState.state.humanityLog || [];
+            if (gameState.state.humanityLog.length < 50) {
+                gameState.state.humanityLog.push(item.name.substring(0, MAX_ARCHIVE_NAME_LENGTH));
+            }
+            gameState._save();
+            _dropRoutes.archived++;
+            window.emotionalBeatActive = true;
+            clearItemQueue(); advanceBeltQueue();
+            var archPool = window.ARCHIVE_DISCOVERY_POOL || ['Archived.'];
+            var archMsg = archPool[Math.floor(Math.random() * archPool.length)];
+            otisLines.push({ role: 'otis', text: archMsg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(archMsg);
+            // Update archive count in header
+            gameState._updateUI();
+            // Clear emotional beat after a short delay so it does not block future jokes permanently
+            setTimeout(function() { window.emotionalBeatActive = false; }, 8000);
         } else if (method === 'SCRAP') {
             gameState.state.scrapFill = Math.min(100, (gameState.state.scrapFill || 0) + 12);
             gameState.state.currentDropScrapped = (gameState.state.currentDropScrapped || 0) + 1;
             gameState._save();
             trackOTISLearning('SCRAP', item);
+            _dropRoutes.scrap++;
             clearItemQueue(); advanceBeltQueue();
             recordOrderProgress(item.category, item.rarity);
             var msg = SCRAP_SHORTS[Math.floor(Math.random() * SCRAP_SHORTS.length)];
