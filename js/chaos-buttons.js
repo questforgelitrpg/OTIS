@@ -193,6 +193,7 @@
         if (typeof window.renderOTIS === 'function') {
             window.renderOTIS();
         }
+        if (window.OtisTTS) OtisTTS.speak(text);
     }
 
     // ---------------------------------------------------------------------------
