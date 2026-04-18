@@ -62,6 +62,9 @@
     window.startBeltDelivery = startBeltDelivery;
     window.stopBeltDelivery = stopBeltDelivery;
 
+    // Maximum characters to store for archived item names (keeps log sizes bounded)
+    var MAX_ARCHIVE_NAME_LENGTH = 30;
+
     // ── Per-drop routing stats (ephemeral — reset each drop, never persisted) ──
     // Used to populate the end-of-drop debrief modal.
     var _dropRoutes = { kept: 0, sold: 0, sven: 0, archived: 0, scrap: 0, skip: 0 };
@@ -255,7 +258,13 @@
         if (totalEl)   totalEl.textContent   = total;
         if (creditsEl) creditsEl.textContent = (creditsEarned >= 0 ? '+' : '') + creditsEarned + ' cr (running: ' + (s.credits || 0).toLocaleString() + ' cr)';
         if (debtEl)    debtEl.textContent    = (debt).toLocaleString() + ' cr remaining';
-        if (cyclesEl)  cyclesEl.textContent  = cyclesToPayoff + ' payment cycle' + (cyclesToPayoff === 1 ? '' : 's') + ' at current rate';
+        if (cyclesEl) {
+            if (typeof cyclesToPayoff === 'number') {
+                cyclesEl.textContent = cyclesToPayoff + ' payment cycle' + (cyclesToPayoff === 1 ? '' : 's') + ' at current rate';
+            } else {
+                cyclesEl.textContent = '\u2014 cycles to payoff unknown';
+            }
+        }
         if (routeEl)   routeEl.innerHTML     = routeHtml || '<span style="color:var(--text-dim)">No items routed.</span>';
         if (otisEl)    otisEl.textContent    = otisLine;
         var archiveSection = el('debrief-archive-section');
@@ -1149,7 +1158,7 @@
                 gameState.state.humanityArchive = (gameState.state.humanityArchive || 0) + 1;
                 gameState.state.humanityLog = gameState.state.humanityLog || [];
                 if (gameState.state.humanityLog.length < 50) {
-                    gameState.state.humanityLog.push(item.name.substring(0, 30));
+                    gameState.state.humanityLog.push(item.name.substring(0, MAX_ARCHIVE_NAME_LENGTH));
                 }
             }
             gameState._save();
@@ -1172,12 +1181,12 @@
             // ARCHIVE: dedicated route for Anomalous items — feeds the humanity archive.
             // Triggers a unique discovery-flavored OTIS line (never a dad joke).
             var archLog = gameState.state.anomalyLog || [];
-            if (archLog.length < 100) archLog.push(item.name.substring(0, 30));
+            if (archLog.length < 100) archLog.push(item.name.substring(0, MAX_ARCHIVE_NAME_LENGTH));
             gameState.state.anomalyLog = archLog;
             gameState.state.humanityArchive = (gameState.state.humanityArchive || 0) + 1;
             gameState.state.humanityLog = gameState.state.humanityLog || [];
             if (gameState.state.humanityLog.length < 50) {
-                gameState.state.humanityLog.push(item.name.substring(0, 30));
+                gameState.state.humanityLog.push(item.name.substring(0, MAX_ARCHIVE_NAME_LENGTH));
             }
             gameState._save();
             _dropRoutes.archived++;

@@ -192,6 +192,11 @@
     // ensureStateDefaults — applied after loading a saved state to guarantee all
     // fields introduced in newer stateVersion bumps are present.  Add a guard here
     // whenever a new persisted field is added so that old saves migrate cleanly.
+    // NOTE: Fields that have safe Object.assign defaults (e.g. numeric counters,
+    // booleans) are already covered by Object.assign({}, _default(), parsed) in
+    // stateManager.load().  Only fields that require Array/type checks need explicit
+    // guards below.  This function is the canonical place for those guards.
+    // v6 additions: anomalyLog, humanityLog, humanityArchive
     function ensureStateDefaults(state) {
         if (!Array.isArray(state.anomalyLog))  state.anomalyLog  = [];
         if (!Array.isArray(state.humanityLog)) state.humanityLog = [];
