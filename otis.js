@@ -138,14 +138,6 @@ const OTIS_SEED_HISTORY = [
     },
     {
         role: 'user',
-        content: `[TRIGGER: CONSULT_GEORGE] ${formatStateBlock(5, 24500, 'Vern', 'LOW', 7)}\nItem: Unidentified alloy fragment. Category: Unknown. Rarity: Anomalous. Condition: Used. OTIS estimate: ERROR — NO COMPARABLE.`,
-    },
-    {
-        role: 'assistant',
-        content: "George pulled three of these off a derelict in Sector 9, Day 847. Marked them 'unknown composite — do not scrap.' Never said why. They sold for 340 each to a buyer he never logged by name.",
-    },
-    {
-        role: 'user',
         content: `[TRIGGER: BARGE_IMMINENT] ${formatStateBlock(5, 24000, 'Mr. Serling', 'NONE', 7)}\nBarge inbound. Manifest: 5 items. Categories: Industrial, Vessel, Unknown. Notable: Pre-collapse data crystal.`,
     },
     {
@@ -162,19 +154,38 @@ const OTIS_SEED_HISTORY = [
     },
 ];
 
+// Bug #6 fix: CONSULT_GEORGE gets its own history bucket separate from the shared
+// _otisHistory pool.  This prevents long George conversations from evicting earlier
+// George archive entries by competing with other trigger types for the same window.
+// The George seed provides context anchors for item callbacks and archive language.
+const OTIS_GEORGE_SEED_HISTORY = [
+    {
+        role: 'user',
+        content: `[TRIGGER: CONSULT_GEORGE] ${formatStateBlock(5, 24500, 'Vern', 'LOW', 7)}\nItem: Unidentified alloy fragment. Category: Unknown. Rarity: Anomalous. Condition: Used. OTIS estimate: ERROR — NO COMPARABLE.`,
+    },
+    {
+        role: 'assistant',
+        content: "George pulled three of these off a derelict in Sector 9, Day 847. Marked them 'unknown composite — do not scrap.' Never said why. They sold for 340 each to a buyer he never logged by name.",
+    },
+    {
+        role: 'user',
+        content: `[TRIGGER: CONSULT_GEORGE] ${formatStateBlock(8, 23800, 'Vern', 'LOW', 5)}\nItem: Pre-collapse data crystal. Category: Vessel. Rarity: Rare. Condition: Used. OTIS estimate: 1060 cr. [RECENT_ITEMS: Encrypted data slate (Rare, SELL, Day 7); Settlement water filter (Common, SCRAP, Day 6)]`,
+    },
+    {
+        role: 'assistant',
+        content: "George flagged pre-collapse crystals as priority-hold on anything from that era. The encrypted slate you sold last cycle — he would have paired them. Buyers in the outer rim want matched sets. You might have left 200 cr on the table.",
+    },
+];
+let _georgeHistory = [...OTIS_GEORGE_SEED_HISTORY];
+const GEORGE_MAX_LIVE_MESSAGES = 10;
+
 let _otisHistory = [...OTIS_SEED_HISTORY];
 
-function buildOTISContext(gs) {
+function buildOTISContext(gs, opts) {
     const s = gs.state;
-    // Use getFatigueTier() from index.html if available, otherwise derive locally
-    const fatigue = (typeof getFatigueTier === 'function') ? getFatigueTier() : (function() {
-        const h = s.sessionHours || 0;
-        if (h < 30) return 'NONE';
-        if (h < 60) return 'LOW';
-        if (h < 120) return 'MODERATE';
-        if (h < 180) return 'HIGH';
-        return 'CRITICAL';
-    })();
+    // getFatigueTier is the canonical definition in js/ui.js (loaded before otis.js).
+    // window.getFatigueTier is always present on the page — no local fallback needed.
+    const fatigue = window.getFatigueTier();
     // Derive naming from namingTier index
     // Use the canonical NAMING_TIERS from js/data.js (window.NAMING_TIERS) if available;
     // fall back to the local copy so otis.js still works in server-rendered/standalone contexts.
@@ -200,9 +211,29 @@ function buildOTISContext(gs) {
         ? ` [FLAVOR: ${FLAVOR_POOL[Math.floor(Math.random() * FLAVOR_POOL.length)]}]`
         : '';
 
+    // Recent-items digest — injected for CONSULT_GEORGE to enable item callbacks
+    let recentPart = '';
+    if (opts && opts.includeRecentItems) {
+        const keepLog = s.keepLog || [];
+        // Build digest from last 8–12 routed items across keepLog + recent routing events
+        const recentRouted = (s.recentRoutedItems || []).slice(0, 12);
+        if (recentRouted.length > 0) {
+            const digest = recentRouted.map(function(r) {
+                return `${r.name} (${r.rarity}, ${r.route}, Day ${r.day})`;
+            }).join('; ');
+            recentPart = ` [RECENT_ITEMS: ${digest}]`;
+        } else if (keepLog.length > 0) {
+            const digest = keepLog.slice(-8).map(function(k) {
+                return `${k.name} (${k.rarity}, KEEP, Day ${k.keepDay || k.day})`;
+            }).join('; ');
+            recentPart = ` [RECENT_ITEMS: ${digest}]`;
+        }
+    }
+
     return formatStateBlock(s.day, s.debt, naming, fatigue, dup)
         + ` [PRESSURE: ${pressure}] [STANCE: ${stance}] `
         + learnNote
+        + recentPart
         + flavorPart;
 }
 
@@ -215,18 +246,33 @@ async function askOTIS(userText, gs, trigger = 'COMMS') {
         return pick.text;
     }
 
-    const context = buildOTISContext(gs);
+    // CONSULT_GEORGE: use dedicated history bucket with recent-items digest
+    const isGeorge = (trigger === 'CONSULT_GEORGE');
+    const context = buildOTISContext(gs, { includeRecentItems: isGeorge });
     const fullMessage = `[TRIGGER: ${trigger}] ${context}\n${userText}`;
-    _otisHistory.push({ role: 'user', content: fullMessage });
 
-    // CONSULT_GEORGE gets more history — memories should feel continuous.
-    // Everything else: 4 live messages is enough for voice consistency.
-    const maxExchangeMessages = (trigger === 'CONSULT_GEORGE') ? 8 : 4;
-    if (_otisHistory.length > OTIS_SEED_HISTORY.length + maxExchangeMessages) {
-        _otisHistory = [
-            ...OTIS_SEED_HISTORY,
-            ..._otisHistory.slice(-maxExchangeMessages),
-        ];
+    let activeHistory;
+    if (isGeorge) {
+        _georgeHistory.push({ role: 'user', content: fullMessage });
+        // Trim to keep GEORGE_MAX_LIVE_MESSAGES live exchanges on top of seed
+        if (_georgeHistory.length > OTIS_GEORGE_SEED_HISTORY.length + GEORGE_MAX_LIVE_MESSAGES) {
+            _georgeHistory = [
+                ...OTIS_GEORGE_SEED_HISTORY,
+                ..._georgeHistory.slice(-GEORGE_MAX_LIVE_MESSAGES),
+            ];
+        }
+        activeHistory = _georgeHistory;
+    } else {
+        _otisHistory.push({ role: 'user', content: fullMessage });
+        // Everything else: 4 live messages is enough for voice consistency.
+        const maxExchangeMessages = 4;
+        if (_otisHistory.length > OTIS_SEED_HISTORY.length + maxExchangeMessages) {
+            _otisHistory = [
+                ...OTIS_SEED_HISTORY,
+                ..._otisHistory.slice(-maxExchangeMessages),
+            ];
+        }
+        activeHistory = _otisHistory;
     }
 
     try {
@@ -241,7 +287,7 @@ async function askOTIS(userText, gs, trigger = 'COMMS') {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 system: OTIS_SYSTEM_PROMPT,
-                messages: _otisHistory,
+                messages: activeHistory,
                 maxTokens: triggerMaxTokens,
             }),
         });
@@ -254,7 +300,11 @@ async function askOTIS(userText, gs, trigger = 'COMMS') {
         const reply = (data.content && data.content[0] && data.content[0].text)
             ? data.content[0].text
             : '[OTIS offline]';
-        _otisHistory.push({ role: 'assistant', content: reply });
+        if (isGeorge) {
+            _georgeHistory.push({ role: 'assistant', content: reply });
+        } else {
+            _otisHistory.push({ role: 'assistant', content: reply });
+        }
         return reply;
     } catch (err) {
         console.error('OTIS error:', err);
