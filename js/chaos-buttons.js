@@ -253,6 +253,15 @@
                         if (active[idx]) {
                             EFFECTS[idx].apply();
                             _pushLine(_onLine(idx));
+                            // Track chaos button for achievements
+                            if (window.gameState) {
+                                var s = window.gameState.state;
+                                if (!Array.isArray(s.chaosButtonsPressed)) s.chaosButtonsPressed = [];
+                                if (s.chaosButtonsPressed.indexOf(idx) === -1) {
+                                    s.chaosButtonsPressed.push(idx);
+                                    if (window.Achievements) Achievements.check();
+                                }
+                            }
                         } else {
                             EFFECTS[idx].revert();
                             _pushLine(CHAOS_DIALOG[idx].off);

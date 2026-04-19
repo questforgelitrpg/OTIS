@@ -10,6 +10,7 @@
         // Reset the full cycle from the payment date, whether early or on time.
         gameState.state.daysUntilPayment = TIMING.PAYMENT_CYCLE_DAYS;
         gameState.state.paymentCycle = (gameState.state.paymentCycle || 0) + 1;
+        gameState.state.paymentsCleared = (gameState.state.paymentsCleared || 0) + 1;
         checkPaymentEscalation();
         gameState._save(); gameState._updateUI();
         recalculateNamingTier();

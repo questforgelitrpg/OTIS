@@ -103,5 +103,6 @@
         var installMsg = installLines[key] || (upg.name + ' Tier ' + tierRoman + ' installed.');
         otisLines.push({ role: 'otis', text: installMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(installMsg);
+        if (window.Achievements) Achievements.check();
     }
     window.handlePurchaseUpgrade = handlePurchaseUpgrade;

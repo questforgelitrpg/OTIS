@@ -126,6 +126,7 @@
             otisLines.push({ role: 'otis', text: 'Search complete \u2014 deploying held barge now.' }); renderOTIS();
             setTimeout(function() { if (typeof _doBargeArrival === 'function') _doBargeArrival(); }, 1500);
         }
+        if (window.Achievements) Achievements.check();
     }
     window.resolveWarehouseSearch = resolveWarehouseSearch;
 
@@ -229,6 +230,7 @@
         renderGeorgeWarehouse();
         appendOTIS('Vernon moved ' + item.name + ' to the belt.', 'CONSULT_GEORGE');
         checkDiaryUnlocksWarehouse(idx);
+        if (window.Achievements) Achievements.check();
     }
     window.handleWarehouseMoveToBelt = handleWarehouseMoveToBelt;
 
@@ -250,6 +252,7 @@
         gameState._save(); gameState._updateUI();
         renderGeorgeWarehouse();
         appendOTIS('Moved unlisted find to belt: ' + item.name + '.', 'ITEM_SCAN');
+        if (window.Achievements) Achievements.check();
     }
     window.handleWarehouseEasterEggMoveToBelt = handleWarehouseEasterEggMoveToBelt;
 
@@ -297,6 +300,7 @@
         renderOTIS();
         setLight('light-store', 'light-amber');
         renderGeorgeDiary();
+        if (window.Achievements) Achievements.check();
         return true;
     }
     window._unlockDiaryEntry = _unlockDiaryEntry;
@@ -622,6 +626,7 @@
         var transmitSection = document.getElementById('transmit-section');
         if (transmitSection) transmitSection.style.display = '';
         gameState._save(); gameState._updateUI();
+        if (window.Achievements) Achievements.check();
     }
     window.checkSchematicCompletion = checkSchematicCompletion;
 
