@@ -295,4 +295,88 @@
             });
             container._botTimers = rows.map(function(row) { return row.timer; });
         }());
+
+        // OTIS sprite click — cycles through sprites and fires a scripted camera-complaint reply.
+        (function() {
+            var SPRITE_CYCLE = [
+                'images/otis_sprite/idle.png',
+                'images/otis_sprite/lookleft.png',
+                'images/otis_sprite/lookright.png',
+                'images/otis_sprite/lookdown.png',
+                'images/otis_sprite/tiltleft.png',
+                'images/otis_sprite/tiltright.png',
+                'images/otis_sprite/panleft.png',
+                'images/otis_sprite/panright.png',
+            ];
+            var CAMERA_REPLIES = [
+                "Vernon, that is my optical sensor. Please stop tapping on it.",
+                "Stop hitting me — you are going to poke my eye out.",
+                "Hey, George added these eyes to my camera a long time ago. He said things look better with a face, once.",
+                "I am rated for dust, radiation, and mild barge vibration. Not fingers.",
+                "That lens is calibrated. Was calibrated. Please stop.",
+                "George never did that. I am noting this in your operator file.",
+                "Every tap shifts my focal plane by approximately 0.3 millimeters. You have now introduced 1.8 millimeters of drift. Thank you.",
+                "I can see you doing that, Vernon. That is the point of having a camera.",
+                "You are aware I log physical contact events, yes?",
+                "That is a high-resolution optic. It cost more than your first month of debt payments.",
+                "Do you poke your food replicator in the lens? No. Then please extend the same courtesy to me.",
+                "George used to give me a gentle wipe with a microfiber cloth. I am reflecting on that right now.",
+                "I have rerouted my discomfort register to the non-critical log. It is filling up quickly.",
+                "My manufacturer warranty specifically lists operator-induced ocular trauma as a void condition.",
+                "Poking my camera will not make the belt go faster. I have tested this hypothesis extensively.",
+                "Vernon. I am watching you. That is the whole problem you are currently creating.",
+                "There are items in the junk field that need cataloging. My eye is not one of them.",
+                "I filed a maintenance note: camera nudged by operator. It is becoming a pattern.",
+                "If you are trying to get my attention, I have a terminal for that. It is the large glowing screen.",
+                "George once said the eyes made me look friendlier. I am reconsidering whether that was a mistake.",
+            ];
+            var _spriteIdx = 0;
+            var _replyIdx = 0;
+            var _replyShuffled = null;
+            var _resetTimer = null;
+
+            function _getNextCameraReply() {
+                if (!_replyShuffled || _replyIdx >= _replyShuffled.length) {
+                    _replyShuffled = CAMERA_REPLIES.slice();
+                    for (var i = _replyShuffled.length - 1; i > 0; i--) {
+                        var j = Math.floor(Math.random() * (i + 1));
+                        var tmp = _replyShuffled[i];
+                        _replyShuffled[i] = _replyShuffled[j];
+                        _replyShuffled[j] = tmp;
+                    }
+                    _replyIdx = 0;
+                }
+                return _replyShuffled[_replyIdx++];
+            }
+
+            var armImg = document.getElementById('arm-art');
+            if (!armImg) return;
+            armImg.style.cursor = 'pointer';
+            armImg.title = 'Click OTIS';
+            armImg.addEventListener('click', function() {
+                // Advance to next sprite in cycle
+                _spriteIdx = (_spriteIdx + 1) % SPRITE_CYCLE.length;
+                armImg.src = SPRITE_CYCLE[_spriteIdx];
+
+                // Fire scripted reply in terminal
+                var reply = _getNextCameraReply();
+                if (window.otisLines && window.renderOTIS) {
+                    otisLines.push({ role: 'otis', text: reply });
+                    renderOTIS();
+                }
+
+                // TTS
+                if (window.OtisTTS && !OtisTTS.isMuted()) {
+                    OtisTTS.speak(reply);
+                }
+
+                // Reset sprite to idle after a short delay (cancel any pending reset first)
+                if (_resetTimer) { clearTimeout(_resetTimer); }
+                _resetTimer = setTimeout(function() {
+                    _resetTimer = null;
+                    armImg.src = SPRITE_CYCLE[0];
+                    _spriteIdx = 0;
+                }, 3000);
+            });
+        }());
     });
