@@ -62,6 +62,32 @@ body.panel-open #terminal { margin-right: min(640px, 60vw); }
 .payment-warn { color: var(--text-warn) !important; }
 .payment-crit { color: var(--text-danger) !important; animation: pulse-warn 0.8s infinite; }
 
+/* ── Day clock wrapper ─────────────────────────────────────────────────────── */
+#hdr-day-wrap { display: inline-flex; flex-direction: column; padding: 0 0.4rem; border-left: 1px solid var(--border-dim); gap: 2px; }
+#hdr-day-text { font-weight: bold; letter-spacing: 0.04em; color: var(--text-dim); }
+#hdr-day-bar { width: 100%; height: 3px; background: #0f2010; border-radius: 1px; }
+#hdr-day-bar-fill { height: 100%; width: 0%; background: var(--ind-on); border-radius: 1px; transition: width 1s linear; }
+
+/* ── Session clock ─────────────────────────────────────────────────────────── */
+#hdr-hours { font-weight: bold; }
+
+/* ── Payoff bar ────────────────────────────────────────────────────────────── */
+#hdr-payoff { display: inline-flex; flex-direction: column; padding: 0 0.4rem; border-left: 1px solid var(--border-dim); gap: 2px; }
+#hdr-payoff-label { font-size: 13px; color: var(--text-dim); }
+#hdr-payoff-bar { width: 60px; height: 3px; background: #0f2010; border-radius: 1px; }
+#hdr-payoff-bar-fill { height: 100%; width: 0%; background: var(--ind-on); border-radius: 1px; transition: width 0.5s; }
+
+/* ── Clock color states ────────────────────────────────────────────────────── */
+@keyframes pulse-crit { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.clock-ok   { color: #33ff66 !important; }
+.clock-warn { color: #ffb700 !important; }
+.clock-alert { color: #ff8800 !important; }
+.clock-crit  { color: #ff4444 !important; animation: pulse-crit 0.6s infinite; }
+
+/* ── Scan delay animation ──────────────────────────────────────────────────── */
+@keyframes scan-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.scanning-active { color: var(--ind-amber) !important; animation: scan-pulse 0.9s infinite; font-style: italic; }
+
 /* OTIS output */
 #otis-output { flex: 1; overflow-y: auto; padding: 0.6rem 0.8rem; scrollbar-width: thin; scrollbar-color: #33ff66 #000; }
 

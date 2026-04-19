@@ -235,10 +235,16 @@
         var s = this.state;
         var naming = NAMING_TIERS[Math.min(s.namingTier, NAMING_TIERS.length - 1)];
         var dup = (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS;
-        setEl('hdr-day', 'DAY ' + s.day);
         setEl('hdr-credits', s.credits.toLocaleString() + ' cr');
         setEl('hdr-debt', 'LOAN: ' + s.debt.toLocaleString() + ' cr');
         setEl('hdr-naming', naming.toUpperCase());
+        // Payoff bar — shows progress toward repaying the original 25,000 cr loan
+        var ORIGINAL_LOAN = 25000;
+        var paid = Math.max(0, ORIGINAL_LOAN - s.debt);
+        var paidPct = Math.min(100, Math.round((paid / ORIGINAL_LOAN) * 100));
+        setEl('hdr-payoff-pct', paidPct + '%');
+        var payoffFill = document.getElementById('hdr-payoff-bar-fill');
+        if (payoffFill) payoffFill.style.width = paidPct + '%';
         var payEl = document.getElementById('hdr-payment');
         if (payEl) { payEl.textContent = 'INST: ' + (s.currentInstallment||850) + 'cr/' + dup + 'd'; payEl.className = 'hdr-stat' + (dup <= 1 ? ' payment-crit' : dup <= 3 ? ' payment-warn' : ''); }
         var daysUntilDrop = (s.daysUntilNextDrop != null) ? s.daysUntilNextDrop : TIMING.DAYS_BETWEEN_DROPS;

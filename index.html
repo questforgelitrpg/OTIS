@@ -38,9 +38,16 @@
         <div id="terminal">
             <header id="hdr">
                 <span id="hdr-title">O.T.I.S.</span>
-                <span class="hdr-stat" id="hdr-day">DAY 1</span>
+                <div id="hdr-day-wrap">
+                    <span id="hdr-day-text">DAY 1&nbsp;&nbsp;00:00</span>
+                    <div id="hdr-day-bar"><div id="hdr-day-bar-fill"></div></div>
+                </div>
                 <span class="hdr-stat" id="hdr-credits">200 cr</span>
                 <span class="hdr-stat" id="hdr-debt">LOAN: 25,000 cr</span>
+                <div id="hdr-payoff">
+                    <span id="hdr-payoff-label">PAID: <span id="hdr-payoff-pct">0%</span></span>
+                    <div id="hdr-payoff-bar"><div id="hdr-payoff-bar-fill"></div></div>
+                </div>
                 <span class="hdr-stat" id="hdr-payment">PAY: 28d</span>
                 <span class="hdr-stat" id="hdr-barge">BARGE: 7d</span>
                 <span class="hdr-stat" id="hdr-hours">SESSION: 0h 0m</span>
@@ -1634,6 +1641,49 @@
             }, TIMING.MS_PER_INGAME_DAY); // use the canonical timing constant (240 000 ms)
         }
 
+        // In-memory day-start timestamp — not persisted to avoid schema change.
+        // advanceDay() in economy.js resets this each cycle.
+        if (!window._dayStartedAt) window._dayStartedAt = Date.now();
+
+        // Day clock + clock color states — 1-second tick
+        if (!window._otisDayClockId) {
+            window._otisDayClockId = setInterval(function() {
+                var s = gameState.state;
+                var elapsed = Date.now() - (window._dayStartedAt || Date.now());
+                var fraction = Math.min(1, elapsed / TIMING.MS_PER_INGAME_DAY);
+                var totalMinutes = Math.floor(fraction * 24 * 60);
+                var hours = Math.floor(totalMinutes / 60);
+                var minutes = totalMinutes % 60;
+                var clockText = 'DAY ' + s.day + '\u00a0\u00a0'
+                    + String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+                setEl('hdr-day-text', clockText);
+
+                var dayFill = document.getElementById('hdr-day-bar-fill');
+                if (dayFill) dayFill.style.width = Math.round(fraction * 100) + '%';
+
+                // Day clock color state — apply to the text span so !important overrides ID rule
+                var dayTextEl = document.getElementById('hdr-day-text');
+                if (dayTextEl) {
+                    dayTextEl.classList.remove('clock-ok', 'clock-warn', 'clock-alert', 'clock-crit');
+                    if (fraction < 0.5)       dayTextEl.classList.add('clock-ok');
+                    else if (fraction < 0.75) dayTextEl.classList.add('clock-warn');
+                    else if (fraction < 0.9)  dayTextEl.classList.add('clock-alert');
+                    else                       dayTextEl.classList.add('clock-crit');
+                }
+
+                // Session clock color state
+                var sh = s.sessionHours || 0;
+                var hoursEl = document.getElementById('hdr-hours');
+                if (hoursEl) {
+                    hoursEl.classList.remove('clock-ok', 'clock-warn', 'clock-alert', 'clock-crit');
+                    if (sh < 20)       hoursEl.classList.add('clock-ok');
+                    else if (sh < 40)  hoursEl.classList.add('clock-warn');
+                    else if (sh < 60)  hoursEl.classList.add('clock-alert');
+                    else               hoursEl.classList.add('clock-crit');
+                }
+            }, 1000);
+        }
+
         var ttsBtn = document.getElementById('tts-btn');
         if (ttsBtn && window.OtisTTS) { if (!window.OtisTTS.isSupported()) ttsBtn.style.display = 'none'; else ttsBtn.textContent = window.OtisTTS.isMuted() ? 'TTS: OFF' : 'TTS: ON'; }
         var ttsSkipBtn = document.getElementById('tts-skip-btn');
@@ -1710,6 +1760,16 @@
             }
             // Await the LOGIN OTIS response (welcome Vernon).
             await appendOTIS('Operator logging in.', 'LOGIN');
+            // Day-1 auto-nudge: 2s after login, open the belt modal and fire orientation line
+            var dayOneState = gameState.state;
+            if (dayOneState.day === 1 && (dayOneState.keepLog || []).length === 0 && !(dayOneState.totalProcessed || 0)) {
+                setTimeout(function() {
+                    openModal('belt');
+                    var nudgeMsg = 'Belt is live. An item is waiting.';
+                    otisLines.push({ role: 'otis', text: nudgeMsg }); renderOTIS();
+                    if (window.OtisTTS) OtisTTS.speak(nudgeMsg);
+                }, 2000);
+            }
             // Day 1: load 4 random starter items onto the belt before any barge drop.
             var s1 = gameState.state;
             if (s1.day === 1 && (s1.dropCount || 0) === 0 && !s1.dropActive && (!s1.manifestItems || s1.manifestItems.length === 0)) {

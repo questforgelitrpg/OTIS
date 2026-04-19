@@ -86,10 +86,18 @@
     // Used to populate the end-of-drop debrief modal.
     var _dropRoutes = { kept: 0, sold: 0, sven: 0, archived: 0, scrap: 0, skip: 0 };
     var _dropCreditsStart = 0;
+    // Per-drop skip counter — in-memory only, resets each drop, never saved to state
+    var _currentDropSkips = 0;
+    // Skip penalty constants (applied when _currentDropSkips reaches SKIP_PENALTY_THRESHOLD)
+    var SKIP_PENALTY_THRESHOLD = 5;
+    var SKIP_PENALTY_PER_DAY   = 5;
+    var SKIP_PENALTY_MIN       = 5;
+    var SKIP_PENALTY_MAX       = 50;
 
     function _resetDropRoutes() {
         _dropRoutes = { kept: 0, sold: 0, sven: 0, archived: 0, scrap: 0, skip: 0 };
         _dropCreditsStart = gameState.state.credits || 0;
+        _currentDropSkips = 0;
     }
 
     // ── Per-bot fetch loop constants and state ────────────────────────────────
@@ -1144,6 +1152,7 @@
     function handleSkip() {
         if (!currentItem) return;
         gameState.state.skipCount = (gameState.state.skipCount || 0) + 1;
+        _currentDropSkips++;
         gameState.state.beltJammed = false;
         gameState.state.itemDisplayedAt = null;
         _dropRoutes.skip++;
@@ -1161,6 +1170,17 @@
             otisLines.push({ role: 'otis', text: msg }); renderOTIS();
             ttsSay(msg);
         }
+        // Skip penalty: fires on the 5th cumulative skip within a single drop
+        if (_currentDropSkips === SKIP_PENALTY_THRESHOLD) {
+            var daysUntil = gameState.state.daysUntilPayment || 1;
+            var penalty = Math.max(SKIP_PENALTY_MIN, Math.min(SKIP_PENALTY_MAX, SKIP_PENALTY_PER_DAY * daysUntil));
+            gameState.state.credits = Math.max(0, gameState.state.credits - penalty);
+            gameState._save();
+            gameState._updateUI();
+            var penaltyMsg = 'Each skip costs us time. Time costs credits.';
+            otisLines.push({ role: 'otis', text: penaltyMsg }); renderOTIS();
+            ttsSay(penaltyMsg);
+        }
     }
     window.handleSkip = handleSkip;
 
@@ -1174,15 +1194,49 @@
         var ctx = buildItemContext(currentItem);
         if (trigger === 'CONSULT_GEORGE') currentItem.consultedGeorge = true;
         renderItemQueue();
-        if (trigger === 'CONSULT_GEORGE') {
-            var georgeCtx = '[GEORGE ARCHIVE REQUEST] ' + ctx
-                + ' Vernon is asking specifically what George knew about this type of item.'
-                + ' Surface a specific memory, method, or comparable — not general knowledge.';
-            appendOTIS(georgeCtx, 'CONSULT_GEORGE');
-        } else {
-            appendOTIS(ctx, trigger);
+
+        // Common items: skip scan delay — respond immediately
+        if (currentItem.rarity === 'Common') {
+            if (trigger === 'CONSULT_GEORGE') {
+                var georgeCtxCommon = '[GEORGE ARCHIVE REQUEST] ' + ctx
+                    + ' Vernon is asking specifically what George knew about this type of item.'
+                    + ' Surface a specific memory, method, or comparable — not general knowledge.';
+                appendOTIS(georgeCtxCommon, 'CONSULT_GEORGE');
+            } else {
+                appendOTIS(ctx, trigger);
+            }
+            if (gameState.state.tutorialStep === 2) tutorialAdvance();
+            return;
         }
-        if (gameState.state.tutorialStep === 2) tutorialAdvance();
+
+        // Uncommon, Rare, Anomalous — show SCANNING animation then API call
+        var examineBtn = document.getElementById('cc-examine');
+        var georgeBtn  = document.getElementById('cc-george');
+        if (examineBtn) examineBtn.disabled = true;
+        if (georgeBtn)  georgeBtn.disabled  = true;
+        var estEl = document.getElementById('otis-estimate');
+        if (estEl) { estEl.textContent = 'SCANNING\u2026'; estEl.style.display = ''; estEl.className = 'otis-estimate scanning-active'; }
+
+        var scanDelay = 3000 + Math.floor(Math.random() * 1001); // 3000–4000 ms
+        var itemSnapshot = currentItem;
+        var capturedTrigger = trigger;
+        var capturedCtx = ctx;
+        setTimeout(function() {
+            if (estEl) { estEl.style.display = 'none'; estEl.className = 'otis-estimate'; estEl.textContent = ''; }
+            if (examineBtn) examineBtn.disabled = false;
+            if (georgeBtn)  georgeBtn.disabled  = false;
+            if (currentItem === itemSnapshot) {
+                if (capturedTrigger === 'CONSULT_GEORGE') {
+                    var georgeCtx = '[GEORGE ARCHIVE REQUEST] ' + capturedCtx
+                        + ' Vernon is asking specifically what George knew about this type of item.'
+                        + ' Surface a specific memory, method, or comparable — not general knowledge.';
+                    appendOTIS(georgeCtx, 'CONSULT_GEORGE');
+                } else {
+                    appendOTIS(capturedCtx, capturedTrigger);
+                }
+                if (gameState.state.tutorialStep === 2) tutorialAdvance();
+            }
+        }, scanDelay);
     }
     window.handleConsult = handleConsult;
 
@@ -1193,7 +1247,7 @@
         renderItemQueue();
         if (gameState.state.tutorialStep === 2) tutorialAdvance();
 
-        // Common items: no API call — display hardcoded assessment
+        // Common items: no API call — display hardcoded assessment (instant)
         if (currentItem.rarity === 'Common') {
             var ev = getEffectiveValue(currentItem);
             var condNote = currentItem.condition !== 'Used'
@@ -1207,8 +1261,24 @@
             return;
         }
 
-        // Uncommon, Rare, Anomalous, George items — full API call
-        appendOTIS(buildItemContext(currentItem), 'CONSULT_EXAMINE');
+        // Uncommon, Rare, Anomalous — show SCANNING animation then API call
+        var examineBtn = document.getElementById('cc-examine');
+        var georgeBtn  = document.getElementById('cc-george');
+        if (examineBtn) examineBtn.disabled = true;
+        if (georgeBtn)  georgeBtn.disabled  = true;
+        var estEl = document.getElementById('otis-estimate');
+        if (estEl) { estEl.textContent = 'SCANNING\u2026'; estEl.style.display = ''; estEl.className = 'otis-estimate scanning-active'; }
+
+        var scanDelay = 3000 + Math.floor(Math.random() * 1001); // 3000–4000 ms
+        var itemSnapshot = currentItem;
+        setTimeout(function() {
+            if (estEl) { estEl.style.display = 'none'; estEl.className = 'otis-estimate'; estEl.textContent = ''; }
+            if (examineBtn) examineBtn.disabled = false;
+            if (georgeBtn)  georgeBtn.disabled  = false;
+            if (currentItem === itemSnapshot) {
+                appendOTIS(buildItemContext(currentItem), 'CONSULT_EXAMINE');
+            }
+        }, scanDelay);
     }
 
     window.handleConsultMerged = handleConsultMerged;
