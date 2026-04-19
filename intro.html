@@ -255,14 +255,17 @@
                 _timers = [];
                 if (btnEl) {
                     btnEl.textContent = 'SKIP TUTORIAL \u25BA';
-                    btnEl.classList.add('login-pulse');
+                    // Do NOT add login-pulse here — we want TAKE TUTORIAL to be the prominent CTA
                     btnEl.onclick = goToGame;
                 } else {
                     goToGame();
                 }
-                // Show the TAKE TUTORIAL button alongside OPERATOR LOGIN
+                // Show the TAKE TUTORIAL button with the attention-grabbing pulse
                 var tutBtn = document.getElementById('tutorial-btn');
-                if (tutBtn) { tutBtn.style.display = ''; }
+                if (tutBtn) {
+                    tutBtn.style.display = '';
+                    tutBtn.classList.add('login-pulse');
+                }
                 // Show browser-storage warning now that player is about to begin
                 var storageWarn = document.getElementById('intro-storage-warn');
                 if (storageWarn) { storageWarn.style.display = ''; }

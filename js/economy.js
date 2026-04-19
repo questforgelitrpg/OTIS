@@ -219,6 +219,7 @@
     }
 
     function advanceDay() {
+        if (gameState.state.tutorialStep >= 1) return; // Do not advance day during tutorial
         var s = gameState.state;
         // Reset in-memory day-start timestamp so the 24h clock loops correctly
         window._dayStartedAt = Date.now();

@@ -59,7 +59,7 @@
 
         var msg = '[STEP ' + step + '/' + TUTORIAL_TOTAL + '] ' + data.msg;
         otisLines.push({ role: 'otis', text: msg }); renderOTIS();
-        if (window.OtisTTS && data.tts !== false) OtisTTS.speak(data.msg);
+        if (data.tts !== false) ttsSay(data.msg);
 
         _showTutorialNav(true);
         _updateBackBtn();
@@ -144,6 +144,19 @@
     function checkTutorialModalOpen(name) {
         var s = gameState.state;
         if (s.tutorialStep === 8 && name === 'belt') {
+            // Spawn a tutorial demo item so step 9 ("There is an item on the belt") is true
+            var tutorialDemoItem = {
+                name: 'Salvaged Power Cell',
+                category: 'Industrial',
+                rarity: 'Common',
+                condition: 'Used',
+                otisValue: 45,
+                tutorialItem: true,
+                consultedExamine: false,
+                consultedWorth: false,
+                consultedGeorge: false
+            };
+            if (typeof setItemInQueue === 'function') setItemInQueue(tutorialDemoItem);
             tutorialUnlockGate(8);
         }
         if (s.tutorialStep === 18 && name === 'comms') {
