@@ -1,5 +1,22 @@
 // OTIS belt / drop / declaration subsystem — extracted from index.html in Phase 5 of the monolith refactor.
 
+    // ttsSay — used for TTS triggered by an explicit player decision/action.
+    // Cancels any in-progress narration and any queued utterances, then speaks
+    // the new line so OTIS responds to the player's most recent input rather
+    // than catching up on stale lines. Safe no-op if TTS is unsupported/muted.
+    function ttsSay(msg) {
+        if (!window.OtisTTS) return;
+        if (typeof OtisTTS.interrupt === 'function') {
+            OtisTTS.interrupt(msg);
+        } else {
+            // Fallback for older builds of tts.js that may not expose interrupt().
+            try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+            if (typeof OtisTTS.flush === 'function') OtisTTS.flush();
+            OtisTTS.speak(msg);
+        }
+    }
+    window.ttsSay = ttsSay;
+
     function buildManifestSummary(manifest) {
         if (gameState.state.day === 1) {
             return "First intake. Four items. Common origin. Belt is running. Examine each one. George had a method. Worth learning before diverging from it.";
@@ -1142,7 +1159,7 @@
             appendOTIS(msg, 'ITEM_SCAN');
         } else {
             otisLines.push({ role: 'otis', text: msg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(msg);
+            ttsSay(msg);
         }
     }
     window.handleSkip = handleSkip;
@@ -1186,7 +1203,7 @@
                 + ' OTIS estimate: ' + ev + ' credits.';
             otisLines.push({ role: 'otis', text: msg });
             renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(msg);
+            ttsSay(msg);
             return;
         }
 
@@ -1234,7 +1251,7 @@
                 setTimeout(function() {
                     var _sm = 'You sold the ' + _soldItemName + ' for credits? George spent years waiting for that to arrive. I hope the debt payment was worth the silence.';
                     otisLines.push({ role: 'otis', text: _sm }); renderOTIS();
-                    if (window.OtisTTS) OtisTTS.speak(_sm);
+                    ttsSay(_sm);
                     renderSchematic();
                 }, 500);
             }
@@ -1263,7 +1280,7 @@
             recordOrderProgress(item.category, item.rarity);
             var binMsg = item.name.substring(0,22) + ' to May bin. ' + mayBin.length + '/12.';
             otisLines.push({ role:'otis', text: binMsg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(binMsg);
+            ttsSay(binMsg);
         } else if (method === 'BROKER_BIN') {
             var brokerBin = gameState.state.brokerBin || [];
             if (brokerBin.length >= 10) {
@@ -1282,7 +1299,7 @@
             recordOrderProgress(item.category, item.rarity);
             var bbMsg = item.name.substring(0,22) + ' to broker. ' + brokerBin.length + '/10.';
             otisLines.push({ role:'otis', text: bbMsg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(bbMsg);
+            ttsSay(bbMsg);
         } else if (method === 'SVEN_BIN') {
             var allowedSven = (item.rarity === 'Rare' || item.rarity === 'Anomalous');
             if (!allowedSven) {
@@ -1315,7 +1332,7 @@
             recordOrderProgress(item.category, item.rarity);
             var svMsg = item.name.substring(0,22) + ' to Sven. His offer: ' + svenValue + ' cr. Bin: ' + svenBin.length + '/3.';
             otisLines.push({ role:'otis', text: svMsg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(svMsg);
+            ttsSay(svMsg);
             // Auto-pay when bin reaches 2 items
             if (svenBin.length >= 2) {
                 setTimeout(handleSvenBinShip, 1500);
@@ -1352,7 +1369,7 @@
                     .replace('{N}', kn);
                 keepMsg = item.name.substring(0, 22) + '. ' + keepMsg;
                 otisLines.push({ role: 'otis', text: keepMsg }); renderOTIS();
-                if (window.OtisTTS) OtisTTS.speak(keepMsg);
+                ttsSay(keepMsg);
             }
         } else if (method === 'ARCHIVE') {
             // ARCHIVE: dedicated route for Anomalous items — feeds the humanity archive.
@@ -1373,7 +1390,7 @@
             var archPool = window.ARCHIVE_DISCOVERY_POOL || ['Archived.'];
             var archMsg = archPool[Math.floor(Math.random() * archPool.length)];
             otisLines.push({ role: 'otis', text: archMsg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(archMsg);
+            ttsSay(archMsg);
             // Update archive count in header
             gameState._updateUI();
             // Clear emotional beat after a short delay so it does not block future jokes permanently
@@ -1389,7 +1406,7 @@
             recordOrderProgress(item.category, item.rarity);
             var msg = SCRAP_SHORTS[Math.floor(Math.random() * SCRAP_SHORTS.length)];
             otisLines.push({ role: 'otis', text: msg }); renderOTIS();
-            if (window.OtisTTS) OtisTTS.speak(msg);
+            ttsSay(msg);
         }
         gameState._updateUI();
         // B3 — SCRAP_HEAP ending: track George item sells and civilian/settlement scraps.
@@ -1432,7 +1449,7 @@
         if (warn) warn.style.display = 'none';
         var rsMsg = 'Routing items to storeroom buffer. ' + s.storeroomBuffer.length + ' held.';
         otisLines.push({ role: 'otis', text: rsMsg }); renderOTIS();
-        if (window.OtisTTS) OtisTTS.speak(rsMsg);
+        ttsSay(rsMsg);
     }
     window.handleRouteToStoreroom = handleRouteToStoreroom;
 
@@ -1510,7 +1527,7 @@
         if (clr)  clr.style.display  = 'none';
         var clearMsg = 'Jam cleared. Belt running.';
         otisLines.push({ role: 'otis', text: clearMsg }); renderOTIS();
-        if (window.OtisTTS) OtisTTS.speak(clearMsg);
+        ttsSay(clearMsg);
         updateBeltUI(gameState.state.dropActive ? 'DELIVERING' : 'CLEAR');
     }
     window.rollConveyorJam = rollConveyorJam;

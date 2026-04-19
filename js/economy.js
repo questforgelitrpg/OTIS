@@ -2,9 +2,9 @@
 
     // PAYMENT
     function handleMakePayment() {
-        if ((gameState.state.outstandingDebt || 0) > 0) { var pf1 = 'Cannot process. Arrears outstanding. Clear arrears first.'; otisLines.push({ role: 'otis', text: pf1 }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(pf1); return; }
+        if ((gameState.state.outstandingDebt || 0) > 0) { var pf1 = 'Cannot process. Arrears outstanding. Clear arrears first.'; otisLines.push({ role: 'otis', text: pf1 }); renderOTIS(); ttsSay(pf1); return; }
         var installment = gameState.state.currentInstallment || 850;
-        if (gameState.state.credits < installment) { var pf2 = 'Insufficient credits. Need ' + installment + ' cr, have ' + gameState.state.credits + ' credits.'; otisLines.push({ role: 'otis', text: pf2 }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(pf2); return; }
+        if (gameState.state.credits < installment) { var pf2 = 'Insufficient credits. Need ' + installment + ' cr, have ' + gameState.state.credits + ' credits.'; otisLines.push({ role: 'otis', text: pf2 }); renderOTIS(); ttsSay(pf2); return; }
         gameState.state.credits -= installment;
         gameState.state.debt = Math.max(0, gameState.state.debt - installment);
         // Reset the full cycle from the payment date, whether early or on time.
@@ -16,18 +16,18 @@
         recalculateNamingTier();
         var mpMsg = 'Payment processed. ' + installment + ' credits. Balance: ' + gameState.state.debt.toLocaleString() + ' credits.';
         otisLines.push({ role: 'otis', text: mpMsg }); renderOTIS();
-        if (window.OtisTTS) OtisTTS.speak(mpMsg);
+        ttsSay(mpMsg);
     }
     function handleClearArrears() {
         var a = gameState.state.outstandingDebt || 0; if (a === 0) return;
-        if (gameState.state.credits < a) { var pf3 = 'Insufficient credits. Need ' + a + ' cr to clear arrears, have ' + gameState.state.credits + ' credits.'; otisLines.push({ role: 'otis', text: pf3 }); renderOTIS(); if (window.OtisTTS) OtisTTS.speak(pf3); return; }
+        if (gameState.state.credits < a) { var pf3 = 'Insufficient credits. Need ' + a + ' cr to clear arrears, have ' + gameState.state.credits + ' credits.'; otisLines.push({ role: 'otis', text: pf3 }); renderOTIS(); ttsSay(pf3); return; }
         gameState.state.credits -= a;
         gameState.state.outstandingDebt = 0;
         gameState.state.consecutiveArrearsCycles = 0; // reset when arrears cleared
         gameState._save(); gameState._updateUI();
         var arMsg = 'Arrears cleared. Balance zero.';
         otisLines.push({ role: 'otis', text: arMsg }); renderOTIS();
-        if (window.OtisTTS) OtisTTS.speak(arMsg);
+        ttsSay(arMsg);
     }
 
     // SCRAP
@@ -46,7 +46,7 @@
         renderStoreroomBuffer();
         var sdMsg = 'Scrap dispatched. ' + prevFill + '% fill. +' + earned + ' cr from May.';
         otisLines.push({ role: 'otis', text: sdMsg }); renderOTIS();
-        if (window.OtisTTS) OtisTTS.speak(sdMsg);
+        ttsSay(sdMsg);
         shipMayBin();
     }
 
@@ -66,7 +66,7 @@
         otisLines.push({ role:'otis', text: mMsg }); renderOTIS();
         var mayDot = document.getElementById('comms-dot-may');
         if (mayDot) mayDot.className = 'comms-dot dot-on';
-        if (window.OtisTTS) OtisTTS.speak(mMsg);
+        ttsSay(mMsg);
     }
     function handleBrokerBinShip() {
         var s = gameState.state;
@@ -87,7 +87,7 @@
         var multStr = mult < 1.0 ? ' (' + Math.round(mult*100) + '% value)' : '';
         var bMsg = 'Broker bin shipped. ' + bin.length + ' items. ' + pctStr + multStr + '. +' + total + ' cr.';
         otisLines.push({ role:'otis', text: bMsg }); renderOTIS();
-        if (window.OtisTTS) OtisTTS.speak(bMsg);
+        ttsSay(bMsg);
     }
     function handleSvenBinShip() {
         var s = gameState.state;
