@@ -1732,7 +1732,10 @@
                 setBotDots(true);
                 var fp = gameState.state.fieldPool || [];
                 var bq = gameState.state.beltQueue || [];
-                if (fp.length > 0 || bq.length > 0) {
+                var anyBotActive = (gameState.state.bots || []).some(function(b) {
+                    return b.activity === 'FETCHING' || b.activity === 'CARRYING';
+                });
+                if (fp.length > 0 || bq.length > 0 || anyBotActive) {
                     // Restore any items already in beltQueue to display
                     if (bq.length > 0 && currentItem === null) {
                         setItemInQueue(bq[0]);
