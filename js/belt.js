@@ -1256,6 +1256,7 @@
         currentItem.consultedWorth = true;
         renderItemQueue();
         if (gameState.state.tutorialStep === 2) tutorialAdvance();
+        if (gameState.state.tutorialStep === 10) tutorialUnlockGate(10);
 
         // Common items: no API call — display hardcoded assessment (instant)
         if (currentItem.rarity === 'Common') {
@@ -1303,6 +1304,7 @@
         var eeMultiplier = item.easterEgg ? 3 : 1;
         // Advance tutorial step 3 before item processing
         if (gameState.state.tutorialStep === 3) tutorialAdvance();
+        if (gameState.state.tutorialStep === 17) tutorialUnlockGate(17);
         // Clear belt jam state on any player declaration
         gameState.state.beltJammed = false;
         gameState.state.itemDisplayedAt = null;

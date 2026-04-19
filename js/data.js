@@ -286,14 +286,52 @@
     window.RARITY_CREDIT_CAPS = RARITY_CREDIT_CAPS;
 
     // TUTORIAL SYSTEM
-    // tutorialStep in state: 0 = inactive, 1–6 = active step, sets to 0 on complete/exit.
+    // tutorialStep in state: 0 = inactive, 1–22 = active step, sets to 0 on complete/exit.
     var TUTORIAL_STEPS = [
-        { target: 'module-btn-belt',    msg: 'Open the belt panel. An item is waiting.' },
-        { target: 'cc-examine',         msg: 'Examine the item before declaring it. George always did.' },
-        { target: 'item-declaration',   msg: 'Sort to a bin: May takes Civilian/Settlement, Broker takes any, Sven takes Rare/Anomalous at 65%.' },
-        { target: 'module-btn-comms',   msg: 'Items land in bins after you declare them. Ship each bin to get paid. May: Civilian/Settlement. Broker: any item, bonus when full. Sven: Rare/Anomalous at 65%, auto-ships at two.' },
-        { target: 'module-btn-comms',   msg: 'The Bank sent a message on Day 1. It is not friendly. It is also not optional.' },
-        { target: 'module-btn-systems', msg: 'Check the bots occasionally. George did not. Eventually that mattered.' },
+        // Step 1 — Orientation
+        { target: 'otis-output', msg: 'Vernon. I am OTIS. Before the clock starts I will walk you through every system in this station. Use NEXT and BACK at your own pace. Nothing ticks until you click BEGIN GAME.' },
+        // Step 2 — Day clock
+        { target: 'hdr-day-wrap', msg: 'DAY CLOCK. One in-game day is four real minutes. The bar fills as the day progresses. Every system on this station is tied to it — the barge, the bank, the bots.' },
+        // Step 3 — Session clock
+        { target: 'hdr-hours', msg: 'SESSION HOURS. This tracks how long you have been logged in this shift. Extended sessions cause fatigue. Performance degrades. Log off when you need to. The station does not mind. I do.' },
+        // Step 4 — Credits and debt
+        { target: 'hdr-credits', msg: 'Your credits and your debt are both shown up here. You owe 25,000 credits to the Universal Bank Conglomerate. You pay in weekly installments of 850 cr. Miss one and arrears stack. Stack enough and the station is repossessed.' },
+        // Step 5 — Payment and barge countdowns
+        { target: 'hdr-payment', msg: 'PAY shows days until your next installment. BARGE shows days until the next salvage drop. Both count down in real time while the clock runs. Keep both numbers in your head.' },
+        // Step 6 — Module buttons overview
+        { target: 'module-grid', msg: 'Four panels run this station. BELT/ITEMS is where you work. COMMS is how you get paid. STOREROOM holds what you keep. SYSTEMS keeps the bots running. Each button has a status light. No light is good. Amber means attention. Red means something is wrong.' },
+        // Step 7 — Belt button
+        { target: 'module-btn-belt', msg: 'BELT/ITEMS. Your primary workstation. Salvage arrives here from barges overhead. You examine each item and decide where it goes. Everything starts here.' },
+        // Step 8 — Gated: open belt
+        { target: 'module-btn-belt', msg: 'Open the belt now. Click the BELT/ITEMS button to continue.', gated: true },
+        // Step 9 — Examine explanation
+        { target: 'cc-examine', msg: 'There is an item on the belt. EXAMINE tells you its name, category, rarity, and condition. You need all of that before you sort. George always examined. He had a reason.' },
+        // Step 10 — Gated: examine item
+        { target: 'cc-examine', msg: 'Examine the item now. Click EXAMINE.', gated: true },
+        // Step 11 — Sorting options overview
+        { target: 'item-declaration', msg: 'Five choices. MAY BIN, BROKER BIN, SVEN BIN, KEEP, and SCRAP. Each one does something different. I will explain each one before you sort.' },
+        // Step 12 — May bin
+        { target: 'item-declaration', msg: 'MAY BIN. Accepts Civilian and Settlement items only. May Finster runs a recycling operation on the surface. She pays full item value. You ship the bin manually from the COMMS panel. Holds up to 12 items.' },
+        // Step 13 — Broker bin
+        { target: 'item-declaration', msg: 'BROKER BIN. Accepts any item, any category. Pays on a sliding scale based on fill level. The fuller the bin when you ship, the closer to full value. Ship at 10 out of 10 for maximum return. Ten-item capacity.' },
+        // Step 14 — Sven bin
+        { target: 'item-declaration', msg: 'SVEN BIN. Rare and Anomalous items only. Sven Digut pays 65% of item value. Below market, but he is fast. The bin auto-ships the moment you load a second item. You do not need to do anything. Watch for his interference.' },
+        // Step 15 — Keep
+        { target: 'item-declaration', msg: 'KEEP. Holds the item in your storeroom log. Storage is limited. Use KEEP for items with special value, schematic interest, or items you are not ready to sell. George kept too many. Then he kept more.' },
+        // Step 16 — Scrap
+        { target: 'item-declaration', msg: 'SCRAP. Sends the item to the scrap channel immediately. May buys scrap by weight. Low return but it clears the belt fast. Watch the scrap fill percentage in COMMS and ship it before the channel hits 100%.' },
+        // Step 17 — Gated: sort an item
+        { target: 'item-declaration', msg: 'Sort the item now. Pick whichever bin accepts its category. If you choose wrong I will tell you. The item tags show category and rarity.', gated: true },
+        // Step 18 — Gated: open comms
+        { target: 'module-btn-comms', msg: 'Good. Your item is in a bin. Open COMMS to ship it and collect your credits.', gated: true },
+        // Step 19 — Gated: ship the bin
+        { target: 'shipping-bins-section', msg: 'Find the bin your item is in and click SHIP. Credits transfer immediately. That is the core loop. Examine, sort, ship, collect. Repeat until the debt is cleared.', gated: true },
+        // Step 20 — Storeroom
+        { target: 'module-btn-store', msg: 'STOREROOM. Holds items you have kept, overflow from heavy drops, and objects George left behind in his warehouse. It is worth exploring. Do not let it distract you from the belt.' },
+        // Step 21 — Systems
+        { target: 'module-btn-systems', msg: 'SYSTEMS. Three retrieval bots fetch items from the salvage field. They degrade after every drop. Calibrate them to slow the process. Order parts when they go critical. All three bots offline stops the belt. George did not keep up with maintenance. Eventually that mattered.' },
+        // Step 22 — Ready
+        { target: null, msg: 'That is the station. The clock starts when you click BEGIN GAME. The belt will not wait forever once it starts, but it will wait for you now. The HELP module stays available if you need a reference at any time.' },
     ];
     window.TUTORIAL_STEPS = TUTORIAL_STEPS;
 

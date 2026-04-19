@@ -1,8 +1,11 @@
-// OTIS tutorial subsystem — first-run step engine and overlay renderer. Extracted from index.html in Phase 12 of the monolith refactor.
+// OTIS tutorial subsystem — 22-step pre-game guided walkthrough.
+// Amber halo highlight, step badges, back/forward navigation, gated actions.
+
+    var TUTORIAL_TOTAL = 22;
 
     function _tutorialActive() {
         var step = gameState.state.tutorialStep;
-        return step >= 1 && step <= 6;
+        return step >= 1 && step <= TUTORIAL_TOTAL;
     }
 
     function _clearTutorialHighlight() {
@@ -11,37 +14,84 @@
         });
     }
 
-    function _showTutorialSkip(visible) {
-        var btn = document.getElementById('tutorial-skip-btn');
-        if (btn) btn.style.display = visible ? '' : 'none';
+    function _clearTutorialBadge() {
+        document.querySelectorAll('.tutorial-badge').forEach(function(el) {
+            el.remove();
+        });
+    }
+
+    function _placeTutorialBadge(targetEl, stepNum, total) {
+        _clearTutorialBadge();
+        if (!targetEl) return;
+        var badge = document.createElement('span');
+        badge.className = 'tutorial-badge';
+        badge.textContent = stepNum + ' / ' + total;
+        targetEl.parentNode.insertBefore(badge, targetEl.nextSibling);
+    }
+
+    function _showTutorialNav(visible) {
+        ['tutorial-skip-btn','tutorial-next-btn','tutorial-back-btn'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.style.display = visible ? '' : 'none';
+        });
+    }
+    window._showTutorialNav = _showTutorialNav;
+
+    function _updateBackBtn() {
+        var back = document.getElementById('tutorial-back-btn');
+        if (!back) return;
+        var isFirst = gameState.state.tutorialStep <= 1;
+        back.disabled = isFirst;
+        back.style.opacity = isFirst ? '0.3' : '1';
     }
 
     function _startTutorialStep(step) {
         _clearTutorialHighlight();
+        _clearTutorialBadge();
         var data = TUTORIAL_STEPS[step - 1];
         if (!data) return;
-        var el = document.getElementById(data.target);
-        if (el) el.classList.add('tutorial-highlight');
-        var msg = data.msg;
+
+        var el = data.target ? document.getElementById(data.target) : null;
+        if (el) {
+            el.classList.add('tutorial-highlight');
+            _placeTutorialBadge(el, step, TUTORIAL_TOTAL);
+        }
+
+        var msg = '[STEP ' + step + '/' + TUTORIAL_TOTAL + '] ' + data.msg;
         otisLines.push({ role: 'otis', text: msg }); renderOTIS();
-        if (window.OtisTTS) OtisTTS.speak(msg);
-        _showTutorialSkip(true);
+        if (window.OtisTTS && data.tts !== false) OtisTTS.speak(data.msg);
+
+        _showTutorialNav(true);
+        _updateBackBtn();
+
+        var nextBtn = document.getElementById('tutorial-next-btn');
+        if (nextBtn) {
+            nextBtn.disabled = !!data.gated;
+            nextBtn.style.opacity = data.gated ? '0.3' : '1';
+        }
     }
     window._startTutorialStep = _startTutorialStep;
 
     function tutorialAdvance() {
         var s = gameState.state;
         if (!_tutorialActive()) return;
+        var data = TUTORIAL_STEPS[s.tutorialStep - 1];
+        if (data && data.gated) {
+            var nextBtn = document.getElementById('tutorial-next-btn');
+            if (nextBtn && nextBtn.disabled) return;
+        }
         var next = s.tutorialStep + 1;
-        if (next > 6) {
-            // All steps done — complete
+        if (next > TUTORIAL_TOTAL) {
             _clearTutorialHighlight();
-            _showTutorialSkip(false);
+            _clearTutorialBadge();
+            _showTutorialNav(false);
             s.tutorialStep = 0;
             gameState._save();
-            var doneMsg = 'Tutorial complete. You know enough to start. The rest you learn by doing.';
+            var doneMsg = 'Tutorial complete. The station is yours when you are ready. Click BEGIN GAME to start. The clock starts then.';
             otisLines.push({ role: 'otis', text: doneMsg }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(doneMsg);
+            var beginBtn = document.getElementById('tutorial-begin-btn');
+            if (beginBtn) beginBtn.style.display = '';
             return;
         }
         s.tutorialStep = next;
@@ -50,38 +100,54 @@
     }
     window.tutorialAdvance = tutorialAdvance;
 
-    function tutorialExit() {
+    function tutorialNext() { tutorialAdvance(); }
+    window.tutorialNext = tutorialNext;
+
+    function tutorialBack() {
+        var s = gameState.state;
         if (!_tutorialActive()) return;
+        var prev = s.tutorialStep - 1;
+        if (prev < 1) return;
+        s.tutorialStep = prev;
+        gameState._save();
+        _startTutorialStep(prev);
+    }
+    window.tutorialBack = tutorialBack;
+
+    function tutorialExit() {
         _clearTutorialHighlight();
-        _showTutorialSkip(false);
+        _clearTutorialBadge();
+        _showTutorialNav(false);
         gameState.state.tutorialStep = 0;
         gameState._save();
-        var msg = 'Tutorial skipped. The belt does not wait.';
+        var msg = 'Tutorial skipped. Review topics in the HELP module at any time.';
         otisLines.push({ role: 'otis', text: msg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(msg);
+        var loginBtn = document.getElementById('btn-login');
+        var loginHidden = !loginBtn || loginBtn.style.display === 'none';
+        if (loginHidden) {
+            var beginBtn = document.getElementById('tutorial-begin-btn');
+            if (beginBtn) beginBtn.style.display = '';
+        }
     }
     window.tutorialExit = tutorialExit;
 
+    function tutorialUnlockGate(stepNum) {
+        if (gameState.state.tutorialStep !== stepNum) return;
+        var nextBtn = document.getElementById('tutorial-next-btn');
+        if (nextBtn) { nextBtn.disabled = false; nextBtn.style.opacity = '1'; }
+        // Brief pause so the player sees the gate unlock before auto-advancing
+        setTimeout(tutorialAdvance, 900);
+    }
+    window.tutorialUnlockGate = tutorialUnlockGate;
+
     function checkTutorialModalOpen(name) {
         var s = gameState.state;
-        if (s.tutorialStep === 1 && name === 'belt') {
-            // Belt opened — ensure an item is ready then advance to step 2
-            if (currentItem === null) { deliverNextBeltItem(); }
-            tutorialAdvance();
-        } else if (s.tutorialStep === 4 && name === 'comms') {
-            // Comms opened during step 4 (bins) — highlight shipping bins and advance
-            var binsSection = document.getElementById('shipping-bins-section');
-            if (binsSection) binsSection.classList.add('tutorial-highlight');
-            tutorialAdvance();
-            // Also highlight the answer bank button since step 5 is already active in comms
-            var bankBtn5 = document.getElementById('btn-answer-bank');
-            if (bankBtn5) bankBtn5.classList.add('tutorial-highlight');
-        } else if (s.tutorialStep === 5 && name === 'comms') {
-            // Comms opened during step 5 — also highlight the ANSWER BANK button
-            var bankBtn = document.getElementById('btn-answer-bank');
-            if (bankBtn) bankBtn.classList.add('tutorial-highlight');
-        } else if (s.tutorialStep === 6 && name === 'systems') {
-            tutorialAdvance();
+        if (s.tutorialStep === 8 && name === 'belt') {
+            tutorialUnlockGate(8);
+        }
+        if (s.tutorialStep === 18 && name === 'comms') {
+            tutorialUnlockGate(18);
         }
     }
     window.checkTutorialModalOpen = checkTutorialModalOpen;
