@@ -1168,7 +1168,12 @@
         _bf++;
         var now = performance.now();
         var ic = 0;
-        if (window.gameState&&window.gameState.state) ic=Math.min(6,(window.gameState.state.manifestItems||[]).length);
+        if (window.gameState&&window.gameState.state) {
+          var _s=window.gameState.state;
+          var _tot=(_s.manifestItems||[]).length+(_s.beltQueue||[]).length+(_s.fieldPool||[]).length;
+          ic=Math.min(6,_tot);
+          if(ic===0&&_s.dropActive) ic=1;
+        }
         if (ic>0 && now-_bls>_bns && _bo.length<ic) { _sp(false,0); _bls=now; _bns=1400+Math.random()*1000; }
         if (ic===0) _bo=[];
         _bo.forEach(function(o){o.x+=o.speed;});
@@ -1206,7 +1211,7 @@
       }
       window.startBeltAnim=function(){
         if(_bi)clearInterval(_bi); _bo=[]; _bf=0;
-        var ic=0; if(window.gameState&&window.gameState.state)ic=Math.min(3,(window.gameState.state.manifestItems||[]).length);
+        var ic=0; if(window.gameState&&window.gameState.state){var _s=window.gameState.state;var _t=(_s.manifestItems||[]).length+(_s.beltQueue||[]).length+(_s.fieldPool||[]).length;ic=Math.min(3,_t);if(ic===0&&_s.dropActive)ic=1;}
         for(var i=0;i<Math.min(2,ic);i++)_sp(true,i*38);
         _bi=setInterval(_tick,83); _tick();
       };
