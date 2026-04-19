@@ -136,6 +136,7 @@
         if (gameState.state.tutorialStep !== stepNum) return;
         var nextBtn = document.getElementById('tutorial-next-btn');
         if (nextBtn) { nextBtn.disabled = false; nextBtn.style.opacity = '1'; }
+        // Brief pause so the player sees the gate unlock before auto-advancing
         setTimeout(tutorialAdvance, 900);
     }
     window.tutorialUnlockGate = tutorialUnlockGate;
