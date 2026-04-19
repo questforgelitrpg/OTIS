@@ -336,14 +336,16 @@
             var _resetTimer = null;
 
             function _getNextCameraReply() {
-                if (!_replyShuffled) {
+                if (!_replyShuffled || _replyIdx >= _replyShuffled.length) {
                     _replyShuffled = CAMERA_REPLIES.slice();
                     for (var i = _replyShuffled.length - 1; i > 0; i--) {
                         var j = Math.floor(Math.random() * (i + 1));
-                        var tmp = _replyShuffled[i]; _replyShuffled[i] = _replyShuffled[j]; _replyShuffled[j] = tmp;
+                        var tmp = _replyShuffled[i];
+                        _replyShuffled[i] = _replyShuffled[j];
+                        _replyShuffled[j] = tmp;
                     }
+                    _replyIdx = 0;
                 }
-                if (_replyIdx >= _replyShuffled.length) { _replyShuffled = null; _replyIdx = 0; return _getNextCameraReply(); }
                 return _replyShuffled[_replyIdx++];
             }
 
