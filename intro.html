@@ -17,6 +17,13 @@
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; background: var(--bg); color: var(--text-primary); font-family: var(--font-mono); font-size: 15px; overflow: hidden; }
 
+        /* Green-black scrollbar — matches main game styling */
+        * { scrollbar-width: thin; scrollbar-color: #33ff66 #000; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #33ff66; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #66ff88; }
+
         /* CRT scanline overlay */
         #crt-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 9998;
             background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px); }

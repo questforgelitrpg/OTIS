@@ -291,12 +291,14 @@
                 <ul id="storeroom-buffer-list" class="keep-list"></ul>
             </div>
             <div class="modal-section">
-                <div class="modal-label" style="display:flex;justify-content:space-between"><span>KEEP LOG</span><span id="keep-log-count" style="color:var(--text-dim)">0 / 12</span></div>
+                <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center"><span>KEEP LOG</span><span style="display:flex;align-items:center;gap:0.5rem"><span id="keep-log-count" style="color:var(--text-dim)">0 / 12</span><button id="btn-keep-log-toggle" onclick="toggleKeepLog()" style="font-size:12px;padding:0.1rem 0.4rem;min-height:22px">&#9660; COLLAPSE</button></span></div>
+                <div id="keep-log-body">
                 <ul id="keep-log-list" class="keep-list"></ul>
                 <p class="zone-hint" id="keep-log-empty">Log empty.</p>
+                </div>
             </div>
             <div class="modal-section" id="george-warehouse-section">
-                <div class="modal-label">GEORGE&#39;S WAREHOUSE</div>
+                <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center"><span>GEORGE&#39;S WAREHOUSE</span><button id="btn-warehouse-toggle" onclick="toggleWarehouseList()" style="font-size:12px;padding:0.1rem 0.4rem;min-height:22px;display:none">&#9660; COLLAPSE</button></div>
                 <div class="modal-row"><button id="btn-search-warehouse" onclick="handleSearchWarehouse()">SEARCH WAREHOUSE</button> <span id="warehouse-search-countdown" style="color:var(--text-dim);margin-left:0.5rem"></span></div>
                 <div class="warehouse-search-progress-track"><div id="warehouse-search-progress-fill"></div></div>
                 <p id="warehouse-search-status" style="color:var(--text-dim);font-size:14px;margin:0.2rem 0 0.4rem 0"></p>
@@ -842,6 +844,17 @@
         }
         setLight('light-auxiliary', 'light-amber');
     }
+
+    // COLLAPSE / EXPAND: KEEP LOG
+    var _keepLogCollapsed = false;
+    function toggleKeepLog() {
+        _keepLogCollapsed = !_keepLogCollapsed;
+        var body = document.getElementById('keep-log-body');
+        var btn  = document.getElementById('btn-keep-log-toggle');
+        if (body) body.style.display = _keepLogCollapsed ? 'none' : '';
+        if (btn)  btn.innerHTML = _keepLogCollapsed ? '&#9658; EXPAND' : '&#9660; COLLAPSE';
+    }
+    window.toggleKeepLog = toggleKeepLog;
 
 
 

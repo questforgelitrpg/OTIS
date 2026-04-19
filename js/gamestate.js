@@ -296,6 +296,7 @@
         var n = state.keepLog.length;
         if (cnt) { cnt.textContent = n + ' / ' + getStorageCap(); cnt.style.color = n >= getStorageCap() ? 'var(--text-danger)' : n >= (getStorageCap() - 2) ? 'var(--text-warn)' : 'var(--text-dim)'; }
         if (list) {
+            var artQueue = [];
             list.innerHTML = state.keepLog.map(function(k, i) {
                 var daysHeld = Math.max(0, (state.day||1) - (k.keepDay||k.day||1));
                 var appraised = getAppraisedValue(k);
@@ -303,10 +304,27 @@
                 var gained = appraised - baseVal;
                 var gainStr = gained > 0 ? ' (+' + gained + ' cr appreciated)' : '';
                 var beltOccupied = (currentItem !== null);
-                return '<li class="keep-list-item"><span>' + escapeHtml(k.name) + '</span>' +
+                var artHtml = '';
+                if (k.asciiFile) {
+                    var colorAttr = k.asciiColor ? ' style="color:' + ((/^#[0-9a-fA-F]{3,8}$/.test(k.asciiColor)) ? k.asciiColor : '') + '"' : '';
+                    artHtml = '<pre id="keep-ascii-' + i + '" class="george-ascii"' + colorAttr + '>[ART PENDING]</pre>';
+                    artQueue.push({ idx: i, file: k.asciiFile });
+                }
+                return '<li class="keep-list-item">' + artHtml +
+                    '<span>' + escapeHtml(k.name) + '</span>' +
                     '<span class="keep-item-meta">' + escapeHtml(k.condition||'') + ' \u2014 ' + appraised + ' cr' + gainStr + ' \u2014 Day ' + (k.keepDay||k.day) + ' \u2014 ' + daysHeld + 'd held</span>' +
                     '<button class="consult-card" onclick="handleReturnToBelt(' + i + ')"' + (beltOccupied ? ' disabled title="Belt is occupied — clear current item first"' : '') + '>RETURN TO BELT</button></li>';
             }).join('');
+            // Load ascii art after HTML is in DOM
+            artQueue.forEach(function(q) {
+                fetch(q.file).then(function(r){ return r.text(); }).then(function(txt){
+                    var pre = document.getElementById('keep-ascii-' + q.idx);
+                    if (pre) pre.textContent = txt;
+                }).catch(function(){
+                    var pre = document.getElementById('keep-ascii-' + q.idx);
+                    if (pre) pre.textContent = '[ART PENDING]';
+                });
+            });
         }
         if (empty) empty.style.display = n ? 'none' : '';
         var hc = document.getElementById('humanity-count');
