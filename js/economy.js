@@ -217,6 +217,8 @@
 
     function advanceDay() {
         var s = gameState.state;
+        // Reset in-memory day-start timestamp so the 24h clock loops correctly
+        window._dayStartedAt = Date.now();
         s.day = (s.day || 1) + 1;
         s.daysUntilPayment = Math.max(0, (s.daysUntilPayment || 7) - 1);
         s.daysUntilNextDrop = Math.max(0, (s.daysUntilNextDrop || 7) - 1);

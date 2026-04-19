@@ -87,6 +87,9 @@
         } else if (dup <= 3) {
             text = 'PAYMENT: ' + dup + 'd \u2014 ' + (s.credits || 0) + ' cr available';
             color = 'var(--text-dim)';
+        } else if (!s.dropActive && (s.keepLog && s.keepLog.length || 0) === 0) {
+            text = 'STANDING BY \u2014 OPEN BELT TO BEGIN';
+            color = 'var(--text-dim)';
         } else {
             text = 'STANDING BY';
             color = 'var(--text-muted)';
