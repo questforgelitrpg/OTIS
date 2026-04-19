@@ -257,6 +257,7 @@
 
     function stopMusic() {
         _music1InterludeActive = false;
+        if (_music2Timer) { clearTimeout(_music2Timer); _music2Timer = null; }
         if (!_musicCurrent) return;
         var outgoing = _musicCurrent;
         _musicCurrent = null;
@@ -306,6 +307,12 @@
         }
     }
 
+    function stopAllAmbients() {
+        Object.keys(_ambients).forEach(function (name) {
+            stopAmbient(name);
+        });
+    }
+
     // ── SFX layer ─────────────────────────────────────────────────────────────
 
     function playSFX(name) {
@@ -330,6 +337,24 @@
             _nonBuzzCount = Math.max(0, _nonBuzzCount - 1);
             _checkBuzz();
         });
+    }
+
+    function playClick() {
+        if (!_unlocked || _muted) return;
+        var ctx  = _getCtx();
+        var dest = _getDest();
+        if (!ctx || !dest) return;
+        var osc  = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1200, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+        osc.connect(gain);
+        gain.connect(dest);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.07);
     }
 
     // ── Init / unlock ─────────────────────────────────────────────────────────
@@ -391,15 +416,17 @@
     // ── Public API ────────────────────────────────────────────────────────────
 
     window.OtisSound = {
-        init:         init,
-        startMusic:   startMusic,
-        stopMusic:    stopMusic,
-        startAmbient: startAmbient,
-        stopAmbient:  stopAmbient,
-        playSFX:      playSFX,
-        toggleMute:   toggleMute,
-        isMuted:      isMuted,
-        onNoSound:    function (cb) {},
-        onSoundStart: function (cb) {}
+        init:             init,
+        startMusic:       startMusic,
+        stopMusic:        stopMusic,
+        startAmbient:     startAmbient,
+        stopAmbient:      stopAmbient,
+        stopAllAmbients:  stopAllAmbients,
+        playSFX:          playSFX,
+        playClick:        playClick,
+        toggleMute:       toggleMute,
+        isMuted:          isMuted,
+        onNoSound:        function (cb) {},
+        onSoundStart:     function (cb) {}
     };
 }());
