@@ -277,6 +277,14 @@
     window.handleWarehouseEasterEggMoveToBelt = handleWarehouseEasterEggMoveToBelt;
 
     // GEORGE'S DIARY — render and unlock logic
+    // Collapse/expand state for the diary list (ephemeral, not persisted)
+    var _diaryCollapsed = false;
+    function toggleGeorgeDiary() {
+        _diaryCollapsed = !_diaryCollapsed;
+        renderGeorgeDiary();
+    }
+    window.toggleGeorgeDiary = toggleGeorgeDiary;
+
     function renderGeorgeDiary() {
         var s = gameState.state;
         var found = s.georgesDiaryFound || [];
@@ -315,14 +323,6 @@
         }).join('');
     }
     window.renderGeorgeDiary = renderGeorgeDiary;
-
-    // Collapse/expand state for the diary list (ephemeral, not persisted)
-    var _diaryCollapsed = false;
-    function toggleGeorgeDiary() {
-        _diaryCollapsed = !_diaryCollapsed;
-        renderGeorgeDiary();
-    }
-    window.toggleGeorgeDiary = toggleGeorgeDiary;
 
     function _unlockDiaryEntry(id) {
         var s = gameState.state;

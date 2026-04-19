@@ -537,7 +537,7 @@ html.chaos-bigfont { font-size: 22px; }
 }
 body.chaos-shake { animation: chaos-shake 0.5s infinite, flicker 12s infinite; }
 /* 8 — blur terminal */
-#terminal.chaos-blur { filter: blur(10px) blur(var(--tb,0px)) saturate(1.4); transition: filter 0.3s; }
+#terminal.chaos-blur { filter: blur(calc(10px + var(--tb,0px))) saturate(1.4); transition: filter 0.3s; }
 /* 9 — hide scanlines */
 #crt-overlay.chaos-hidden { display: none; }
 
