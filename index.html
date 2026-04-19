@@ -316,9 +316,9 @@
                 <pre id="schematic-pre"></pre>
             </div>
             <div class="modal-section" id="george-diary-section">
-                <div class="modal-label">GEORGE&#39;S DIARY</div>
+                <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center"><span>GEORGE&#39;S DIARY</span><button id="btn-diary-toggle" class="collapse-toggle-btn" onclick="toggleGeorgeDiary()" style="display:none">&#9660; COLLAPSE</button></div>
                 <p class="zone-hint" id="diary-empty" style="color:var(--text-muted);font-size:14px">No entries found.</p>
-                <div id="george-diary-list"></div>
+                <div id="george-diary-body"><div id="george-diary-list"></div></div>
             </div>
         </div>
     </div>
@@ -949,11 +949,20 @@
         otisLines.push({ role: 'otis', text: logoffMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(logoffMsg);
 
-        // Estimate speech duration: ~100ms per word, minimum 2.5s, cap at 12s
-        var wordCount = logoffMsg.split(/\s+/).length;
-        var speechDelay = Math.min(Math.max(wordCount * 100, 2500), 12000);
+        // Stop game mechanics immediately so no new days advance or items deliver while we wait
+        if (typeof stopBeltDelivery === 'function') stopBeltDelivery();
+        if (typeof stopBotFetch === 'function') stopBotFetch();
 
-        setTimeout(function() {
+        // Wait for TTS to finish before running the visual logoff transition.
+        // Poll speechSynthesis.speaking every 200 ms; fall through after 16 s max.
+        var _logoffPollStart = Date.now();
+        var _logoffMaxWait = 16000;
+        var _logoffTransitionFired = false;
+
+        function _doLogoffTransition() {
+            if (_logoffTransitionFired) return;
+            _logoffTransitionFired = true;
+
             // Cut all audio
             if (window.speechSynthesis) window.speechSynthesis.cancel();
             if (window.OtisTTS) OtisTTS.flush();
@@ -962,9 +971,6 @@
             // Close all open modals
             document.querySelectorAll('.modal.open').forEach(function(m) { m.classList.remove('open'); });
             document.body.classList.remove('panel-open');
-
-            // Stop belt timer
-            if (typeof stopBeltDelivery === 'function') stopBeltDelivery();
 
             var term        = document.getElementById('terminal');
             var grid        = document.getElementById('module-grid');
@@ -1018,7 +1024,23 @@
                     renderOTIS();
                 }, 700);
             }, 850);
-        }, speechDelay);
+        }
+
+        // Trigger the logoff transition: wait for TTS to finish speaking, then proceed.
+        // Polling keeps the transition in sync with actual speech end regardless of voice/device speed.
+        if (window.OtisTTS && !window.OtisTTS.isMuted() && window.speechSynthesis) {
+            // Give TTS 400 ms to start before polling
+            setTimeout(function() {
+                var _pollId = setInterval(function() {
+                    var done = !window.speechSynthesis.speaking;
+                    var overtime = (Date.now() - _logoffPollStart) >= _logoffMaxWait;
+                    if (done || overtime) { clearInterval(_pollId); _doLogoffTransition(); }
+                }, 200);
+            }, 400);
+        } else {
+            // TTS muted or unsupported — short delay then proceed
+            setTimeout(_doLogoffTransition, 800);
+        }
     }
     function handleTTSToggle() {
         if (!window.OtisTTS) return;
@@ -1199,6 +1221,7 @@
           var _tot=(_s.manifestItems||[]).length+(_s.beltQueue||[]).length+(_s.fieldPool||[]).length;
           ic=Math.min(6,_tot);
           if(ic===0&&_s.dropActive) ic=1;
+          if(ic===0&&window.currentItem) ic=1; // storeroom items placed directly on belt
         }
         if (ic>0 && now-_bls>_bns && _bo.length<ic) { _sp(false,0); _bls=now; _bns=1400+Math.random()*1000; }
         if (ic===0) _bo=[];
@@ -1237,7 +1260,7 @@
       }
       window.startBeltAnim=function(){
         if(_bi)clearInterval(_bi); _bo=[]; _bf=0;
-        var ic=0; if(window.gameState&&window.gameState.state){var _s=window.gameState.state;var _t=(_s.manifestItems||[]).length+(_s.beltQueue||[]).length+(_s.fieldPool||[]).length;ic=Math.min(3,_t);if(ic===0&&_s.dropActive)ic=1;}
+        var ic=0; if(window.gameState&&window.gameState.state){var _s=window.gameState.state;var _t=(_s.manifestItems||[]).length+(_s.beltQueue||[]).length+(_s.fieldPool||[]).length;ic=Math.min(3,_t);if(ic===0&&_s.dropActive)ic=1;if(ic===0&&window.currentItem)ic=1;}
         for(var i=0;i<Math.min(2,ic);i++)_sp(true,i*38);
         _bi=setInterval(_tick,83); _tick();
       };
@@ -1700,6 +1723,7 @@
 
         if (!window._otisDayIntervalId) {
             window._otisDayIntervalId = setInterval(function() {
+                if (window._otisLoggedOff) return;
                 advanceDay();
             }, TIMING.MS_PER_INGAME_DAY); // use the canonical timing constant (240 000 ms)
         }
@@ -1711,6 +1735,7 @@
         // Day clock + clock color states — 1-second tick
         if (!window._otisDayClockId) {
             window._otisDayClockId = setInterval(function() {
+                if (window._otisLoggedOff) return;
                 var s = gameState.state;
                 var elapsed = Date.now() - (window._dayStartedAt || Date.now());
                 var fraction = Math.min(1, elapsed / TIMING.MS_PER_INGAME_DAY);
