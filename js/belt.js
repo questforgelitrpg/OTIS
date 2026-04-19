@@ -250,13 +250,13 @@
                 var stalledEl = document.getElementById('belt-stall-indicator');
                 if (stalledEl) stalledEl.style.display = '';
             }
-            // Always show overflow/storeroom route warning when belt queue is full
+            // Show storeroom route option whenever there are items left in the field pool
             var fieldLen = (s.fieldPool || []).length;
             var overflowWarn = document.getElementById('storeroom-overflow-warning');
             var overflowCount = document.getElementById('overflow-count');
-            if (overflowWarn) overflowWarn.style.display = fieldLen >= TIMING.OVERFLOW_THRESHOLD ? '' : 'none';
+            if (overflowWarn) overflowWarn.style.display = fieldLen > 0 ? '' : 'none';
             if (overflowCount) overflowCount.textContent = fieldLen;
-            return;
+            return false;
         }
         // Clear stall indicator and overflow warning when queue accepts items again
         var stalledEl = document.getElementById('belt-stall-indicator');
@@ -484,11 +484,14 @@
                     anyChange = true;
                     break;
                 case 'CARRYING':
-                    pushToBeltQueue(bot.carrying);
-                    bot.carrying = null;
-                    bot.activity = 'IDLE';
-                    bot.activityRemainingMs = 0;
-                    anyChange = true;
+                    if (pushToBeltQueue(bot.carrying)) {
+                        bot.carrying = null;
+                        bot.activity = 'IDLE';
+                        bot.activityRemainingMs = 0;
+                        anyChange = true;
+                    }
+                    // If queue is full pushToBeltQueue returns false — bot stays in CARRYING state
+                    // so the item is not lost and will be delivered once space opens up.
                     break;
             }
         });
