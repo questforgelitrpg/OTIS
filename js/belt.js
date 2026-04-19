@@ -128,7 +128,8 @@
         var degradationMult = 1 + (bot.degradation * 0.15);
         var beltTier = (s.upgrades && s.upgrades.belt) || 0;
         var beltMult = [1.0, 0.85, 0.70, 0.50][beltTier];
-        return Math.round(base * degradationMult * beltMult);
+        var fatigueSlow = (typeof getFatigueBeltSlowFactor === 'function') ? getFatigueBeltSlowFactor() : 1.0;
+        return Math.round(base * degradationMult * beltMult * fatigueSlow);
     }
 
     function computeReturnDuration(bot) {
@@ -138,7 +139,8 @@
         var degradationMult = 1 + (bot.degradation * 0.15);
         var beltTier = (s.upgrades && s.upgrades.belt) || 0;
         var beltMult = [1.0, 0.85, 0.70, 0.50][beltTier];
-        return Math.round(base * degradationMult * beltMult);
+        var fatigueSlow = (typeof getFatigueBeltSlowFactor === 'function') ? getFatigueBeltSlowFactor() : 1.0;
+        return Math.round(base * degradationMult * beltMult * fatigueSlow);
     }
 
     // Dynamic belt queue cap — scales with drop size and degraded bot count so that
@@ -1552,7 +1554,10 @@
     function rollConveyorJam() {
         gameState.state.dropsSinceLastJam = (gameState.state.dropsSinceLastJam || 0) + 1;
         if (gameState.state.dropsSinceLastJam < 3) return;
-        if (Math.random() >= 0.15 * getJamRateMultiplier()) return;
+        var fatigueJam = (typeof getFatigueJamMultiplier === 'function') ? getFatigueJamMultiplier() : 1.0;
+        // Carry-over: elevated jam rate for first 30 session minutes after a CRITICAL re-login
+        var carryOverJamMultiplier = (gameState.state.fatigueCarryOver) ? 1.30 : 1.0;
+        if (Math.random() >= 0.15 * getJamRateMultiplier() * fatigueJam * carryOverJamMultiplier) return;
         gameState.state.dropsSinceLastJam = 0;
         gameState.state.conveyorJammed = true;
         gameState.state.daysUntilNextDrop = (gameState.state.daysUntilNextDrop || TIMING.DAYS_BETWEEN_DROPS) + 1;

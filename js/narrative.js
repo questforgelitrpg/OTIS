@@ -25,6 +25,7 @@
 
     var SILENCE_THRESHOLD_MS = 120000; // 2 real minutes
     setInterval(function() {
+        if (window._otisLoggedOff) return;
         var s = gameState.state;
         // Only fire during active session, not during a drop or power outage
         if (s.dropActive || s.powerOutageActive) return;

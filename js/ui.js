@@ -208,43 +208,49 @@
     // FATIGUE VISUALS
     function getFatigueTier() {
         var h = gameState.state.sessionHours;
-        if (h < 30) return 'NONE';
-        if (h < 60) return 'LOW';
-        if (h < 120) return 'MODERATE';
-        if (h < 180) return 'HIGH';
+        var m = (typeof getFatigueThresholdMultiplier === 'function') ? getFatigueThresholdMultiplier() : 1.0;
+        if (h < Math.floor(30  * m)) return 'NONE';
+        if (h < Math.floor(60  * m)) return 'LOW';
+        if (h < Math.floor(120 * m)) return 'MODERATE';
+        if (h < Math.floor(180 * m)) return 'HIGH';
         return 'CRITICAL';
     }
     window.getFatigueTier = getFatigueTier;
     function updateFatigueVisuals() {
         var h = gameState.state.sessionHours;
+        var m = (typeof getFatigueThresholdMultiplier === 'function') ? getFatigueThresholdMultiplier() : 1.0;
+        var T1 = Math.floor(30  * m);
+        var T2 = Math.floor(60  * m);
+        var T3 = Math.floor(120 * m);
+        var T4 = Math.floor(180 * m);
         var overlay = document.getElementById('fatigue-overlay');
-        var noise = document.getElementById('fatigue-noise');
-        var term = document.getElementById('terminal');
+        var noise   = document.getElementById('fatigue-noise');
+        var term    = document.getElementById('terminal');
         var warnBtn = document.getElementById('fatigue-warn-btn');
-        if (h < 30) {
+        if (h < T1) {
             if (overlay) overlay.style.opacity = '0';
-            if (noise) noise.style.opacity = '0';
-            if (term) term.style.filter = 'blur(0px)';
+            if (noise)   noise.style.opacity   = '0';
+            if (term)    term.style.filter     = 'blur(0px)';
             if (warnBtn) warnBtn.style.display = 'none';
-        } else if (h < 60) {
+        } else if (h < T2) {
             if (overlay) overlay.style.opacity = '0.3';
-            if (noise) noise.style.opacity = '0.05';
-            if (term) term.style.filter = 'blur(0.2px)';
+            if (noise)   noise.style.opacity   = '0.05';
+            if (term)    term.style.filter     = 'blur(0.2px)';
             if (warnBtn) warnBtn.style.display = 'none';
-        } else if (h < 120) {
+        } else if (h < T3) {
             if (overlay) overlay.style.opacity = '0.6';
-            if (noise) noise.style.opacity = '0.15';
-            if (term) term.style.filter = 'blur(0.6px)';
+            if (noise)   noise.style.opacity   = '0.15';
+            if (term)    term.style.filter     = 'blur(0.6px)';
             if (warnBtn) warnBtn.style.display = 'none';
-        } else if (h < 180) {
+        } else if (h < T4) {
             if (overlay) overlay.style.opacity = '0.85';
-            if (noise) noise.style.opacity = '0.30';
-            if (term) term.style.filter = 'blur(1.2px)';
+            if (noise)   noise.style.opacity   = '0.30';
+            if (term)    term.style.filter     = 'blur(1.2px)';
             if (warnBtn) warnBtn.style.display = '';
         } else {
             if (overlay) overlay.style.opacity = '1';
-            if (noise) noise.style.opacity = '0.50';
-            if (term) term.style.filter = 'blur(2px)';
+            if (noise)   noise.style.opacity   = '0.50';
+            if (term)    term.style.filter     = 'blur(2px)';
             if (warnBtn) { warnBtn.style.display = ''; warnBtn.classList.add('fatigue-pulse'); }
         }
     }
