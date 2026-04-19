@@ -931,7 +931,7 @@
             // Cut all audio
             if (window.speechSynthesis) window.speechSynthesis.cancel();
             if (window.OtisTTS) OtisTTS.flush();
-            if (window.OtisSound) OtisSound.stopMusic();
+            if (window.OtisSound) { OtisSound.stopMusic(); OtisSound.stopAllAmbients(); }
 
             // Close all open modals
             document.querySelectorAll('.modal.open').forEach(function(m) { m.classList.remove('open'); });
@@ -1604,6 +1604,14 @@
         }
         document.addEventListener('click',   _unlockAndStartMusic, { once: true });
         document.addEventListener('keydown', _unlockAndStartMusic, { once: true });
+
+        // Play a subtle click on every non-disabled button press.
+        document.addEventListener('click', function (e) {
+            if (!window.OtisSound) return;
+            var t = e.target;
+            var btn = (t.tagName === 'BUTTON') ? t : t.closest('button');
+            if (btn && !btn.disabled) OtisSound.playClick();
+        });
 
         // Timers — IDs stored on window to prevent duplicate intervals on hot reload
         if (!window._otisSessionIntervalId) {
