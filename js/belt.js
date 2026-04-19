@@ -533,9 +533,9 @@
 
     function deliverNextBeltItem() {
         if (!gameState.state.dropActive) { stopBeltDelivery(); return; }
-        // Check belt occupied BEFORE checking manifest empty — ensures the animation
-        // keeps running (and drop doesn't complete) while the player is still
-        // processing the final item on the belt.
+        // Check belt occupied BEFORE checking manifest empty — ensures the belt
+        // animation stays active and prevents the drop from completing prematurely
+        // while the player is still processing the final item on the belt.
         if (currentItem !== null) {
             var backed = gameState.state.manifestItems.length;
             var overflowWarn = document.getElementById('storeroom-overflow-warning');

@@ -306,7 +306,8 @@
                 var beltOccupied = (currentItem !== null);
                 var artHtml = '';
                 if (k.asciiFile) {
-                    var colorAttr = k.asciiColor ? ' style="color:' + ((/^#[0-9a-fA-F]{3,8}$/.test(k.asciiColor)) ? k.asciiColor : '') + '"' : '';
+                    var safeColor = /^#[0-9a-fA-F]{3,8}$/.test(k.asciiColor) ? k.asciiColor : null;
+                    var colorAttr = safeColor ? ' style="color:' + safeColor + '"' : '';
                     artHtml = '<pre id="keep-ascii-' + i + '" class="george-ascii"' + colorAttr + '>[ART PENDING]</pre>';
                     artQueue.push({ idx: i, file: k.asciiFile });
                 }

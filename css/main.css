@@ -272,6 +272,7 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 .keep-list { list-style: none; }
 .keep-list-item { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.3rem; padding: 0.2rem 0; border-bottom: 1px solid var(--border-dim); font-size: 14px; }
 .keep-item-meta { font-size: 14px; color: var(--text-dim); flex: 1; }
+.collapse-toggle-btn { font-size: 12px; padding: 0.1rem 0.4rem; min-height: 22px; }
 
 /* Comms */
 .comms-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; padding: 0.3rem 0; }
