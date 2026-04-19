@@ -185,6 +185,17 @@ body.panel-open #terminal { margin-right: min(640px, 60vw); }
 /* Quick actions */
 #otis-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.3rem 0.8rem; border-top: 1px solid var(--border-dim); border-bottom: 1px solid var(--border-dim); flex-shrink: 0; }
 
+/* Browser-storage data warning — shown on the logoff/login screen */
+#storage-warn {
+    padding: 0.5rem 0.8rem;
+    font-size: 12px;
+    color: var(--ind-amber);
+    border: 1px solid #4a3800;
+    background: #0d0a00;
+    line-height: 1.5;
+    flex-shrink: 0;
+}
+
 /* Buttons */
 button { background: transparent; border: 1px solid var(--border); color: var(--text-primary); font-family: var(--font-mono); font-size: 14px; padding: 0.25rem 0.6rem; cursor: pointer; letter-spacing: 0.06em; min-height: 28px; transition: border-color 0.15s, color 0.15s; }
 button:hover { border-color: var(--text-dim); color: var(--text-bright); }

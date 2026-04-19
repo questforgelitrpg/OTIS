@@ -121,3 +121,13 @@
 .ach-entry.unlocked .ach-progress {
     color: var(--text-bright);
 }
+
+/* Redacted / not-yet-revealed achievement entries */
+.ach-entry.ach-redacted {
+    opacity: 0.45;
+    filter: blur(1.5px);
+    user-select: none;
+    pointer-events: none;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+}
