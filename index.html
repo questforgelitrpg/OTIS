@@ -1782,6 +1782,7 @@
         if (!window._otisDayIntervalId) {
             window._otisDayIntervalId = setInterval(function() {
                 if (window._otisLoggedOff) return;
+                if (gameState.state.tutorialStep >= 1) return; // Freeze day clock during tutorial
                 advanceDay();
             }, TIMING.MS_PER_INGAME_DAY); // use the canonical timing constant (240 000 ms)
         }
@@ -1794,6 +1795,7 @@
         if (!window._otisDayClockId) {
             window._otisDayClockId = setInterval(function() {
                 if (window._otisLoggedOff) return;
+                if (gameState.state.tutorialStep >= 1) return; // Freeze visual clock during tutorial
                 var s = gameState.state;
                 var elapsed = Date.now() - (window._dayStartedAt || Date.now());
                 var fraction = Math.min(1, elapsed / TIMING.MS_PER_INGAME_DAY);

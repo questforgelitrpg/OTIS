@@ -109,6 +109,7 @@
     // NEVER triggers the toaster incident (power-outage plot event).  The toaster
     // incident is a separate Act-3 event; see fireToasterIncident() below.
     function autoToast() {
+        if (gameState.state.tutorialStep >= 1) return; // No toaster during tutorial
         if (gameState.state.toastFiredToday) return;
         if (window.OtisSound) OtisSound.startMusic('music2');
         var s = gameState.state;
