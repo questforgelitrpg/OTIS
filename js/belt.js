@@ -273,6 +273,7 @@
             setItemInQueue(item);
             updateBeltUI('DELIVERING');
         }
+        return true;
     }
     window.pushToBeltQueue = pushToBeltQueue;
 
