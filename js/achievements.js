@@ -470,29 +470,41 @@
         var totalUnlocked = unlocked.length;
         var totalAch = ACHIEVEMENTS.length;
 
-        // Update header summary
+        // Update header summary — show only unlocked count, not total (player should
+        // not know how many achievements exist in each section or overall).
         var summary = document.getElementById('ach-summary');
-        if (summary) summary.textContent = totalUnlocked + ' / ' + totalAch + ' unlocked';
+        if (summary) summary.textContent = totalUnlocked + ' unlocked';
 
         var html = '';
         sections.forEach(function(sec) {
             var group = sectionMap[sec];
             html += '<div class="ach-section">';
             html += '<div class="ach-section-title">' + escapeHtmlAch(sec.toUpperCase()) + '</div>';
-            group.forEach(function(a) {
+            // Progressive reveal: show all unlocked entries, then show the FIRST locked
+            // entry as a redacted placeholder (####), stop before any further locked entries.
+            for (var i = 0; i < group.length; i++) {
+                var a = group[i];
                 var isUnlocked = unlocked.indexOf(a.id) !== -1;
-                var cls = isUnlocked ? 'ach-entry unlocked' : 'ach-entry locked';
-                var icon = isUnlocked ? '\u2713' : '\u25A1';
+                if (!isUnlocked) {
+                    // Render this one as redacted, then stop — player sees one hint only
+                    html += '<div class="ach-entry locked ach-redacted">';
+                    html += '<span class="ach-icon">?</span>';
+                    html += '<span class="ach-name">####</span>';
+                    html += '<span class="ach-desc">####</span>';
+                    html += '<span class="ach-progress">####</span>';
+                    html += '</div>';
+                    break; // hide all remaining locked entries in this section
+                }
                 var prog = { current: 0, target: 1 };
                 try { prog = a.progress(s); } catch(e) {}
-                var progText = (prog.target > 1) ? (prog.current + ' / ' + prog.target) : (isUnlocked ? 'Done' : '—');
-                html += '<div class="' + cls + '">';
-                html += '<span class="ach-icon">' + icon + '</span>';
+                var progText = (prog.target > 1) ? (prog.current + ' / ' + prog.target) : 'Done';
+                html += '<div class="ach-entry unlocked">';
+                html += '<span class="ach-icon">\u2713</span>';
                 html += '<span class="ach-name">' + escapeHtmlAch(a.name) + '</span>';
                 html += '<span class="ach-desc">' + escapeHtmlAch(a.desc) + '</span>';
                 html += '<span class="ach-progress">' + progText + '</span>';
                 html += '</div>';
-            });
+            }
             html += '</div>';
         });
         body.innerHTML = html;

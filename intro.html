@@ -61,6 +61,17 @@
             margin-top: 1rem;
         }
 
+        #intro-storage-warn {
+            display: none;
+            margin-top: 1rem;
+            padding: 0.5rem 0.7rem;
+            font-size: 12px;
+            color: #c8960a;
+            border: 1px solid #4a3800;
+            background: #0d0a00;
+            line-height: 1.5;
+        }
+
         button {
             background: transparent;
             border: 1px solid var(--text-dim);
@@ -113,6 +124,10 @@
             <div id="intro-actions">
                 <button id="tutorial-btn" style="display:none" onclick="takeTutorial()">TAKE TUTORIAL &#9658;</button>
                 <button id="intro-btn" style="display:none" onclick="skipIntro()">SKIP &#9658;</button>
+            </div>
+            <div id="intro-storage-warn">
+                &#9888; SYSTEM NOTICE: Your game is saved in browser storage (localStorage).
+                Clearing your browser history, cache, or site data will permanently delete your save and you will have to start over.
             </div>
         </div>
     </div>
@@ -243,6 +258,9 @@
                 // Show the TAKE TUTORIAL button alongside OPERATOR LOGIN
                 var tutBtn = document.getElementById('tutorial-btn');
                 if (tutBtn) { tutBtn.style.display = ''; }
+                // Show browser-storage warning now that player is about to begin
+                var storageWarn = document.getElementById('intro-storage-warn');
+                if (storageWarn) { storageWarn.style.display = ''; }
             }, elapsed);
             _timers.push(endT);
         }

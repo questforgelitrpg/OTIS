@@ -80,6 +80,11 @@
                 <button id="tutorial-skip-btn" onclick="tutorialExit()" style="display:none;color:var(--text-dim);border-color:var(--border-dim)">SKIP TUTORIAL</button>
             </div>
 
+            <div id="storage-warn" style="display:none">
+                &#9888; SYSTEM NOTICE: Your game data is saved in browser storage.
+                Clearing your browser history, cache, or site data will permanently delete your save and you will have to start over.
+            </div>
+
             <div id="module-grid">
                 <button class="module-btn" id="module-btn-belt" onclick="openModal('belt')"><span class="mod-light" id="light-belt"></span>BELT / ITEMS</button>
                 <button class="module-btn" id="module-btn-comms" onclick="openModal('comms')"><span class="mod-light" id="light-comms"></span>COMMS</button>
@@ -965,6 +970,10 @@
                         loginBtn.classList.add('login-pulse');
                     }
 
+                    // Show browser-storage warning on logoff screen
+                    var storageWarn = document.getElementById('storage-warn');
+                    if (storageWarn) { storageWarn.style.display = ''; }
+
                     otisLines.length = 0;
                     otisLines.push({ role: 'otis', text: 'Terminal offline. Click LOGIN to resume.' });
                     renderOTIS();
@@ -1641,6 +1650,10 @@
                 loginBtn.disabled = true;
                 loginBtn.style.display = 'none';
             }
+
+            // Hide browser-storage warning when session resumes
+            var _storageWarn = document.getElementById('storage-warn');
+            if (_storageWarn) { _storageWarn.style.display = 'none'; }
 
             // Restore elements that may have been hidden by handleLogoff
             var _grid  = document.getElementById('module-grid');
