@@ -58,7 +58,7 @@
         gameState._save();
         var dot = document.getElementById('comms-dot-bank');
         if (dot) dot.className = 'comms-dot';
-        if (s.tutorialStep === 4) tutorialAdvance();
+        if (s.tutorialStep === 5) tutorialAdvance();
     }
     window.handleAnswerBank = handleAnswerBank;
 

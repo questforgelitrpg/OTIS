@@ -2,7 +2,7 @@
 
     function _tutorialActive() {
         var step = gameState.state.tutorialStep;
-        return step >= 1 && step <= 5;
+        return step >= 1 && step <= 6;
     }
 
     function _clearTutorialHighlight() {
@@ -33,7 +33,7 @@
         var s = gameState.state;
         if (!_tutorialActive()) return;
         var next = s.tutorialStep + 1;
-        if (next > 5) {
+        if (next > 6) {
             // All steps done — complete
             _clearTutorialHighlight();
             _showTutorialSkip(false);
@@ -69,10 +69,18 @@
             if (currentItem === null) { deliverNextBeltItem(); }
             tutorialAdvance();
         } else if (s.tutorialStep === 4 && name === 'comms') {
-            // Comms opened during step 4 — also highlight the ANSWER BANK button
+            // Comms opened during step 4 (bins) — highlight shipping bins and advance
+            var binsSection = document.getElementById('shipping-bins-section');
+            if (binsSection) binsSection.classList.add('tutorial-highlight');
+            tutorialAdvance();
+            // Also highlight the answer bank button since step 5 is already active in comms
+            var bankBtn5 = document.getElementById('btn-answer-bank');
+            if (bankBtn5) bankBtn5.classList.add('tutorial-highlight');
+        } else if (s.tutorialStep === 5 && name === 'comms') {
+            // Comms opened during step 5 — also highlight the ANSWER BANK button
             var bankBtn = document.getElementById('btn-answer-bank');
             if (bankBtn) bankBtn.classList.add('tutorial-highlight');
-        } else if (s.tutorialStep === 5 && name === 'systems') {
+        } else if (s.tutorialStep === 6 && name === 'systems') {
             tutorialAdvance();
         }
     }

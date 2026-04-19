@@ -286,11 +286,12 @@
     window.RARITY_CREDIT_CAPS = RARITY_CREDIT_CAPS;
 
     // TUTORIAL SYSTEM
-    // tutorialStep in state: 0 = inactive, 1–5 = active step, sets to 0 on complete/exit.
+    // tutorialStep in state: 0 = inactive, 1–6 = active step, sets to 0 on complete/exit.
     var TUTORIAL_STEPS = [
         { target: 'module-btn-belt',    msg: 'Open the belt panel. An item is waiting.' },
         { target: 'cc-examine',         msg: 'Examine the item before declaring it. George always did.' },
         { target: 'item-declaration',   msg: 'Sort to a bin: May takes Civilian/Settlement, Broker takes any, Sven takes Rare/Anomalous at 65%.' },
+        { target: 'module-btn-comms',   msg: 'Items land in bins after you declare them. Ship each bin to get paid. May: Civilian/Settlement. Broker: any item, bonus when full. Sven: Rare/Anomalous at 65%, auto-ships at two.' },
         { target: 'module-btn-comms',   msg: 'The Bank sent a message on Day 1. It is not friendly. It is also not optional.' },
         { target: 'module-btn-systems', msg: 'Check the bots occasionally. George did not. Eventually that mattered.' },
     ];

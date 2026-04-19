@@ -329,6 +329,7 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 .scrap-bar-fill.scrap-amber { background: var(--ind-amber); }
 .scrap-bar-fill.scrap-red   { background: var(--ind-red); }
 .bin-total { font-size: 10px; color: var(--text-warn); }
+.bin-help-text { font-size: 12px; color: var(--text-dim); margin-bottom: 0.5rem; }
 
 /* Shipping queue */
 .shipping-item { font-size: 14px; color: var(--text-dim); padding: 0.1rem 0; border-bottom: 1px solid var(--border-dim); }
