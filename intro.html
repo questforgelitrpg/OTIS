@@ -121,7 +121,7 @@
     <script>
     (function () {
         // STATE_KEY must match the stateManager STATE_KEY constant in index.html.
-        var STATE_KEY = 'otis_state_v4';
+        var STATE_KEY = 'otis_state_v5';
         var _timers = [];
         var _running = false;
         var _started = false;
@@ -151,13 +151,13 @@
         // Mark introPlayed in the game-state key so index.html knows intro is done.
         // intro.html only bootstraps introPlayed (and optionally tutorialStep); all other
         // fields are supplied by stateManager._default() in index.html on first load.
-        // stateVersion must be >= 4 so stateManager.load() does not discard the state.
+        // stateVersion must be >= 7 so stateManager.load() does not discard the state.
         function markIntroPlayed() {
             try {
                 var raw = localStorage.getItem(STATE_KEY);
                 var state = raw ? JSON.parse(raw) : {};
                 state.introPlayed = true;
-                if (!state.stateVersion || state.stateVersion < 4) { state.stateVersion = 4; }
+                if (!state.stateVersion || state.stateVersion < 7) { state.stateVersion = 7; }
                 localStorage.setItem(STATE_KEY, JSON.stringify(state));
             } catch (e) {}
         }
@@ -168,14 +168,14 @@
         }
 
         // TAKE TUTORIAL button — marks intro played, sets tutorialStep=1, goes to game.
-        // stateVersion must be >= 4 so stateManager.load() does not discard the state.
+        // stateVersion must be >= 7 so stateManager.load() does not discard the state.
         window.takeTutorial = function () {
             try {
                 var raw = localStorage.getItem(STATE_KEY);
                 var state = raw ? JSON.parse(raw) : {};
                 state.introPlayed = true;
                 state.tutorialStep = 1;
-                if (!state.stateVersion || state.stateVersion < 4) { state.stateVersion = 4; }
+                if (!state.stateVersion || state.stateVersion < 7) { state.stateVersion = 7; }
                 localStorage.setItem(STATE_KEY, JSON.stringify(state));
             } catch (e) {}
             window.location.href = 'index.html';
