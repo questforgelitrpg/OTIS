@@ -156,7 +156,7 @@
         }
         // Track order completion for achievements
         s.ordersCompletedTotal = (s.ordersCompletedTotal || 0) + 1;
-        if (order.requirementKey === 'svenRareRefusal') s.svenFirstRefusalDone = true;
+        if (order && order.requirementKey === 'svenRareRefusal') s.svenFirstRefusalDone = true;
         otisLines.push({ role: 'otis', text: rewardMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(rewardMsg);
 
