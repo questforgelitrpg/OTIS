@@ -110,6 +110,7 @@
         var msg = 'Complaint filed with moon transit authority. Total complaints filed: ' + s.svenComplaints + '. No response received.';
         otisLines.push({ role:'otis', text: msg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(msg);
+        if (window.Achievements) Achievements.check();
     }
     window.handleFileComplaint = handleFileComplaint;
 

@@ -150,6 +150,22 @@
                 weighItShown: [],            // item names already shown weigh-it hint
         orderFollowUpDay: {},        // last follow-up day per NPC (Sven/May) — used to
                                      // rate-limit future NPC follow-up pings to once per day
+                // --- ACHIEVEMENTS (v8) ---
+                itemsScannedTotal: 0,
+                easterEggsFoundTotal: 0,
+                easterEggNamesSeen: [],
+                ordersCompletedTotal: 0,
+                endingsSeen: [],
+                buttonsPressed: {},
+                chaosButtonsPressed: [],
+                dadJokesHeard: 0,
+                achievementsUnlocked: [],
+                paymentsCleared: 0,
+                botFirstCalibrated: false,
+                botFirstPartsOrdered: false,
+                botEverDegraded: false,
+                svenFirstRefusalDone: false,
+                stateVersion: 8,
             };
         },
         save: function(state) {
@@ -190,6 +206,12 @@
         if (typeof state.earlyDebtEventFired !== 'boolean') state.earlyDebtEventFired = false;
         if (!Array.isArray(state.weighItShown)) state.weighItShown = [];
         if (typeof state.orderFollowUpDay !== 'object' || state.orderFollowUpDay === null) state.orderFollowUpDay = {};
+        // v8 achievement fields
+        if (!Array.isArray(state.endingsSeen))         state.endingsSeen         = [];
+        if (!Array.isArray(state.easterEggNamesSeen))  state.easterEggNamesSeen  = [];
+        if (!Array.isArray(state.chaosButtonsPressed)) state.chaosButtonsPressed = [];
+        if (!Array.isArray(state.achievementsUnlocked)) state.achievementsUnlocked = [];
+        if (typeof state.buttonsPressed !== 'object' || state.buttonsPressed === null) state.buttonsPressed = {};
     }
     window.ensureStateDefaults = ensureStateDefaults;
 
@@ -264,6 +286,7 @@
         if (typeof renderBinPanel === 'function') renderBinPanel();
         if (typeof renderUpgrades === 'function') renderUpgrades();
         if (typeof renderActiveOrders === 'function') renderActiveOrders();
+        if (window.Achievements) Achievements.check();
     };
     GameState.prototype._renderKeepLog = function() {
         var list  = document.getElementById('keep-log-list');

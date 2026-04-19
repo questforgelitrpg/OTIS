@@ -18,6 +18,7 @@
     }());
     </script>
     <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/achievements.css">
 </head>
 <body>
     <div id="crt-overlay" aria-hidden="true"></div>
@@ -75,6 +76,7 @@
                 <button id="tts-btn" onclick="handleTTSToggle()">TTS: ON</button>
                 <button id="tts-skip-btn" onclick="handleTTSSkip()" title="Skip current speech and clear queue">TTS: SKIP</button>
                 <button id="sfx-btn" onclick="handleSoundToggle()">SFX: ON</button>
+                <button id="ach-btn" onclick="openAchievements()">ACH</button>
                 <button id="tutorial-skip-btn" onclick="tutorialExit()" style="display:none;color:var(--text-dim);border-color:var(--border-dim)">SKIP TUTORIAL</button>
             </div>
 
@@ -217,11 +219,11 @@
             </div>
             <div class="modal-section">
                 <div class="modal-label">SVEN DIGUT / DIGUT OPS</div>
-                <div class="comms-row"><span class="comms-dot" id="comms-dot-sven"></span><span class="comms-label">SIGNAL</span><button onclick="handleAnswerSven()">ANSWER SVEN</button><button onclick="handleIgnoreSven()">IGNORE SVEN</button><button onclick="handleFileComplaint()">FILE COMPLAINT</button></div>
+                <div class="comms-row"><span class="comms-dot" id="comms-dot-sven"></span><span class="comms-label">SIGNAL</span><button id="btn-answer-sven" onclick="handleAnswerSven()">ANSWER SVEN</button><button id="btn-ignore-sven" onclick="handleIgnoreSven()">IGNORE SVEN</button><button id="btn-file-complaint" onclick="handleFileComplaint()">FILE COMPLAINT</button></div>
             </div>
             <div class="modal-section">
                 <div class="modal-label">MAY FINSTER / LEFTOVER RECYCLING</div>
-                <div class="comms-row"><span class="comms-dot" id="comms-dot-may"></span><span class="comms-label" id="may-scrap-readout">SCRAP: 0%</span><button onclick="handleAnswerMay()">ANSWER MAY</button><button onclick="handleDispatchMay()">DISPATCH SCRAP</button></div>
+                <div class="comms-row"><span class="comms-dot" id="comms-dot-may"></span><span class="comms-label" id="may-scrap-readout">SCRAP: 0%</span><button id="btn-answer-may" onclick="handleAnswerMay()">ANSWER MAY</button><button onclick="handleDispatchMay()">DISPATCH SCRAP</button></div>
             </div>
             <div class="modal-section">
                 <div class="modal-label">SHIPPING BINS</div>
@@ -465,6 +467,18 @@
       </div>
     </div>
 
+    <!-- ACHIEVEMENTS MODAL -->
+    <div id="modal-achievements" class="modal" role="dialog" aria-label="Achievements">
+      <div class="modal-inner">
+        <div class="modal-header">
+          <span>ACHIEVEMENTS</span>
+          <span id="ach-summary" style="font-size:13px;color:var(--text-dim);margin-left:auto;margin-right:0.8rem"></span>
+          <button onclick="closeAchievements()">&#x2715; CLOSE</button>
+        </div>
+        <div id="ach-modal-body" style="overflow-y:auto;max-height:70vh;padding-top:0.5rem"></div>
+      </div>
+    </div>
+
     <!-- DROP DEBRIEF MODAL -->
     <div id="modal-debrief" class="modal" role="dialog" aria-label="Drop Debrief" aria-modal="true">
       <div class="modal-inner" style="max-width:480px;margin-top:10vh">
@@ -532,6 +546,7 @@
     <script src="js/naming.js"></script>
     <script src="js/debug.js"></script>
     <script src="js/chaos-buttons.js"></script>
+    <script src="js/achievements.js"></script>
     <script>
 
     // PICK LIST
@@ -1342,6 +1357,7 @@
         }
 
         mazeRender();
+        if (window.Achievements) Achievements.check();
     }
 
     function mazeGrantReward() {

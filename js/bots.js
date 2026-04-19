@@ -18,6 +18,7 @@
         else if (bot.degradation >= 6) bot.status = 'RED';
         else if (bot.degradation >= 3) bot.status = 'AMBER';
         else bot.status = 'NOMINAL';
+        if (bot.status !== 'NOMINAL') s.botEverDegraded = true;
         gameState._save();
         updateBotUI();
     }
@@ -99,9 +100,11 @@
         else if (bot.degradation >= 6) bot.status = 'RED';
         else if (bot.degradation >= 3) bot.status = 'AMBER';
         else bot.status = 'NOMINAL';
+        s.botFirstCalibrated = true;
         gameState._save(); gameState._updateUI();
         var b3 = 'BOT-' + id + ' calibrated. Status: ' + bot.status + '.';
         otisLines.push({ role: 'otis', text: b3 }); renderOTIS();
+        if (window.Achievements) Achievements.check();
     }
     window.handleBotCalibrate = handleBotCalibrate;
 
@@ -121,6 +124,7 @@
         // Deferred repair: parts arrive in 2 in-game days
         s.pendingBotRepairs = pending;
         s.pendingBotRepairs.push({ botId: id, repairOnDay: s.day + 2 });
+        s.botFirstPartsOrdered = true;
         gameState._save(); gameState._updateUI();
         renderPendingBotRepairs();
         var b5 = 'BOT-' + id + ' parts ordered. ETA: 2 days. Bot remains degraded until delivery.';

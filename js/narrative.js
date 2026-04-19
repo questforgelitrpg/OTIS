@@ -48,6 +48,9 @@
         renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(full);
         _lastOtisActivity = Date.now(); // reset so it doesn't fire again immediately
+        // Track dad joke count for achievements
+        gameState.state.dadJokesHeard = (gameState.state.dadJokesHeard || 0) + 1;
+        if (window.Achievements) Achievements.check();
     }, 30000); // check every 30 seconds
 
     async function appendOTIS(userText, trigger) {
@@ -284,6 +287,12 @@
         var s = gameState.state;
         var ending = ENDINGS[endingKey];
         if (!ending) return;
+        // Track ending seen for achievements (deduplicated)
+        if (!Array.isArray(s.endingsSeen)) s.endingsSeen = [];
+        if (s.endingsSeen.indexOf(endingKey) === -1) {
+            s.endingsSeen.push(endingKey);
+            gameState._save();
+        }
         var archive = s.humanityArchive || 0;
         var credits = s.credits || 0;
         var titleEl = document.getElementById('ending-title');
@@ -305,6 +314,7 @@
             otisLines.push({ role: 'otis', text: ending.otisLine }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(ending.otisLine);
         }
+        if (window.Achievements) Achievements.check();
         openModal('ending');
     }
 

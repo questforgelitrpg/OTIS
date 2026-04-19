@@ -562,8 +562,19 @@
         setItemInQueue(item);
         updateBeltUI('DELIVERING');
         var s = gameState.state;
+        // Track scanned items for achievements
+        s.itemsScannedTotal = (s.itemsScannedTotal || 0) + 1;
+        // Track easter eggs (deduplicated by name)
+        if (item.easterEgg) {
+            if (!Array.isArray(s.easterEggNamesSeen)) s.easterEggNamesSeen = [];
+            if (s.easterEggNamesSeen.indexOf(item.name) === -1) {
+                s.easterEggNamesSeen.push(item.name);
+                s.easterEggsFoundTotal = (s.easterEggsFoundTotal || 0) + 1;
+            }
+        }
         var deliveryCount = s.deliveryCount = (s.deliveryCount || 0) + 1;
         if (deliveryCount % 7 === 0) fireOtisSideComment();
+        if (window.Achievements) Achievements.check();
         // Mobile: CSS media query handles auto-opening the belt panel at ≤600px
     }
 
