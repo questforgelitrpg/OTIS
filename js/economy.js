@@ -61,6 +61,7 @@
         s.mayBin = [];
         s.mayNotifUnread = true;
         gameState._save(); gameState._updateUI();
+        if (gameState.state.tutorialStep === 19) tutorialUnlockGate(19);
         renderBinPanel();
         var mMsg = 'May bin shipped. ' + bin.length + ' items. +' + total + ' cr.';
         otisLines.push({ role:'otis', text: mMsg }); renderOTIS();
@@ -82,6 +83,7 @@
         s.credits += total;
         s.brokerBin = [];
         gameState._save(); gameState._updateUI();
+        if (gameState.state.tutorialStep === 19) tutorialUnlockGate(19);
         renderBinPanel();
         var pctStr = Math.round(fillPct * 100) + '% fill';
         var multStr = mult < 1.0 ? ' (' + Math.round(mult*100) + '% value)' : '';
@@ -112,6 +114,7 @@
         s.credits += total;
         s.svenBin = [];
         gameState._save(); gameState._updateUI();
+        if (gameState.state.tutorialStep === 19) tutorialUnlockGate(19);
         renderBinPanel();
         var svMsg = '[SVEN] Items received. Credits transferred. ' + total + ' cr. \u2014 Digut';
         otisLines.push({ role:'otis', text: svMsg }); renderOTIS();

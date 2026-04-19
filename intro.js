@@ -90,7 +90,7 @@
             // skipped) before Day 1 begins.  Change the SKIP button to a LOGIN button.
             var skipBtn = document.getElementById('intro-skip-btn');
             if (skipBtn) {
-                skipBtn.textContent = 'OPERATOR LOGIN \u25BA';
+                skipBtn.textContent = 'SKIP TUTORIAL \u25BA';
                 skipBtn.classList.add('login-pulse');
                 skipBtn.onclick = function () { _doComplete(); };
             } else {

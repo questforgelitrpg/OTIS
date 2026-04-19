@@ -38,7 +38,7 @@
         <div id="terminal">
             <header id="hdr">
                 <span id="hdr-title">O.T.I.S.</span>
-                <div id="hdr-day-wrap">
+                <div id="hdr-day-wrap" data-tooltip="DAY CLOCK&#10;4 real minutes = 1 in-game day&#10;Barge and payment tied to this">
                     <span id="hdr-day-text">DAY 1&nbsp;&nbsp;00:00</span>
                     <div id="hdr-day-bar"><div id="hdr-day-bar-fill"></div></div>
                 </div>
@@ -48,9 +48,9 @@
                     <span id="hdr-payoff-label">PAID: <span id="hdr-payoff-pct">0%</span></span>
                     <div id="hdr-payoff-bar"><div id="hdr-payoff-bar-fill"></div></div>
                 </div>
-                <span class="hdr-stat" id="hdr-payment">PAY: 28d</span>
-                <span class="hdr-stat" id="hdr-barge">BARGE: 7d</span>
-                <span class="hdr-stat" id="hdr-hours">SESSION: 0h 0m</span>
+                <span class="hdr-stat" id="hdr-payment" data-tooltip="PAYMENT DUE&#10;Days until 850 cr installment&#10;Miss it and arrears stack">PAY: 28d</span>
+                <span class="hdr-stat" id="hdr-barge" data-tooltip="BARGE ARRIVAL&#10;Days until next salvage drop&#10;Drops every 2 in-game days">BARGE: 7d</span>
+                <span class="hdr-stat" id="hdr-hours" data-tooltip="SESSION HOURS&#10;Long sessions reduce performance&#10;Log off between shifts">SESSION: 0h 0m</span>
                 <span class="hdr-stat" id="hdr-naming">MR. SERLING</span>
                 <span class="hdr-stat" id="hdr-archive" style="color:#cc77ff;display:none" title="Items in the Humanity Archive">&#x25C6; ARCHIVE: 0</span>
                 <button id='fatigue-warn-btn' onclick='handleLogoff()'
@@ -84,7 +84,10 @@
                 <button id="tts-skip-btn" onclick="handleTTSSkip()" title="Skip current speech and clear queue">TTS: SKIP</button>
                 <button id="sfx-btn" onclick="handleSoundToggle()">SFX: ON</button>
                 <button id="ach-btn" onclick="openAchievements()">ACH</button>
+                <button id="tutorial-back-btn" onclick="tutorialBack()" style="display:none;color:var(--text-dim);border-color:var(--border-dim)" disabled>&#9664; BACK</button>
+                <button id="tutorial-next-btn" onclick="tutorialNext()" style="display:none;color:var(--text-bright);border-color:var(--text-bright)">NEXT &#9654;</button>
                 <button id="tutorial-skip-btn" onclick="tutorialExit()" style="display:none;color:var(--text-dim);border-color:var(--border-dim)">SKIP TUTORIAL</button>
+                <button id="tutorial-begin-btn" onclick="handleTutorialBeginGame()" style="display:none;color:var(--text-bright);border-color:var(--text-bright)">BEGIN GAME &#9658;</button>
             </div>
 
             <div id="storage-warn" style="display:none">
@@ -93,11 +96,12 @@
             </div>
 
             <div id="module-grid">
-                <button class="module-btn" id="module-btn-belt" onclick="openModal('belt')"><span class="mod-light" id="light-belt"></span>BELT / ITEMS</button>
-                <button class="module-btn" id="module-btn-comms" onclick="openModal('comms')"><span class="mod-light" id="light-comms"></span>COMMS</button>
-                <button class="module-btn" onclick="openModal('store')"><span class="mod-light" id="light-store"></span>STOREROOM</button>
-                <button class="module-btn" id="module-btn-systems" onclick="openModal('systems')"><span class="mod-light" id="light-systems"></span>SYSTEMS / BOTS</button>
+                <button class="module-btn" id="module-btn-belt" onclick="openModal('belt')" data-tooltip="BELT / ITEMS&#10;Examine and sort incoming salvage&#10;Core workstation"><span class="mod-light" id="light-belt"></span>BELT / ITEMS</button>
+                <button class="module-btn" id="module-btn-comms" onclick="openModal('comms')" data-tooltip="COMMS&#10;Bank, Sven, May channels&#10;Ship bins here to collect credits"><span class="mod-light" id="light-comms"></span>COMMS</button>
+                <button class="module-btn" onclick="openModal('store')" data-tooltip="STOREROOM&#10;Keep log, buffer, George's warehouse&#10;Station upgrade node"><span class="mod-light" id="light-store"></span>STOREROOM</button>
+                <button class="module-btn" id="module-btn-systems" onclick="openModal('systems')" data-tooltip="SYSTEMS / BOTS&#10;Monitor retrieval bots&#10;Degrade each drop — maintain regularly"><span class="mod-light" id="light-systems"></span>SYSTEMS / BOTS</button>
                 <button class="module-btn" id="module-btn-auxiliary" style="display:none;opacity:0;transition:opacity 1s" onclick="openModal('auxiliary')"><span class="mod-light" id="light-auxiliary"></span>AUXILIARY INPUT</button>
+                <button class="module-btn" id="module-btn-help" onclick="openModal('help')" data-tooltip="HELP / REFERENCE&#10;Station manual and mechanic summaries&#10;Not read by TTS"><span class="mod-light" id="light-help"></span>HELP</button>
             </div>
 
             <div id="debug-panel">
@@ -183,12 +187,12 @@
                     </div>
                     <div class="item-actions" id="item-declaration" style="display:none">
                         <p id="weigh-it-hint" style="display:none"></p>
-                        <button id="btn-to-may" onclick="handleDeclare('MAY_BIN')" title="Civilian and Settlement items only">TO MAY BIN</button>
-                        <button id="btn-to-broker" onclick="handleDeclare('BROKER_BIN')" title="Industrial and Vessel items">TO BROKER BIN</button>
-                        <button id="btn-to-sven" onclick="handleDeclare('SVEN_BIN')" title="Rare and Anomalous only — Sven pays 65%" style="color:var(--text-warn);border-color:#3a2a00">TO SVEN BIN</button>
+                        <button id="btn-to-may" onclick="handleDeclare('MAY_BIN')" title="Civilian and Settlement items only" data-tooltip="Civilian and Settlement only&#10;Full value — ships to May">TO MAY BIN</button>
+                        <button id="btn-to-broker" onclick="handleDeclare('BROKER_BIN')" title="Industrial and Vessel items" data-tooltip="Any item&#10;Higher payout when bin is fuller">TO BROKER BIN</button>
+                        <button id="btn-to-sven" onclick="handleDeclare('SVEN_BIN')" title="Rare and Anomalous only — Sven pays 65%" style="color:var(--text-warn);border-color:#3a2a00" data-tooltip="Rare and Anomalous only&#10;65% — auto-ships at 2">TO SVEN BIN</button>
                         <button id="btn-to-archive" onclick="handleDeclare('ARCHIVE')" title="Route to Humanity Archive — Anomalous items only" style="display:none;color:#cc77ff;border-color:#5a2a7a">ARCHIVE</button>
-                        <button onclick="handleDeclare('KEEP')">KEEP</button>
-                        <button class="btn-warn" onclick="handleDeclare('SCRAP')">SCRAP</button>
+                        <button onclick="handleDeclare('KEEP')" data-tooltip="Stores in your keep log&#10;Limited capacity">KEEP</button>
+                        <button class="btn-warn" onclick="handleDeclare('SCRAP')" data-tooltip="Low return, instant clear&#10;Watch scrap fill in COMMS">SCRAP</button>
                     </div>
                 </div>
             </div>
@@ -242,7 +246,7 @@
                 <div class="bin-help-text">Items you declare route here. Ship each bin to earn credits. May takes Civilian &amp; Settlement goods. Broker takes any item and pays a bonus when full. Sven takes Rare &amp; Anomalous at 65% value and auto-ships once you have two.</div>
                 <!-- MAY BIN -->
                 <div style="margin-bottom:0.5rem">
-                    <div class="modal-label" style="font-size:13px">
+                    <div class="modal-label" style="font-size:13px" data-tooltip="Civilian and Settlement items only&#10;Full value&#10;Ship with DISPATCH SCRAP">
                         MAY BIN — Civilian / Settlement
                         <span id="may-bin-count" style="color:var(--text-primary)">0/12</span>
                         <span id="may-bin-total" class="bin-total"></span>
@@ -255,7 +259,7 @@
                 </div>
                 <!-- BROKER BIN -->
                 <div style="margin-bottom:0.5rem">
-                    <div class="modal-label" style="font-size:13px">
+                    <div class="modal-label" style="font-size:13px" data-tooltip="Any item accepted&#10;Sliding payout by fill level&#10;Full value at 10/10">
                         BROKER BIN — Industrial / Vessel
                         <span id="broker-bin-count" style="color:var(--text-primary)">0/10</span>
                         <span id="broker-bin-rate" style="font-size:12px;color:var(--text-warn)"></span>
@@ -269,7 +273,7 @@
                 </div>
                 <!-- SVEN BIN -->
                 <div style="margin-bottom:0.5rem">
-                    <div class="modal-label" style="font-size:13px;color:var(--text-warn)">
+                    <div class="modal-label" style="font-size:13px;color:var(--text-warn)" data-tooltip="Rare and Anomalous only&#10;65% value&#10;Auto-ships at 2 items">
                         SVEN BIN — Rare / Anomalous (65% value — auto-ships at 2)
                         <span id="sven-bin-count" style="color:var(--text-warn)">0/3</span>
                         <span id="sven-bin-total" class="bin-total"></span>
@@ -278,7 +282,7 @@
                 </div>
                 <!-- SCRAP CHANNEL -->
                 <div style="margin-bottom:0.5rem">
-                    <div class="modal-label" style="font-size:13px">SCRAP CHANNEL: <span id="scrap-pct">0%</span></div>
+                    <div class="modal-label" style="font-size:13px" data-tooltip="All categories accepted&#10;Low return — weight-based pay&#10;Ship before 100% fill">SCRAP CHANNEL: <span id="scrap-pct">0%</span></div>
                     <div class="scrap-bar-track" style="height:4px"><div class="scrap-bar-fill" id="scrap-bar-fill" style="width:0%;height:4px"></div></div>
                     <div class="modal-row"><button onclick="handleDispatchMay()">SHIP SCRAP</button></div>
                 </div>
@@ -385,6 +389,59 @@
             <div class="modal-section">
                 <div class="modal-label">STATION UPGRADES</div>
                 <div id="upgrades-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HELP MODAL -->
+    <div id="modal-help" class="modal modal-panel" role="dialog" aria-label="Help and Reference">
+        <div class="modal-inner">
+            <div class="modal-header"><span>HELP / REFERENCE</span><button onclick="closeModal('help')">&#x2715; CLOSE</button></div>
+            <div class="modal-section">
+                <div class="modal-label">THE CLOCKS</div>
+                <p class="zone-hint">DAY CLOCK: One in-game day = 4 real minutes. The day bar fills as the day progresses. Watch it — the barge and payment countdowns are tied to it.</p>
+                <p class="zone-hint">SESSION HOURS: How long you have been logged in this shift. Extended shifts degrade performance. OTIS will comment. Log off between sessions.</p>
+                <p class="zone-hint">PAY: Days until your next loan installment is due. Default 850 cr. Miss it and arrears accrue.</p>
+                <p class="zone-hint">BARGE: Days until the next salvage drop arrives. Drops every 2 in-game days. Contains 10–32 items depending on your progress.</p>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label">THE BELT</div>
+                <p class="zone-hint">Items arrive from barges overhead. Open BELT/ITEMS to process them one at a time. EXAMINE each item to see its category, rarity, and condition before sorting.</p>
+                <p class="zone-hint">SKIP passes the item to the back of the queue. SCRAP destroys it for low return. A backed-up belt means more items are queued than you can process — keep sorting.</p>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label">SORTING OPTIONS</div>
+                <p class="zone-hint">MAY BIN — Civilian and Settlement items only. Full value. Ship manually from COMMS. Up to 12 items.</p>
+                <p class="zone-hint">BROKER BIN — Any item. Sliding rate: the fuller the bin at ship time, the higher the payout. Full value at 10/10 items. Ship manually from COMMS.</p>
+                <p class="zone-hint">SVEN BIN — Rare and Anomalous only. Pays 65% of value. Auto-ships when you have 2 items. No manual action needed.</p>
+                <p class="zone-hint">KEEP — Holds item in your storeroom log. Limited slots. Use for items with schematic or narrative value.</p>
+                <p class="zone-hint">SCRAP — Low return, instant clearance. May buys by weight. Watch the SCRAP CHANNEL fill percentage in COMMS and ship before it hits 100%.</p>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label">COMMS</div>
+                <p class="zone-hint">Bank Channel: Loan ledger, installments, arrears. Answer bank messages to stay current. MAKE INSTALLMENT pays your weekly debt slice.</p>
+                <p class="zone-hint">Sven Digut: Buyer for rare items. Can steal from your broker bin if you ignore him too long. You can answer, ignore, or file complaints.</p>
+                <p class="zone-hint">May Finster: Runs scrap recycling. Pays for scrap and Civilian/Settlement items. DISPATCH SCRAP ships both the scrap channel and the May bin at once.</p>
+                <p class="zone-hint">Shipping Bins: Ship each bin to collect credits. Broker and May require manual ship. Sven auto-ships at 2 items.</p>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label">STOREROOM</div>
+                <p class="zone-hint">Keep Log: Items you declared KEEP. Upgrade storage capacity in SYSTEMS upgrades.</p>
+                <p class="zone-hint">Buffer Queue: Items routed from the belt during overflow. Pull items from here between drop windows.</p>
+                <p class="zone-hint">George's Warehouse: Items left by the previous operator. Search every 20 seconds. Some items connect to the Master Integration Schematic.</p>
+                <p class="zone-hint">Master Integration Schematic: A circuit George was building. Installing verified nodes from kept items and warehouse finds may reveal something important.</p>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label">SYSTEMS / BOTS</div>
+                <p class="zone-hint">Three retrieval bots fetch items from the salvage field during drop windows. Each bot has a degradation level that increases each drop.</p>
+                <p class="zone-hint">CALIBRATE costs 50 cr and reduces degradation. ORDER PARTS costs 200 cr and schedules a full repair over 2 days. Parts arrive even if the bot is still working.</p>
+                <p class="zone-hint">Bank inspections check bot status every 14 days. Failed inspections add to arrears. All three bots offline will stop the belt entirely.</p>
+            </div>
+            <div class="modal-section">
+                <div class="modal-label">THE DEBT</div>
+                <p class="zone-hint">You owe 25,000 cr to the Universal Bank Conglomerate. Pay 850 cr per week from COMMS. Pay early to reset the countdown.</p>
+                <p class="zone-hint">Miss a payment and arrears stack. The CLEAR ARREARS button in COMMS costs the full arrears amount. Multiple missed payments escalate consequences.</p>
+                <p class="zone-hint">The debt is the game. Everything else is the means to pay it off.</p>
             </div>
         </div>
     </div>
@@ -1850,6 +1907,12 @@
             if (_ttsSkip && window.OtisTTS && !window.OtisTTS.isSupported()) _ttsSkip.style.display = 'none';
             var _tutSkip = document.getElementById('tutorial-skip-btn');
             if (_tutSkip) _tutSkip.style.display = 'none';
+            var _tutBack = document.getElementById('tutorial-back-btn');
+            if (_tutBack) _tutBack.style.display = 'none';
+            var _tutNext = document.getElementById('tutorial-next-btn');
+            if (_tutNext) _tutNext.style.display = 'none';
+            var _tutBegin = document.getElementById('tutorial-begin-btn');
+            if (_tutBegin) _tutBegin.style.display = 'none';
 
             // Carry-over fatigue penalty: if last session ended at CRITICAL and player logs back in
             // within a short window, degrade one random bot by 1 tick and fire a shame-login line.
@@ -1947,12 +2010,31 @@
                 }
             }
             // Start tutorial if flagged (e.g. player chose TAKE TUTORIAL on intro screen)
-            if (gameState.state.tutorialStep === 1) {
-                setTimeout(function() { _startTutorialStep(1); }, 800);
+            // Tutorial now runs pre-game; if tutorialStep >= 1, the clock is not running.
+            // This path handles the case where bootSequence was called with tutorial active.
+            if (gameState.state.tutorialStep >= 1) {
+                setTimeout(function() { _startTutorialStep(gameState.state.tutorialStep); }, 800);
             }
         }
 
-        showLoginGate();
+        function handleTutorialBeginGame() {
+            var btn = document.getElementById('tutorial-begin-btn');
+            if (btn) btn.style.display = 'none';
+            if (typeof _showTutorialNav === 'function') _showTutorialNav(false);
+            // Show login gate — player clicks LOGIN to officially start
+            showLoginGate();
+        }
+        window.handleTutorialBeginGame = handleTutorialBeginGame;
+
+        // If tutorial is active on load, start pre-game tutorial instead of login gate
+        if (gameState.state.tutorialStep >= 1) {
+            var _loginBtn = document.getElementById('btn-login');
+            if (_loginBtn) _loginBtn.style.display = 'none';
+            if (typeof _showTutorialNav === 'function') _showTutorialNav(true);
+            if (typeof _startTutorialStep === 'function') _startTutorialStep(gameState.state.tutorialStep);
+        } else {
+            showLoginGate();
+        }
     })();
     </script>
 </body>
