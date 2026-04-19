@@ -348,7 +348,7 @@
         var gain = ctx.createGain();
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(1200, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.04);
+        osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.06);
         gain.gain.setValueAtTime(0.12, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
         osc.connect(gain);

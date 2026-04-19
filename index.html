@@ -1607,10 +1607,10 @@
 
         // Play a subtle click on every non-disabled button press.
         document.addEventListener('click', function (e) {
-            var btn = e.target.closest('button');
-            if (btn && !btn.disabled && window.OtisSound) {
-                OtisSound.playClick();
-            }
+            if (!window.OtisSound) return;
+            var t = e.target;
+            var btn = (t.tagName === 'BUTTON') ? t : t.closest('button');
+            if (btn && !btn.disabled) OtisSound.playClick();
         });
 
         // Timers — IDs stored on window to prevent duplicate intervals on hot reload
