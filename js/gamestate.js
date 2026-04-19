@@ -235,7 +235,6 @@
         var s = this.state;
         var naming = NAMING_TIERS[Math.min(s.namingTier, NAMING_TIERS.length - 1)];
         var dup = (s.daysUntilPayment != null) ? s.daysUntilPayment : TIMING.PAYMENT_CYCLE_DAYS;
-        setEl('hdr-day-text', 'DAY ' + s.day);
         setEl('hdr-credits', s.credits.toLocaleString() + ' cr');
         setEl('hdr-debt', 'LOAN: ' + s.debt.toLocaleString() + ' cr');
         setEl('hdr-naming', naming.toUpperCase());

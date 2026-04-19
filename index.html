@@ -1761,8 +1761,8 @@
             // Await the LOGIN OTIS response (welcome Vernon).
             await appendOTIS('Operator logging in.', 'LOGIN');
             // Day-1 auto-nudge: 2s after login, open the belt modal and fire orientation line
-            var _s0 = gameState.state;
-            if (_s0.day === 1 && (_s0.keepLog || []).length === 0 && !(_s0.totalProcessed || 0)) {
+            var dayOneState = gameState.state;
+            if (dayOneState.day === 1 && (dayOneState.keepLog || []).length === 0 && !(dayOneState.totalProcessed || 0)) {
                 setTimeout(function() {
                     openModal('belt');
                     var nudgeMsg = 'Belt is live. An item is waiting.';

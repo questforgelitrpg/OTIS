@@ -88,6 +88,11 @@
     var _dropCreditsStart = 0;
     // Per-drop skip counter — in-memory only, resets each drop, never saved to state
     var _currentDropSkips = 0;
+    // Skip penalty constants (applied when _currentDropSkips reaches SKIP_PENALTY_THRESHOLD)
+    var SKIP_PENALTY_THRESHOLD = 5;
+    var SKIP_PENALTY_PER_DAY   = 5;
+    var SKIP_PENALTY_MIN       = 5;
+    var SKIP_PENALTY_MAX       = 50;
 
     function _resetDropRoutes() {
         _dropRoutes = { kept: 0, sold: 0, sven: 0, archived: 0, scrap: 0, skip: 0 };
@@ -1166,9 +1171,9 @@
             ttsSay(msg);
         }
         // Skip penalty: fires on the 5th cumulative skip within a single drop
-        if (_currentDropSkips === 5) {
+        if (_currentDropSkips === SKIP_PENALTY_THRESHOLD) {
             var daysUntil = gameState.state.daysUntilPayment || 1;
-            var penalty = Math.max(5, Math.min(50, 5 * daysUntil));
+            var penalty = Math.max(SKIP_PENALTY_MIN, Math.min(SKIP_PENALTY_MAX, SKIP_PENALTY_PER_DAY * daysUntil));
             gameState.state.credits = Math.max(0, gameState.state.credits - penalty);
             gameState._save();
             gameState._updateUI();
@@ -1213,21 +1218,21 @@
         if (estEl) { estEl.textContent = 'SCANNING\u2026'; estEl.style.display = ''; estEl.className = 'otis-estimate scanning-active'; }
 
         var scanDelay = 3000 + Math.floor(Math.random() * 1001); // 3000–4000 ms
-        var _itemSnapshot = currentItem;
-        var _trigger = trigger;
-        var _ctx = ctx;
+        var itemSnapshot = currentItem;
+        var capturedTrigger = trigger;
+        var capturedCtx = ctx;
         setTimeout(function() {
             if (estEl) { estEl.style.display = 'none'; estEl.className = 'otis-estimate'; estEl.textContent = ''; }
             if (examineBtn) examineBtn.disabled = false;
             if (georgeBtn)  georgeBtn.disabled  = false;
-            if (currentItem === _itemSnapshot) {
-                if (_trigger === 'CONSULT_GEORGE') {
-                    var georgeCtx = '[GEORGE ARCHIVE REQUEST] ' + _ctx
+            if (currentItem === itemSnapshot) {
+                if (capturedTrigger === 'CONSULT_GEORGE') {
+                    var georgeCtx = '[GEORGE ARCHIVE REQUEST] ' + capturedCtx
                         + ' Vernon is asking specifically what George knew about this type of item.'
                         + ' Surface a specific memory, method, or comparable — not general knowledge.';
                     appendOTIS(georgeCtx, 'CONSULT_GEORGE');
                 } else {
-                    appendOTIS(_ctx, _trigger);
+                    appendOTIS(capturedCtx, capturedTrigger);
                 }
                 if (gameState.state.tutorialStep === 2) tutorialAdvance();
             }
@@ -1265,12 +1270,12 @@
         if (estEl) { estEl.textContent = 'SCANNING\u2026'; estEl.style.display = ''; estEl.className = 'otis-estimate scanning-active'; }
 
         var scanDelay = 3000 + Math.floor(Math.random() * 1001); // 3000–4000 ms
-        var _itemSnapshot = currentItem;
+        var itemSnapshot = currentItem;
         setTimeout(function() {
             if (estEl) { estEl.style.display = 'none'; estEl.className = 'otis-estimate'; estEl.textContent = ''; }
             if (examineBtn) examineBtn.disabled = false;
             if (georgeBtn)  georgeBtn.disabled  = false;
-            if (currentItem === _itemSnapshot) {
+            if (currentItem === itemSnapshot) {
                 appendOTIS(buildItemContext(currentItem), 'CONSULT_EXAMINE');
             }
         }, scanDelay);
