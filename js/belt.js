@@ -250,11 +250,19 @@
                 var stalledEl = document.getElementById('belt-stall-indicator');
                 if (stalledEl) stalledEl.style.display = '';
             }
+            // Always show overflow/storeroom route warning when belt queue is full
+            var fieldLen = (s.fieldPool || []).length;
+            var overflowWarn = document.getElementById('storeroom-overflow-warning');
+            var overflowCount = document.getElementById('overflow-count');
+            if (overflowWarn) overflowWarn.style.display = fieldLen >= TIMING.OVERFLOW_THRESHOLD ? '' : 'none';
+            if (overflowCount) overflowCount.textContent = fieldLen;
             return;
         }
-        // Clear stall indicator when queue accepts items again
+        // Clear stall indicator and overflow warning when queue accepts items again
         var stalledEl = document.getElementById('belt-stall-indicator');
         if (stalledEl) stalledEl.style.display = 'none';
+        var overflowWarnClr = document.getElementById('storeroom-overflow-warning');
+        if (overflowWarnClr) overflowWarnClr.style.display = 'none';
         item = Object.assign({}, item);
         s.beltQueue.push(item);
         // Track delivery cadence for OTIS side comments
@@ -525,6 +533,18 @@
 
     function deliverNextBeltItem() {
         if (!gameState.state.dropActive) { stopBeltDelivery(); return; }
+        // Check belt occupied BEFORE checking manifest empty — ensures the belt
+        // animation stays active and prevents the drop from completing prematurely
+        // while the player is still processing the final item on the belt.
+        if (currentItem !== null) {
+            var backed = gameState.state.manifestItems.length;
+            var overflowWarn = document.getElementById('storeroom-overflow-warning');
+            var overflowCount = document.getElementById('overflow-count');
+            if (overflowWarn) overflowWarn.style.display = backed >= TIMING.OVERFLOW_THRESHOLD ? '' : 'none';
+            if (overflowCount) overflowCount.textContent = backed;
+            if (backed > 0) updateBeltUI('BACKED_UP');
+            return;
+        }
         if (gameState.state.manifestItems.length === 0) {
             stopBeltDelivery();
             gameState.state.dropActive = false;
@@ -544,15 +564,6 @@
             if (window.OtisSound) OtisSound.stopAmbient('conveyor');
             renderManifestSummary([]);
             showDebrief();
-            return;
-        }
-        if (currentItem !== null) {
-            updateBeltUI('BACKED_UP');
-            var backed = gameState.state.manifestItems.length;
-            var overflowWarn = document.getElementById('storeroom-overflow-warning');
-            var overflowCount = document.getElementById('overflow-count');
-            if (overflowWarn) overflowWarn.style.display = backed >= TIMING.OVERFLOW_THRESHOLD ? '' : 'none';
-            if (overflowCount) overflowCount.textContent = backed;
             return;
         }
         var item = gameState.state.manifestItems.shift();
@@ -1309,6 +1320,9 @@
             var _keepEntry = { name: item.name, day: gameState.state.day, keepDay: gameState.state.day, condition: item.condition, otisValue: item.otisValue, baseValue: item.otisValue, category: item.category, rarity: item.rarity };
             if (item.targetNodeID) _keepEntry.targetNodeID = item.targetNodeID;
             if (item.evidenceID)   _keepEntry.evidenceID   = item.evidenceID;
+            // Preserve ascii art fields so easter egg images display in the storeroom keep log
+            if (item.asciiFile)  _keepEntry.asciiFile  = item.asciiFile;
+            if (item.asciiColor) _keepEntry.asciiColor = item.asciiColor;
             gameState.state.keepLog.push(_keepEntry);
             gameState.state.keepLog = gameState.state.keepLog.slice(0, getStorageCap());
             // Humanity archive tracking

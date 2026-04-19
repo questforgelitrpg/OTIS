@@ -103,7 +103,7 @@
         // OTIS discovery dialogue when schematic is first revealed
         if (firstSearch) {
             setTimeout(function() {
-                var discMsg = "Where did that come from? I have no record of this... and I have a record of every bolt George ever touched.";
+                var discMsg = "Where did that come from? I have no record of " + item.name + "... and I have a record of every bolt George ever touched. He hid this deliberately.";
                 otisLines.push({ role: 'otis', text: discMsg }); renderOTIS();
                 if (window.OtisTTS) OtisTTS.speak(discMsg);
                 renderSchematic();
@@ -145,7 +145,19 @@
             var total = GEORGE_WAREHOUSE.length;
             statusEl.textContent = fc + " / " + total + " items found.";
         }
-        if (!found.length) { list.style.display = 'none'; return; }
+        if (!found.length) {
+            list.style.display = 'none';
+            var toggleBtn = document.getElementById('btn-warehouse-toggle');
+            if (toggleBtn) toggleBtn.style.display = 'none';
+            return;
+        }
+        // Show the collapse/expand toggle button now that items exist
+        var toggleBtn = document.getElementById('btn-warehouse-toggle');
+        if (toggleBtn) {
+            toggleBtn.style.display = '';
+            toggleBtn.innerHTML = _warehouseCollapsed ? '&#9658; EXPAND' : '&#9660; COLLAPSE';
+        }
+        if (_warehouseCollapsed) { list.style.display = 'none'; return; }
         list.style.display = '';
         var rc = { Common:'tag-common', Uncommon:'tag-uncommon', Rare:'tag-rare', Anomalous:'tag-anomalous', EasterEgg:'tag-uncommon' };
         var html = '';
@@ -185,6 +197,14 @@
         }
     }
     window.renderGeorgeWarehouse = renderGeorgeWarehouse;
+
+    // Collapse/expand state for the warehouse items list (ephemeral, not persisted)
+    var _warehouseCollapsed = false;
+    function toggleWarehouseList() {
+        _warehouseCollapsed = !_warehouseCollapsed;
+        renderGeorgeWarehouse();
+    }
+    window.toggleWarehouseList = toggleWarehouseList;
 
     function loadGeorgeArt(idx, file) {
         var id = 'george-ascii-' + idx;

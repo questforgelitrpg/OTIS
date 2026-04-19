@@ -76,6 +76,10 @@
             if (statusEl) { statusEl.textContent = 'NOMINAL'; statusEl.className = 'status-ok'; }
         } catch(e) {
             if (statusEl) { statusEl.textContent = 'FAULT'; statusEl.className = 'status-err'; }
+            var faultContext = trigger ? ' [TRIGGER: ' + trigger + ']' : '';
+            console.error('OTIS terminal fault' + faultContext, e);
+            otisLines.push({ role: 'otis', text: '[TERMINAL FAULT' + faultContext + '] Response unavailable. Check network or API key.' });
+            renderOTIS();
         }
         gameState._updateUI();
     }
