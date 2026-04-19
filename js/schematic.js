@@ -281,14 +281,24 @@
         var s = gameState.state;
         var found = s.georgesDiaryFound || [];
         var list = document.getElementById('george-diary-list');
+        var body = document.getElementById('george-diary-body');
         var empty = document.getElementById('diary-empty');
+        var toggleBtn = document.getElementById('btn-diary-toggle');
         if (!list) return;
         if (!found.length) {
             list.innerHTML = '';
             if (empty) empty.style.display = '';
+            if (toggleBtn) toggleBtn.style.display = 'none';
             return;
         }
         if (empty) empty.style.display = 'none';
+        // Show the collapse/expand toggle button now that entries exist
+        if (toggleBtn) {
+            toggleBtn.style.display = '';
+            toggleBtn.innerHTML = _diaryCollapsed ? '&#9658; EXPAND' : '&#9660; COLLAPSE';
+        }
+        if (body) body.style.display = _diaryCollapsed ? 'none' : '';
+        if (_diaryCollapsed) return;
         // Sort entries by the order they were found (found array order), not by id
         var entries = found.map(function(id) {
             return GEORGE_DIARY.filter(function(e) { return e.id === id; })[0];
@@ -305,6 +315,14 @@
         }).join('');
     }
     window.renderGeorgeDiary = renderGeorgeDiary;
+
+    // Collapse/expand state for the diary list (ephemeral, not persisted)
+    var _diaryCollapsed = false;
+    function toggleGeorgeDiary() {
+        _diaryCollapsed = !_diaryCollapsed;
+        renderGeorgeDiary();
+    }
+    window.toggleGeorgeDiary = toggleGeorgeDiary;
 
     function _unlockDiaryEntry(id) {
         var s = gameState.state;

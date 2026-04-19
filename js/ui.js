@@ -230,27 +230,27 @@
         if (h < T1) {
             if (overlay) overlay.style.opacity = '0';
             if (noise)   noise.style.opacity   = '0';
-            if (term)    term.style.filter     = 'blur(0px)';
+            if (term)    term.style.setProperty('--tb', '0px');
             if (warnBtn) warnBtn.style.display = 'none';
         } else if (h < T2) {
             if (overlay) overlay.style.opacity = '0.3';
             if (noise)   noise.style.opacity   = '0.05';
-            if (term)    term.style.filter     = 'blur(0.2px)';
+            if (term)    term.style.setProperty('--tb', '0.2px');
             if (warnBtn) warnBtn.style.display = 'none';
         } else if (h < T3) {
             if (overlay) overlay.style.opacity = '0.6';
             if (noise)   noise.style.opacity   = '0.15';
-            if (term)    term.style.filter     = 'blur(0.6px)';
+            if (term)    term.style.setProperty('--tb', '0.6px');
             if (warnBtn) warnBtn.style.display = 'none';
         } else if (h < T4) {
             if (overlay) overlay.style.opacity = '0.85';
             if (noise)   noise.style.opacity   = '0.30';
-            if (term)    term.style.filter     = 'blur(1.2px)';
+            if (term)    term.style.setProperty('--tb', '1.2px');
             if (warnBtn) warnBtn.style.display = '';
         } else {
             if (overlay) overlay.style.opacity = '1';
             if (noise)   noise.style.opacity   = '0.50';
-            if (term)    term.style.filter     = 'blur(2px)';
+            if (term)    term.style.setProperty('--tb', '2px');
             if (warnBtn) { warnBtn.style.display = ''; warnBtn.classList.add('fatigue-pulse'); }
         }
     }

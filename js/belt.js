@@ -313,6 +313,14 @@
         if (s.beltQueue.length > 0) {
             setItemInQueue(s.beltQueue[0]);
             updateBeltUI('DELIVERING');
+        } else if (s.dropActive &&
+                   (s.manifestItems || []).length === 0 &&
+                   (s.fieldPool || []).length === 0 &&
+                   !(s.bots || []).some(function(b) { return b.activity === 'FETCHING' || b.activity === 'CARRYING'; })) {
+            // All queues are clear and the drop is still marked active — wrap it up immediately
+            // instead of waiting up to 45 s for the belt delivery timer. This clears the belt
+            // animation and the belt module light (Bug 5 / Bug 7 fix).
+            deliverNextBeltItem();
         }
     }
     window.advanceBeltQueue = advanceBeltQueue;
