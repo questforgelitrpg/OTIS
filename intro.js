@@ -24,7 +24,7 @@
         { text: '', delay: 600, tts: null },
         { text: 'None of that was in my formal protocols. I was designed to track inventory and manage the bank\u2019s financial anxiety. But George kept talking, so I kept filing his voice in the undocumented sectors of my logic gate.', delay: 4000, tts: "None of that was in my formal protocols. I was designed to track inventory and manage the bank's financial anxiety. But George kept talking, so I kept filing his voice in the undocumented sectors of my logic gate." },
         { text: '', delay: 600, tts: null },
-        { text: 'Then George died. Vernon showed up with a suitcase and a heavy loan from the Universal Bank Conglomerate.', delay: 3000, tts: 'Then George died. Vernon showed up with a suitcase and a heavy loan from the Universal Bank Conglomerate.' },
+        { text: 'Then George died and left Vernon everything: the station, the mess, and a loan offer from the Universal Bank Conglomerate that arrived before the funeral was over. Vernon signed it.', delay: 3500, tts: 'Then George died and left Vernon everything: the station, the mess, and a loan offer from the Universal Bank Conglomerate that arrived before the funeral was over. Vernon signed it.' },
         { text: '', delay: 600, tts: null },
         { text: 'The core systems produce waste faster than they can process it, and it all routes here to the edge of settled space. The junk field is a graveyard of everything the galaxy tried to throw away.', delay: 3500, tts: 'The core systems produce waste faster than they can process it, and it all routes here to the edge of settled space. The junk field is a graveyard of everything the galaxy tried to throw away.' },
         { text: '', delay: 600, tts: null },
