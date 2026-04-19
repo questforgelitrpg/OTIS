@@ -134,6 +134,19 @@
         if (_speaking || _queue.length === 0) return;
         if (!window.speechSynthesis) { _queue.length = 0; return; }
 
+        // Chrome loads voices asynchronously; if the list is empty the voice hasn't
+        // resolved yet and the utterance would use the browser default (often wrong).
+        // Defer until voiceschanged fires so _resolveVoice() picks the correct voice.
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length === 0) {
+            function _onVoicesReady() {
+                window.speechSynthesis.removeEventListener('voiceschanged', _onVoicesReady);
+                _speakNext();
+            }
+            window.speechSynthesis.addEventListener('voiceschanged', _onVoicesReady);
+            return;
+        }
+
         _speaking = true;
         _utteranceStartedAt = Date.now();
         const text = _queue.shift();

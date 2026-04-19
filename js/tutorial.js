@@ -3,6 +3,9 @@
 
     var TUTORIAL_TOTAL = 22;
 
+    // Canonical tutorial demo item — spawned on the belt for steps 8/9.
+    var TUTORIAL_DEMO_ITEM = { name: 'Salvaged Power Cell', category: 'Industrial', rarity: 'Common', condition: 'Used', otisValue: 45, tutorialItem: true };
+
     function _tutorialActive() {
         var step = gameState.state.tutorialStep;
         return step >= 1 && step <= TUTORIAL_TOTAL;
@@ -50,6 +53,29 @@
         _clearTutorialBadge();
         var data = TUTORIAL_STEPS[step - 1];
         if (!data) return;
+
+        // Step 8 is gated: player must open the belt to continue. If the belt modal is
+        // already open from exploring step 7, close it so the gate fires correctly when
+        // the player consciously re-opens it per the instruction.
+        if (step === 8) {
+            var beltModalS8 = document.getElementById('modal-belt');
+            if (beltModalS8 && beltModalS8.classList.contains('open') && typeof closeModal === 'function') {
+                closeModal('belt');
+            }
+        }
+
+        // Step 9 safety net: ensure the belt is open and the tutorial demo item exists.
+        // This covers edge cases where checkTutorialModalOpen was never triggered at step 8
+        // (e.g. the player used tutorial navigation in an unexpected order).
+        if (step === 9) {
+            if (!window.currentItem && typeof setItemInQueue === 'function') {
+                setItemInQueue(TUTORIAL_DEMO_ITEM);
+            }
+            var beltModalS9 = document.getElementById('modal-belt');
+            if (beltModalS9 && !beltModalS9.classList.contains('open') && typeof openModal === 'function') {
+                openModal('belt');
+            }
+        }
 
         var el = data.target ? document.getElementById(data.target) : null;
         if (el) {
@@ -145,18 +171,7 @@
         var s = gameState.state;
         if (s.tutorialStep === 8 && name === 'belt') {
             // Spawn a tutorial demo item so step 9 ("There is an item on the belt") is true
-            var tutorialDemoItem = {
-                name: 'Salvaged Power Cell',
-                category: 'Industrial',
-                rarity: 'Common',
-                condition: 'Used',
-                otisValue: 45,
-                tutorialItem: true,
-                consultedExamine: false,
-                consultedWorth: false,
-                consultedGeorge: false
-            };
-            if (typeof setItemInQueue === 'function') setItemInQueue(tutorialDemoItem);
+            if (typeof setItemInQueue === 'function') setItemInQueue(TUTORIAL_DEMO_ITEM);
             tutorialUnlockGate(8);
         }
         if (s.tutorialStep === 18 && name === 'comms') {
