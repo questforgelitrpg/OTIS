@@ -973,3 +973,76 @@
     ];
     window.MAZE_POOL = MAZE_POOL;
 
+// FATIGUE NOTIFICATION POOLS — fired by the session interval when crossing tier thresholds.
+// One line per tier, picked randomly, non-repeating within a session.
+var FATIGUE_LOW_POOL = [
+    'Session clock at thirty. George used to take a coffee break here. There is no coffee. Still.',
+    'Thirty minutes logged. Belt is running. So are you. That will not last forever.',
+    'System note: operator session approaching first fatigue threshold. Not a problem yet.',
+    'Half an hour on shift. Nothing critical. Noted anyway.',
+    'Thirty minutes. Fatigue index: LOW. You have time. Use it efficiently.',
+];
+window.FATIGUE_LOW_POOL = FATIGUE_LOW_POOL;
+
+var FATIGUE_MODERATE_POOL = [
+    'One hour on the clock. Belt efficiency is degrading with operator focus. Not a warning. An observation.',
+    'Session hour one. I am logging reduced routing accuracy. You may not notice. The debt will.',
+    'Sixty minutes. The station runs better with a rested operator. George knew this. He ignored it too.',
+    'One hour logged. Systems are compensating. They will not do that indefinitely.',
+    'Fatigue index: MODERATE. The belt is still moving. So are the error margins.',
+];
+window.FATIGUE_MODERATE_POOL = FATIGUE_MODERATE_POOL;
+
+var FATIGUE_HIGH_POOL = [
+    'Two hours. Belt governor is compensating for operator lag. This is not sustainable. LOG OFF is available.',
+    'Session clock critical. I am slowing the belt. This is not a malfunction. This is a recommendation.',
+    'Vernon. Two hours. The bots are running warm. So are you. The LOG OFF button is in the header. Use it.',
+    'Fatigue index: HIGH. I have flagged the LOG OFF button. It was always there. Now it is more visible.',
+    'Two hours on shift. George\'s personal record was two hours twelve minutes. He paid for it the next day.',
+];
+window.FATIGUE_HIGH_POOL = FATIGUE_HIGH_POOL;
+
+var FATIGUE_CRITICAL_POOL = [
+    'Session limit reached. Belt offline. Initiating controlled shutdown. This is not optional.',
+    'Three hours. Belt offline. Systems entering standby. You can log back in. I will remember you tried to push through.',
+    'Mandatory rest cycle engaged. George built this limit in. He said no one makes good decisions after three hours. He was right about most things.',
+    'Critical fatigue threshold crossed. I am ending the session. This is not a malfunction.',
+    'Three hours logged. Shift is over. The belt will be here when you return. You need to not be here right now.',
+];
+window.FATIGUE_CRITICAL_POOL = FATIGUE_CRITICAL_POOL;
+
+// Voluntary logoff lines — keyed by fatigue tier at time of logoff.
+var FATIGUE_LOGOFF_LINES = {
+    NONE: [
+        'Short shift. Belt is rested. Come back when the barge does.',
+        'Early out. Nothing wrong with that. George left early twice in twenty-six years.',
+        'Session ended. Quick one. The station holds between shifts.',
+    ],
+    LOW: [
+        'Under an hour. Reasonable start. Come back and finish it.',
+        'Half a shift. Belt can hold. Rest up.',
+        'Short session. Nothing lost. The manifest waits.',
+    ],
+    MODERATE: [
+        'One hour. Reasonable. George averaged ninety minutes. You are in range.',
+        'Good stop. Hour on the clock, belt moving, sensible exit.',
+        'Logging off at MODERATE. Right call. The station will be here.',
+    ],
+    HIGH: [
+        'Good. Two hours is the line. You found it. The station will hold.',
+        'Logged off before critical. George would have pushed through. You did not. That is the right call.',
+        'Two hours and out. The belt needed you to stop. So did the bots.',
+    ],
+};
+window.FATIGUE_LOGOFF_LINES = FATIGUE_LOGOFF_LINES;
+
+// Shame-login lines — fired when player logs back in within 5 minutes of a CRITICAL logoff.
+var FATIGUE_SHAME_LOGIN_POOL = [
+    'You logged back in. I noted the gap. Four minutes. George used to do this. The station did not improve.',
+    'Back already. The rest cycle clocked at less than five minutes. I have updated my expectations accordingly.',
+    'Session gap: insufficient. I am logging this. The bots will feel it.',
+    'That was not a rest cycle. That was a pause. There is a difference. The degradation rate does not care.',
+    'You came back. I tracked the time. It was not enough. Carry-over fatigue applied.',
+];
+window.FATIGUE_SHAME_LOGIN_POOL = FATIGUE_SHAME_LOGIN_POOL;
+

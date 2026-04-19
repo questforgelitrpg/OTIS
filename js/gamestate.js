@@ -22,8 +22,8 @@
     };
     window.TIMING = TIMING;
 
-    // Time penalty (in sessionHours minutes) for a failed verification attempt
-    var VERIFICATION_FAILURE_PENALTY_HOURS = 120;
+    // penalty added to sessionHours (each unit = 1 real minute) per failed schematic verification attempt
+    var VERIFICATION_FAILURE_PENALTY_HOURS = 10;
     window.VERIFICATION_FAILURE_PENALTY_HOURS = VERIFICATION_FAILURE_PENALTY_HOURS;
     var VERIFY_FAIL_WRONG_NODE     = "That component is an industrial-grade regulator. You are trying to install it into a civilian comm-array. George was eccentric, not incompetent.";
     window.VERIFY_FAIL_WRONG_NODE = VERIFY_FAIL_WRONG_NODE;
@@ -165,6 +165,8 @@
                 botFirstPartsOrdered: false,
                 botEverDegraded: false,
                 svenFirstRefusalDone: false,
+                lastLogoffFatigue: 'NONE', // fatigue tier at last logoff — used for carry-over penalty on re-login
+                fatigueCarryOver: false,
                 stateVersion: 8,
             };
         },
@@ -212,6 +214,8 @@
         if (!Array.isArray(state.chaosButtonsPressed)) state.chaosButtonsPressed = [];
         if (!Array.isArray(state.achievementsUnlocked)) state.achievementsUnlocked = [];
         if (typeof state.buttonsPressed !== 'object' || state.buttonsPressed === null) state.buttonsPressed = {};
+        if (typeof state.lastLogoffFatigue !== 'string') state.lastLogoffFatigue = 'NONE';
+        if (typeof state.fatigueCarryOver !== 'boolean') state.fatigueCarryOver = false;
     }
     window.ensureStateDefaults = ensureStateDefaults;
 

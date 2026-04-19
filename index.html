@@ -869,7 +869,7 @@
     // MASTER INTEGRATION SCHEMATIC — Phase 2/3/4/7
     // =====================================================================
 
-    // Time penalty (in sessionHours minutes) for a failed verification attempt
+    // Note: VERIFICATION_FAILURE_PENALTY_HOURS is defined in js/gamestate.js
 
     // State for the node installation modal
     var _sniNodeID = null;
@@ -897,6 +897,8 @@
 
     // LOGOFF / TTS / DEBUG
     function handleLogoff() {
+        window._otisLoggedOff = true;
+
         var LOGOFF_LINES_CLEAR = [
             'Session ended. Belt at rest. Come back.',
             'Logging off. All bots nominal. George used to say the station breathes easier at night.',
@@ -921,18 +923,35 @@
             'Session closed. You know what the balance is. Get some rest anyway.',
             'Logging off. George was always behind too. He stayed anyway.'
         ];
+
+        // Save the fatigue tier at logoff for carry-over penalty detection
+        var logoffTier = (typeof getFatigueTier === 'function') ? getFatigueTier() : 'NONE';
+        gameState.state.lastLogoffFatigue = logoffTier;
+
+        // Pick logoff message pool based on fatigue tier (if voluntary) or use existing debt pool
         var debt = gameState.state.outstandingDebt || 0;
-        var pool = debt > 200 ? LOGOFF_LINES_DEBT : LOGOFF_LINES_CLEAR;
-        var logoffMsg = pool[Math.floor(Math.random() * pool.length)];
+        var logoffMsg;
+        if (logoffTier === 'CRITICAL') {
+            // CRITICAL is force-fired from the tier notification — use the CRITICAL pool
+            var cPool = window.FATIGUE_CRITICAL_POOL || [];
+            logoffMsg = cPool.length ? cPool[Math.floor(Math.random() * cPool.length)] : 'Session terminated.';
+        } else if (window.FATIGUE_LOGOFF_LINES && window.FATIGUE_LOGOFF_LINES[logoffTier]) {
+            var tierPool = window.FATIGUE_LOGOFF_LINES[logoffTier];
+            logoffMsg = tierPool[Math.floor(Math.random() * tierPool.length)];
+        } else if (debt > 200) {
+            logoffMsg = LOGOFF_LINES_DEBT[Math.floor(Math.random() * LOGOFF_LINES_DEBT.length)];
+        } else {
+            logoffMsg = LOGOFF_LINES_CLEAR[Math.floor(Math.random() * LOGOFF_LINES_CLEAR.length)];
+        }
 
         // Save immediately before any visual changes
         gameState._save();
         otisLines.push({ role: 'otis', text: logoffMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(logoffMsg);
 
-        // Estimate speech duration: ~80ms per word, minimum 2s, cap at 6s
+        // Estimate speech duration: ~100ms per word, minimum 2.5s, cap at 12s
         var wordCount = logoffMsg.split(/\s+/).length;
-        var speechDelay = Math.min(Math.max(wordCount * 80, 2000), 6000);
+        var speechDelay = Math.min(Math.max(wordCount * 100, 2500), 12000);
 
         setTimeout(function() {
             // Cut all audio
@@ -1627,11 +1646,55 @@
 
         // Timers — IDs stored on window to prevent duplicate intervals on hot reload
         if (!window._otisSessionIntervalId) {
+            window._otisLastFatigueTier = 'NONE'; // track previous tier
             window._otisSessionIntervalId = setInterval(function() {
+                if (window._otisLoggedOff) return;
                 gameState.state.sessionHours = (gameState.state.sessionHours || 0) + 1;
                 gameState._save();
                 updateFatigueVisuals();
                 gameState._updateUI(); // refresh hdr-hours each real-time minute
+
+                // Clear carry-over flag after 30 session minutes
+                if (gameState.state.fatigueCarryOver && (gameState.state.sessionHours || 0) >= 30) {
+                    gameState.state.fatigueCarryOver = false;
+                    gameState._save();
+                }
+
+                // Fire OTIS notification on tier transition
+                var newTier = getFatigueTier();
+                if (newTier !== window._otisLastFatigueTier) {
+                    var prevTier = window._otisLastFatigueTier;
+                    window._otisLastFatigueTier = newTier;
+
+                    // Only fire notification on escalation (not on reset at login)
+                    var tierOrder = ['NONE','LOW','MODERATE','HIGH','CRITICAL'];
+                    var prev = tierOrder.indexOf(prevTier);
+                    var curr = tierOrder.indexOf(newTier);
+                    if (curr > prev) {
+                        var pool = null;
+                        if (newTier === 'LOW')      pool = window.FATIGUE_LOW_POOL;
+                        if (newTier === 'MODERATE') pool = window.FATIGUE_MODERATE_POOL;
+                        if (newTier === 'HIGH')     pool = window.FATIGUE_HIGH_POOL;
+                        if (newTier === 'CRITICAL') pool = window.FATIGUE_CRITICAL_POOL;
+
+                        if (pool && pool.length) {
+                            var msg = pool[Math.floor(Math.random() * pool.length)];
+                            otisLines.push({ role: 'otis', text: msg }); renderOTIS();
+                            if (window.OtisTTS) OtisTTS.speak(msg);
+
+                            // CRITICAL: stop belt, then auto-logoff after dialog completes
+                            if (newTier === 'CRITICAL') {
+                                if (typeof stopBotFetch === 'function') stopBotFetch();
+                                if (typeof stopBeltDelivery === 'function') stopBeltDelivery();
+                                var wordCount = msg.split(/\s+/).length;
+                                var delay = Math.min(Math.max(wordCount * 100, 3000), 14000);
+                                setTimeout(function() {
+                                    if (!window._otisLoggedOff) handleLogoff();
+                                }, delay);
+                            }
+                        }
+                    }
+                }
             }, 60000);
         }
 
@@ -1676,10 +1739,10 @@
                 var hoursEl = document.getElementById('hdr-hours');
                 if (hoursEl) {
                     hoursEl.classList.remove('clock-ok', 'clock-warn', 'clock-alert', 'clock-crit');
-                    if (sh < 20)       hoursEl.classList.add('clock-ok');
-                    else if (sh < 40)  hoursEl.classList.add('clock-warn');
-                    else if (sh < 60)  hoursEl.classList.add('clock-alert');
-                    else               hoursEl.classList.add('clock-crit');
+                    if (sh < 30)        hoursEl.classList.add('clock-ok');
+                    else if (sh < 60)   hoursEl.classList.add('clock-warn');
+                    else if (sh < 120)  hoursEl.classList.add('clock-alert');
+                    else                hoursEl.classList.add('clock-crit');
                 }
             }, 1000);
         }
@@ -1727,6 +1790,17 @@
                 loginBtn.style.display = 'none';
             }
 
+            // Clear logoff flag — new session is starting
+            window._otisLoggedOff = false;
+
+            // Reset shift fatigue — each login starts a fresh shift
+            gameState.state.sessionHours = 0;
+            gameState._save();
+            updateFatigueVisuals();
+
+            // Reset tier tracking for tier-transition notifications
+            window._otisLastFatigueTier = 'NONE';
+
             // Hide browser-storage warning when session resumes
             var _storageWarn = document.getElementById('storage-warn');
             if (_storageWarn) { _storageWarn.style.display = 'none'; }
@@ -1750,6 +1824,40 @@
             if (_ttsSkip && window.OtisTTS && !window.OtisTTS.isSupported()) _ttsSkip.style.display = 'none';
             var _tutSkip = document.getElementById('tutorial-skip-btn');
             if (_tutSkip) _tutSkip.style.display = 'none';
+
+            // Carry-over fatigue penalty: if last session ended at CRITICAL and player logs back in
+            // within a short window, degrade one random bot by 1 tick and fire a shame-login line.
+            var lastFatigue = gameState.state.lastLogoffFatigue || 'NONE';
+            var savedAt = gameState.state.savedAt || 0;
+            var gapMs = Date.now() - savedAt;
+            var SHAME_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+            if (lastFatigue === 'CRITICAL' && gapMs < SHAME_THRESHOLD_MS) {
+                // Degrade a random non-OFFLINE bot
+                // Degradation scale: 0-2 = NOMINAL, 3-5 = AMBER, 6-8 = RED, 9 = OFFLINE
+                var bots = gameState.state.bots || [];
+                var eligible = bots.filter(function(b) { return b.status !== 'OFFLINE'; });
+                if (eligible.length > 0) {
+                    var bot = eligible[Math.floor(Math.random() * eligible.length)];
+                    bot.degradation = Math.min(9, (bot.degradation || 0) + 1);
+                    if (bot.degradation >= 9) bot.status = 'OFFLINE';
+                    else if (bot.degradation >= 6) bot.status = 'RED';
+                    else if (bot.degradation >= 3) bot.status = 'AMBER';
+                }
+                // Set carry-over jam flag for first 30 session minutes
+                gameState.state.fatigueCarryOver = true;
+                gameState._save();
+
+                // Queue shame-login OTIS line (fires after the normal LOGIN response)
+                var shamePool = window.FATIGUE_SHAME_LOGIN_POOL || [];
+                if (shamePool.length) {
+                    var shameMsg = shamePool[Math.floor(Math.random() * shamePool.length)];
+                    setTimeout(function() {
+                        otisLines.push({ role: 'otis', text: shameMsg }); renderOTIS();
+                        if (window.OtisTTS) OtisTTS.speak(shameMsg);
+                    }, 4000);
+                }
+            }
 
             checkScriptedComms();
             // Fire the daily toast first so it slides in before OTIS responds,

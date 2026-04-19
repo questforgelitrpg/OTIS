@@ -7,7 +7,8 @@
         var bot = s.bots[idx];
         var wasNominal = bot.status === 'NOMINAL';
         // Power Regulator: reduces chance that degradation actually ticks
-        if (Math.random() < getDegradationMultiplier()) {
+        var fatigueDeg = (typeof getFatigueDegradationMultiplier === 'function') ? getFatigueDegradationMultiplier() : 1.0;
+        if (Math.random() < getDegradationMultiplier() * fatigueDeg) {
             bot.degradation++;
             // Cooling Loop: chance to prevent a bot slipping from NOMINAL to AMBER
             if (wasNominal && bot.degradation >= 3 && Math.random() < getCoolingBonus()) {

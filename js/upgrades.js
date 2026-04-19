@@ -37,6 +37,42 @@
     }
     window.getCoolingBonus = getCoolingBonus;
 
+    // Returns a multiplier applied to fatigue tier thresholds.
+    // Based on cooling upgrade level — thematically: a better-cooled station keeps the operator sharper longer.
+    // Tier I: +15%, Tier II: +30%, Tier III: +30% (capped at II for fatigue purposes)
+    function getFatigueThresholdMultiplier() {
+        var t = ((gameState.state.upgrades) || {}).cooling || 0;
+        return t >= 2 ? 1.30 : t >= 1 ? 1.15 : 1.0;
+    }
+    window.getFatigueThresholdMultiplier = getFatigueThresholdMultiplier;
+
+    // Returns a jam rate multiplier applied when fatigue is HIGH or CRITICAL.
+    function getFatigueJamMultiplier() {
+        var tier = window.getFatigueTier ? window.getFatigueTier() : 'NONE';
+        if (tier === 'CRITICAL') return 1.75;
+        if (tier === 'HIGH')     return 1.35;
+        return 1.0;
+    }
+    window.getFatigueJamMultiplier = getFatigueJamMultiplier;
+
+    // Returns a bot degradation multiplier applied when fatigue is HIGH or CRITICAL.
+    function getFatigueDegradationMultiplier() {
+        var tier = window.getFatigueTier ? window.getFatigueTier() : 'NONE';
+        if (tier === 'CRITICAL') return 1.50;
+        if (tier === 'HIGH')     return 1.25;
+        return 1.0;
+    }
+    window.getFatigueDegradationMultiplier = getFatigueDegradationMultiplier;
+
+    // Returns a belt slow factor applied to fetch/return durations at HIGH fatigue.
+    function getFatigueBeltSlowFactor() {
+        var tier = window.getFatigueTier ? window.getFatigueTier() : 'NONE';
+        if (tier === 'CRITICAL') return 1.0; // belt is stopped at CRITICAL — this factor is moot
+        if (tier === 'HIGH')     return 1.40; // 40% slower at HIGH
+        return 1.0;
+    }
+    window.getFatigueBeltSlowFactor = getFatigueBeltSlowFactor;
+
     function renderUpgrades() {
         var el = document.getElementById('upgrades-list');
         if (!el) return;
