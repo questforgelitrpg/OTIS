@@ -2,7 +2,16 @@
 
     // PAYMENT
     function handleMakePayment() {
-        if ((gameState.state.outstandingDebt || 0) > 0) { var pf1 = 'Cannot process. Arrears outstanding. Clear arrears first.'; otisLines.push({ role: 'otis', text: pf1 }); renderOTIS(); ttsSay(pf1); return; }
+        var arrears = gameState.state.outstandingDebt || 0;
+        if (arrears > 0) {
+            // Auto-route: try to clear arrears first so the installment can proceed
+            if (gameState.state.credits >= arrears) {
+                handleClearArrears();
+            } else {
+                var pf1 = 'Insufficient credits to clear arrears (' + arrears + ' cr). Clear arrears before making installment.';
+                otisLines.push({ role: 'otis', text: pf1 }); renderOTIS(); ttsSay(pf1); return;
+            }
+        }
         var installment = gameState.state.currentInstallment || 850;
         if (gameState.state.credits < installment) { var pf2 = 'Insufficient credits. Need ' + installment + ' cr, have ' + gameState.state.credits + ' credits.'; otisLines.push({ role: 'otis', text: pf2 }); renderOTIS(); ttsSay(pf2); return; }
         gameState.state.credits -= installment;
@@ -200,8 +209,24 @@
     function checkPaymentEscalation() {
       var s = gameState.state;
       if (!s.escalationFired) s.escalationFired = { tier1: false, tier2: false, tier3: false };
+      if (!s.escalationWarned) s.escalationWarned = { tier1: false, tier2: false, tier3: false };
       PAYMENT_ESCALATION_EVENTS.forEach(function(event) {
         var tierKey = "tier" + event.tier;
+        // Pre-warning: one payment cycle before escalation
+        if (s.paymentCycle === event.cycle - 1 && !s.escalationWarned[tierKey] && !s.escalationFired[tierKey]) {
+          s.escalationWarned[tierKey] = true;
+          gameState._save();
+          var warnBankMsg = '[BANK] Account VRN-001. Scheduled review upcoming. Installment will increase to ' + event.amount.toLocaleString() + ' cr effective next cycle. \u2014 UBC Automated Systems';
+          appendHardcodedComm(warnBankMsg);
+          var dot = document.getElementById("comms-dot-bank");
+          if (dot) dot.className = "comms-dot dot-amber";
+          setTimeout(function() {
+            var warnOtisMsg = 'Installment increase to ' + event.amount + ' cr effective next cycle. Bank gave one cycle notice. That is unusual.';
+            otisLines.push({ role: "otis", text: warnOtisMsg });
+            renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(warnOtisMsg);
+          }, 3000);
+        }
         if (s.paymentCycle >= event.cycle && !s.escalationFired[tierKey]) {
           s.escalationFired[tierKey] = true;
           s.currentInstallment = event.amount;
@@ -437,8 +462,8 @@
         if (s.mcguffinFired) return;
         s.mcguffinFired = true;
         gameState._save();
-        // Payout = all outstanding arrears + all remaining principal + 10,000 surplus
-        var payout = (s.outstandingDebt || 0) + (s.debt || 0) + 10000;
+        // Payout = half of remaining principal + 5000 surplus (no full clear — player still has to finish)
+        var payout = Math.floor((s.debt || 0) * 0.5) + 5000;
         s.credits = (s.credits || 0) + payout;
         gameState._save();
         gameState._updateUI();

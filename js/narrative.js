@@ -23,14 +23,14 @@
         return _dadJokeShuffled[_dadJokeIndex++];
     }
 
-    var SILENCE_THRESHOLD_MS = 120000; // 2 real minutes
+    var SILENCE_THRESHOLD_MS = 90000; // 1.5 real minutes
     setInterval(function() {
         if (window._otisLoggedOff) return;
         var s = gameState.state;
         // Only fire during active session, not during a drop or power outage
         if (s.dropActive || s.powerOutageActive) return;
-        // Never fire dad jokes while the tutorial is running
-        if (s.tutorialStep && s.tutorialStep >= 1) return;
+        // Never fire dad jokes while the tutorial is in its first 5 steps
+        if (s.tutorialStep && s.tutorialStep >= 1 && s.tutorialStep <= 5) return;
         if (Date.now() - _lastOtisActivity < SILENCE_THRESHOLD_MS) return;
         // Suppress dad jokes while an emotional beat is active (debrief, anomaly archive, debt warning, etc.)
         if (window.emotionalBeatActive) return;
@@ -69,12 +69,7 @@
             renderOTIS();
             updateArmSprite(trigger);
             if (window.OtisTTS) {
-                var tier = getFatigueTier();
-                if (tier === 'MODERATE' || tier === 'HIGH' || tier === 'CRITICAL') {
-                    OtisTTS.interrupt(reply);
-                } else {
-                    OtisTTS.speak(reply);
-                }
+                OtisTTS.speak(reply);
             }
             if (statusEl) { statusEl.textContent = 'NOMINAL'; statusEl.className = 'status-ok'; }
         } catch(e) {
@@ -199,6 +194,8 @@
 
         // Mark power outage active so silence detector does not fire dad jokes
         gameState.state.powerOutageActive = true;
+        // Pause the in-game day clock during the outage sequence
+        gameState.state.dayPaused = true;
         gameState._save();
 
         // STAGE 1 — BLACKOUT (immediate)
@@ -253,6 +250,8 @@
                         setLight('light-auxiliary', '');
                         // Clear power outage flag so silence detector resumes
                         gameState.state.powerOutageActive = false;
+                        // Resume the in-game day clock
+                        gameState.state.dayPaused = false;
                         gameState._save();
                     }, 4000);
                 }, 4000);

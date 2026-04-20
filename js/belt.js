@@ -903,7 +903,7 @@
             var conflictMsg = 'Barge inbound \u2014 search still running, holding belt. Barge will deploy when search resolves.';
             otisLines.push({ role: 'otis', text: conflictMsg }); renderOTIS();
             var bargeHoldEl = document.getElementById('barge-hold-indicator');
-            if (bargeHoldEl) bargeHoldEl.style.display = '';
+            if (bargeHoldEl) { bargeHoldEl.style.display = ''; bargeHoldEl.textContent = '\u26a0 BARGE QUEUED \u2014 deploying when search resolves'; }
             return;
         }
         _doBargeArrival();
@@ -1181,6 +1181,11 @@
             ttsSay(msg);
         }
         // Skip penalty: fires on the 5th cumulative skip within a single drop
+        if (_currentDropSkips === SKIP_PENALTY_THRESHOLD - 1) {
+            var warnMsg = 'Skip threshold approaching \u2014 further skips incur fees.';
+            otisLines.push({ role: 'otis', text: warnMsg }); renderOTIS();
+            ttsSay(warnMsg);
+        }
         if (_currentDropSkips === SKIP_PENALTY_THRESHOLD) {
             var daysUntil = gameState.state.daysUntilPayment || 1;
             var penalty = Math.max(SKIP_PENALTY_MIN, Math.min(SKIP_PENALTY_MAX, SKIP_PENALTY_PER_DAY * daysUntil));
@@ -1586,7 +1591,7 @@
         if (!currentItem) return;
         if ((s.manifestItems || []).length < 3) return;
         if (!s.itemDisplayedAt) return;
-        if (Date.now() - s.itemDisplayedAt < 30000) return;
+        if (Date.now() - s.itemDisplayedAt < 90000) return;
         if (s.beltJammed) return;
         s.beltJammed = true;
         gameState._save();

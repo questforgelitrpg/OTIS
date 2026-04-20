@@ -4,7 +4,7 @@
     var TUTORIAL_TOTAL = 22;
 
     // Canonical tutorial demo item — spawned on the belt for steps 8/9.
-    var TUTORIAL_DEMO_ITEM = { name: 'Salvaged Power Cell', category: 'Industrial', rarity: 'Common', condition: 'Used', otisValue: 45, tutorialItem: true };
+    var TUTORIAL_DEMO_ITEM = { name: 'Salvaged Power Cell', category: 'Industrial', rarity: 'Common', condition: 'Used', otisValue: 65, tutorialItem: true };
 
     function _tutorialActive() {
         var step = gameState.state.tutorialStep;
@@ -55,14 +55,8 @@
         if (!data) return;
 
         // Step 8 is gated: player must open the belt to continue. If the belt modal is
-        // already open from exploring step 7, close it so the gate fires correctly when
-        // the player consciously re-opens it per the instruction.
-        if (step === 8) {
-            var beltModalS8 = document.getElementById('modal-belt');
-            if (beltModalS8 && beltModalS8.classList.contains('open') && typeof closeModal === 'function') {
-                closeModal('belt');
-            }
-        }
+        // already open, leave it open — checkTutorialModalOpen will fire and unlock the gate.
+        // Only close if the modal is NOT open, so the player has to consciously open it.
 
         // Step 9 safety net: ensure the belt is open and the tutorial demo item exists.
         // This covers edge cases where checkTutorialModalOpen was never triggered at step 8
@@ -162,8 +156,7 @@
         if (gameState.state.tutorialStep !== stepNum) return;
         var nextBtn = document.getElementById('tutorial-next-btn');
         if (nextBtn) { nextBtn.disabled = false; nextBtn.style.opacity = '1'; }
-        // Brief pause so the player sees the gate unlock before auto-advancing
-        setTimeout(tutorialAdvance, 900);
+        // Gate is now unlocked — player clicks NEXT to advance manually.
     }
     window.tutorialUnlockGate = tutorialUnlockGate;
 

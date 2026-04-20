@@ -669,7 +669,7 @@ body.chaos-shake { animation: chaos-shake 0.5s infinite, flicker 12s infinite; }
 @media (max-width: 600px) {
     #arm-panel { display: none; }
     #otis-float { display: block; }
-    html, body { font-size: 14px; overflow: auto; }
+    html, body { font-size: clamp(12px, 2.5vw, 16px); overflow: auto; }
     #layout { height: auto; min-height: 100vh; }
     #terminal { height: auto; border-width: 4px; }
     #otis-output { min-height: 240px; max-height: 50vh; height: auto; flex: none; }

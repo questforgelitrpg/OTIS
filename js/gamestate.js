@@ -23,7 +23,7 @@
     window.TIMING = TIMING;
 
     // penalty added to sessionHours (each unit = 1 real minute) per failed schematic verification attempt
-    var VERIFICATION_FAILURE_PENALTY_HOURS = 10;
+    var VERIFICATION_FAILURE_PENALTY_HOURS = 3;
     window.VERIFICATION_FAILURE_PENALTY_HOURS = VERIFICATION_FAILURE_PENALTY_HOURS;
     var VERIFY_FAIL_WRONG_NODE     = "That component is an industrial-grade regulator. You are trying to install it into a civilian comm-array. George was eccentric, not incompetent.";
     window.VERIFY_FAIL_WRONG_NODE = VERIFY_FAIL_WRONG_NODE;
@@ -250,10 +250,17 @@
         var payoffFill = document.getElementById('hdr-payoff-bar-fill');
         if (payoffFill) payoffFill.style.width = paidPct + '%';
         var payEl = document.getElementById('hdr-payment');
-        if (payEl) { payEl.textContent = 'INST: ' + (s.currentInstallment||850) + 'cr/' + dup + 'd'; payEl.className = 'hdr-stat' + (dup <= 1 ? ' payment-crit' : dup <= 3 ? ' payment-warn' : ''); }
+        if (payEl) {
+            payEl.textContent = 'INST: ' + (s.currentInstallment||850) + 'cr/' + dup + 'd';
+            payEl.className = 'hdr-stat' + (dup <= 1 ? ' payment-crit' : dup <= 3 ? ' payment-warn' : '');
+            payEl.title = '\u2248' + Math.round(dup * (TIMING.MS_PER_INGAME_DAY / 60000)) + 'm real time';
+        }
         var daysUntilDrop = (s.daysUntilNextDrop != null) ? s.daysUntilNextDrop : TIMING.DAYS_BETWEEN_DROPS;
         var bargeEl = document.getElementById('hdr-barge');
-        if (bargeEl) bargeEl.textContent = s.bargeActive ? 'BARGE: ACTIVE' : 'BARGE: ' + daysUntilDrop + 'd';
+        if (bargeEl) {
+            bargeEl.textContent = s.bargeActive ? 'BARGE: ACTIVE' : 'BARGE: ' + daysUntilDrop + 'd';
+            if (!s.bargeActive) bargeEl.title = '\u2248' + Math.round(daysUntilDrop * (TIMING.MS_PER_INGAME_DAY / 60000)) + 'm real time';
+        }
         var hoursEl = document.getElementById('hdr-hours');
         if (hoursEl) { var sh = s.sessionHours || 0; hoursEl.textContent = 'SESSION: ' + Math.floor(sh / 60) + 'h ' + (sh % 60) + 'm'; }
         setEl('ledger-debt', s.debt.toLocaleString() + ' cr');
