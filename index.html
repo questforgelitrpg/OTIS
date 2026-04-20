@@ -1878,6 +1878,10 @@
             // Clear logoff flag — new session is starting
             window._otisLoggedOff = false;
 
+            // Reset the day-start timestamp so the clock always begins at 00:00 on login.
+            // This ensures tutorial time (or any pre-login time) doesn't bleed into Day 1.
+            window._dayStartedAt = Date.now();
+
             // Reset shift fatigue — each login starts a fresh shift
             gameState.state.sessionHours = 0;
             gameState._save();
