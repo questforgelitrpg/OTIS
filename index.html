@@ -84,6 +84,7 @@
                 <button id="tts-skip-btn" onclick="handleTTSSkip()" title="Skip current speech and clear queue">TTS: SKIP</button>
                 <button id="sfx-btn" onclick="handleSoundToggle()">SFX: ON</button>
                 <button id="ach-btn" onclick="openAchievements()">ACH</button>
+                <button id="module-btn-help" onclick="openModal('help')">HELP</button>
                 <button id="tutorial-back-btn" onclick="tutorialBack()" style="display:none;color:var(--text-dim);border-color:var(--border-dim)" disabled>&#9664; BACK</button>
                 <button id="tutorial-next-btn" onclick="tutorialNext()" style="display:none;color:var(--text-bright);border-color:var(--text-bright)">NEXT &#9654;</button>
                 <button id="tutorial-skip-btn" onclick="tutorialExit()" style="display:none;color:var(--text-dim);border-color:var(--border-dim)">SKIP TUTORIAL</button>
@@ -101,7 +102,6 @@
                 <button class="module-btn" onclick="openModal('store')" data-tooltip="STOREROOM&#10;Keep log, buffer, George's warehouse&#10;Station upgrade node"><span class="mod-light" id="light-store"></span>STOREROOM</button>
                 <button class="module-btn" id="module-btn-systems" onclick="openModal('systems')" data-tooltip="SYSTEMS / BOTS&#10;Monitor retrieval bots&#10;Degrade each drop — maintain regularly"><span class="mod-light" id="light-systems"></span>SYSTEMS / BOTS</button>
                 <button class="module-btn" id="module-btn-auxiliary" style="display:none;opacity:0;transition:opacity 1s" onclick="openModal('auxiliary')"><span class="mod-light" id="light-auxiliary"></span>AUXILIARY INPUT</button>
-                <button class="module-btn" id="module-btn-help" onclick="openModal('help')" data-tooltip="HELP / REFERENCE&#10;Station manual and mechanic summaries&#10;Not read by TTS"><span class="mod-light" id="light-help"></span>HELP</button>
             </div>
 
             <div id="debug-panel">
@@ -122,7 +122,7 @@
             </div>
 
             <footer id="terminal-footer">
-                <span>O.T.I.S. v0.4 // PHASE 0</span>
+                <span>O.T.I.S. v4.2 // PHASE 0</span>
                 <span style="display:flex;gap:0.4rem;align-items:center">
                     <button onclick="toggleDebug()">DBG</button>
                     <button id="clear-save-btn" onclick="handleClearSave(this)">CLEAR SAVE</button>
@@ -1782,6 +1782,7 @@
         if (!window._otisDayIntervalId) {
             window._otisDayIntervalId = setInterval(function() {
                 if (window._otisLoggedOff) return;
+                if (!window._otisGameStarted) return; // Don't tick until player logs in
                 if (gameState.state.tutorialStep >= 1) return; // Freeze day clock during tutorial
                 advanceDay();
             }, TIMING.MS_PER_INGAME_DAY); // use the canonical timing constant (240 000 ms)
@@ -1795,6 +1796,7 @@
         if (!window._otisDayClockId) {
             window._otisDayClockId = setInterval(function() {
                 if (window._otisLoggedOff) return;
+                if (!window._otisGameStarted) return; // Don't tick until player logs in
                 if (gameState.state.tutorialStep >= 1) return; // Freeze visual clock during tutorial
                 var s = gameState.state;
                 var elapsed = Date.now() - (window._dayStartedAt || Date.now());
@@ -1877,6 +1879,10 @@
 
             // Clear logoff flag — new session is starting
             window._otisLoggedOff = false;
+            // Mark game as started so day timers begin ticking
+            window._otisGameStarted = true;
+            // Enable game-active class to disable tutorial hover tooltips
+            document.body.classList.add('game-active');
 
             // Reset the day-start timestamp so the clock always begins at 00:00 on login.
             // This ensures tutorial time (or any pre-login time) doesn't bleed into Day 1.

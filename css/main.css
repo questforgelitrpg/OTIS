@@ -457,6 +457,12 @@ body.kbd-glitch { animation: kbd-glitch 0.3s infinite; }
     display: block;
 }
 
+/* Disable hover tooltips once the game is active (after player logs in) */
+body.game-active [data-tooltip]:hover::after,
+body.game-active [data-tooltip]:hover::before {
+    display: none;
+}
+
 /* George warehouse */
 .george-note { font-size: 14px; color: var(--text-dim); font-style: italic; margin: 0.15rem 0 0.3rem; }
 .george-ascii { font-size:5px; line-height:1.1; color:var(--text-primary); white-space:pre; overflow-x:auto; text-align:center; margin:0.4rem 0; opacity:0.8; }
