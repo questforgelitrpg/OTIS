@@ -29,6 +29,11 @@
             var pct = Math.round(((20 - countdown) / 20) * 100);
             if (countEl) countEl.textContent = countdown + "s";
             if (progressFill) progressFill.style.width = pct + "%";
+            // Update barge-hold-indicator with live countdown if barge is queued
+            if (s.bargePendingDuringSearch) {
+                var bargeHoldEl = document.getElementById('barge-hold-indicator');
+                if (bargeHoldEl) bargeHoldEl.textContent = '\u26a0 BARGE QUEUED \u2014 deploying in ' + Math.max(0, countdown) + 's';
+            }
             if (countdown <= 0) {
                 clearInterval(tick);
                 if (progressFill) progressFill.parentElement.style.display = "none";
@@ -108,6 +113,11 @@
                 if (window.OtisTTS) OtisTTS.speak(discMsg);
                 renderSchematic();
             }, 1500);
+            setTimeout(function() {
+                var schHint = 'Schematic unlocked. Match kept items and warehouse finds to diary entries to install nodes. Open STOREROOM to continue.';
+                otisLines.push({ role: 'otis', text: schHint }); renderOTIS();
+                if (window.OtisTTS) OtisTTS.speak(schHint);
+            }, 4000);
         } else {
             renderSchematic();
         }
@@ -657,9 +667,21 @@
         var s = gameState.state;
         var installed = s.installedNodes || [];
         if (installed.length < 8) return;
-        var completionMsg = "Pattern match: 100%. Vernon... the station isn't just a salvage yard. It's a transmitter. George wasn't just talking to me; he was calibrating a return address.";
-        otisLines.push({ role: 'otis', text: completionMsg }); renderOTIS();
-        if (window.OtisTTS) OtisTTS.speak(completionMsg);
+        // Completion reward — 2500 cr granted once
+        if (!s.schematicRewardGiven) {
+            s.schematicRewardGiven = true;
+            s.credits = (s.credits || 0) + 2500;
+            gameState._save();
+            gameState._updateUI();
+            var rewardMsg = 'Pattern match: 100%. Schematic complete. +2500 cr.';
+            otisLines.push({ role: 'otis', text: rewardMsg }); renderOTIS();
+            if (window.OtisTTS) OtisTTS.speak(rewardMsg);
+            setTimeout(function() {
+                var completionMsg = "Vernon... the station isn't just a salvage yard. It's a transmitter. George wasn't just talking to me; he was calibrating a return address.";
+                otisLines.push({ role: 'otis', text: completionMsg }); renderOTIS();
+                if (window.OtisTTS) OtisTTS.speak(completionMsg);
+            }, 3000);
+        }
         checkDiaryUnlocksFinal();
         var transmitSection = document.getElementById('transmit-section');
         if (transmitSection) transmitSection.style.display = '';
@@ -673,13 +695,15 @@
         var s = gameState.state;
         if ((s.installedNodes || []).length < 8) return;
         if (s.endingTriggered) return;
+        // Set endingTriggered immediately to prevent double-fire during the 2s delay
+        s.endingTriggered = true;
+        gameState._save();
         // BUG 15 fix: route through triggerEnding() so LEGACY uses the same
         // ending-screen render path as all other endings (restart/ack button
         // logic, {{token}} substitution, endingTriggered guard).
         var txMsg = 'Transmission sequence initiated. Signal locked to 452b.';
         otisLines.push({ role: 'otis', text: txMsg }); renderOTIS();
         if (window.OtisTTS) OtisTTS.speak(txMsg);
-        gameState._save();
         setTimeout(function() {
             triggerEnding('LEGACY');
         }, 2000);

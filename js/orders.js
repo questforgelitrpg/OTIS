@@ -24,12 +24,12 @@
 
     var NPC_FOLLOWUP_MISSED = {
         MAY: [
-            '[MAY] Window closed. Buyer moved on. If you can still get me 2 of the 3, I\u2019ll take them at 70 cr each \u2014 partial rate. \u2014 Finster',
-            '[MAY] Order lapsed. I\u2019ll take whatever you have at reduced rate (50 cr flat per item) if you can send today. \u2014 M. Finster',
+            '[MAY] Window closed. Buyer moved on. Order lapsed. \u2014 Finster',
+            '[MAY] Order expired. I\u2019ll watch for the next opportunity. \u2014 M. Finster',
         ],
         SVEN: [
-            '[SVEN] You missed my window. I\u2019ll extend 24 hours for a 15% cut on the reward. Your call. \u2014 Digut',
-            '[SVEN] Late. I can still take it \u2014 one-time extension, 200 cr flat. Last offer. \u2014 S. Digut',
+            '[SVEN] You missed my window. No extension. \u2014 Digut',
+            '[SVEN] Late. Order void. \u2014 S. Digut',
         ],
         BANK: [
             '[UBC] Deadline passed. Penalty applied. Maintain compliance going forward. \u2014 UBC Oversight',
@@ -193,7 +193,7 @@
             s.svenRareRefusalActive = true;
             s.svenRareRefusalExpiresDay = order.expiresOnDay;
             // LORE
-            var acceptMsg = '[STANDING ORDER ACCEPTED] Sven: First refusal on Rares active. Interference at 5% for 7 days. Route Rare items to Sven this cycle to honour the deal. George never made this agreement. He said the interference was the honest version of the relationship.';
+            var acceptMsg = '[STANDING ORDER ACCEPTED] Sven: First refusal on Rares active. Interference: 20% \u2192 5% for 7 days. Route Rare items to Sven this cycle to honour the deal. George never made this agreement. He said the interference was the honest version of the relationship.';
             otisLines.push({ role: 'otis', text: acceptMsg }); renderOTIS();
             if (window.OtisTTS) OtisTTS.speak(acceptMsg);
         }
@@ -253,6 +253,8 @@
         }
         list.innerHTML = orders.map(function(o) {
             var daysLeft = Math.max(0, o.expiresOnDay - s.day);
+            var minsLeft = Math.round(daysLeft * (TIMING.MS_PER_INGAME_DAY / 60000));
+            var timeStr = daysLeft + 'd (' + minsLeft + 'm)';
             var progressStr = (o.requirementQty > 1)
                 ? ' [' + (o.progressQty || 0) + '/' + o.requirementQty + ']'
                 : '';
@@ -266,7 +268,7 @@
             return '<div class="standing-order-entry">'
                 + '<div class="so-header">[STANDING ORDER] ' + escapeHtml(o.npc) + '</div>'
                 + '<div class="so-desc">' + escapeHtml(o.desc) + progressStr + '</div>'
-                + '<div class="so-meta">Reward: ' + (o.rewardCredits > 0 ? o.rewardCredits + ' cr' : '') + (o.rewardNote ? ' ' + escapeHtml(o.rewardNote) : '') + ' — Expires Day ' + o.expiresOnDay + ' (' + daysLeft + 'd)</div>'
+                + '<div class="so-meta">Reward: ' + (o.rewardCredits > 0 ? o.rewardCredits + ' cr' : '') + (o.rewardNote ? ' ' + escapeHtml(o.rewardNote) : '') + ' \u2014 Expires Day ' + o.expiresOnDay + ' (' + timeStr + ')</div>'
                 + actionsHtml
                 + '</div>';
         }).join('');

@@ -80,6 +80,7 @@
                 <button onclick="appendOTIS('What is the current status?','CONSULT_STATUS')">STATUS</button>
                 <button onclick="appendOTIS('How bad is the debt?','CONSULT_DEBT')">DEBT</button>
                 <button onclick="handleLogoff()">LOGOFF</button>
+                <button id="header-clear-save-btn" onclick="handleClearSave(this)" style="color:var(--text-danger);border-color:var(--text-danger)">NEW GAME</button>
                 <button id="tts-btn" onclick="handleTTSToggle()">TTS: ON</button>
                 <button id="tts-skip-btn" onclick="handleTTSSkip()" title="Skip current speech and clear queue">TTS: SKIP</button>
                 <button id="sfx-btn" onclick="handleSoundToggle()">SFX: ON</button>
@@ -200,9 +201,9 @@
                 <div class="modal-label">PICK LIST</div>
                 <p class="zone-hint" id="pick-list-hint" style="color:var(--text-dim)">Active for next drop.</p>
                 <div class="modal-row">
-                    <button id="pl-mode-drop" class="picklist-btn active" onclick="setPickMode('DROP')">DROP</button>
-                    <button id="pl-mode-prioritize" class="picklist-btn" onclick="setPickMode('PRIORITIZE')">PRIORITIZE</button>
-                    <button id="pl-mode-dw" class="picklist-btn" onclick="setPickMode('DOUBLE_WEIGHT')">DOUBLE-WEIGHT</button>
+                    <button id="pl-mode-drop" class="picklist-btn active" onclick="setPickMode('DROP')" title="DROP: Bots fetch items in default weighted order across all categories">DROP</button>
+                    <button id="pl-mode-prioritize" class="picklist-btn" onclick="setPickMode('PRIORITIZE')" title="PRIORITIZE: Bots favour items in your chosen category first each run">PRIORITIZE</button>
+                    <button id="pl-mode-dw" class="picklist-btn" onclick="setPickMode('DOUBLE_WEIGHT')" title="DOUBLE-WEIGHT: Your chosen category appears twice as often in the manifest">DOUBLE-WEIGHT</button>
                 </div>
                 <div id="pick-category-btns" class="modal-row" style="flex-wrap:wrap;gap:0.3rem;margin-top:0.3rem"></div>
                 <div class="modal-row" style="margin-top:0.4rem">
@@ -438,7 +439,10 @@
                 <p class="zone-hint">Bank inspections check bot status every 14 days. Failed inspections add to arrears. All three bots offline will stop the belt entirely.</p>
             </div>
             <div class="modal-section">
-                <div class="modal-label">THE DEBT</div>
+                <div class="modal-label">TUTORIAL</div>
+                <p class="zone-hint">If you skipped the tutorial or want to review it, you can start it at any time. The tutorial runs before the game clock starts and can be exited at any step.</p>
+                <button onclick="startTutorialFromHelp()" style="margin-top:0.4rem">START TUTORIAL</button>
+            </div>
                 <p class="zone-hint">You owe 25,000 cr to the Universal Bank Conglomerate. Pay 850 cr per week from COMMS. Pay early to reset the countdown.</p>
                 <p class="zone-hint">Miss a payment and arrears stack. The CLEAR ARREARS button in COMMS costs the full arrears amount. Multiple missed payments escalate consequences.</p>
                 <p class="zone-hint">The debt is the game. Everything else is the means to pay it off.</p>
@@ -1763,15 +1767,10 @@
                             otisLines.push({ role: 'otis', text: msg }); renderOTIS();
                             if (window.OtisTTS) OtisTTS.speak(msg);
 
-                            // CRITICAL: stop belt, then auto-logoff after dialog completes
+                            // CRITICAL: stop belt (pause drops) — do not force logoff mid-drop
                             if (newTier === 'CRITICAL') {
                                 if (typeof stopBotFetch === 'function') stopBotFetch();
                                 if (typeof stopBeltDelivery === 'function') stopBeltDelivery();
-                                var wordCount = msg.split(/\s+/).length;
-                                var delay = Math.min(Math.max(wordCount * 100, 3000), 14000);
-                                setTimeout(function() {
-                                    if (!window._otisLoggedOff) handleLogoff();
-                                }, delay);
                             }
                         }
                     }
@@ -1784,6 +1783,7 @@
                 if (window._otisLoggedOff) return;
                 if (!window._otisGameStarted) return; // Don't tick until player logs in
                 if (gameState.state.tutorialStep >= 1) return; // Freeze day clock during tutorial
+                if (gameState.state.dayPaused) return; // Freeze during power outage or cutscene
                 advanceDay();
             }, TIMING.MS_PER_INGAME_DAY); // use the canonical timing constant (240 000 ms)
         }
@@ -2037,6 +2037,17 @@
             showLoginGate();
         }
         window.handleTutorialBeginGame = handleTutorialBeginGame;
+
+        function startTutorialFromHelp() {
+            closeModal('help');
+            gameState.state.tutorialStep = 1;
+            gameState._save();
+            var loginBtn = document.getElementById('btn-login');
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (typeof _showTutorialNav === 'function') _showTutorialNav(true);
+            if (typeof _startTutorialStep === 'function') _startTutorialStep(1);
+        }
+        window.startTutorialFromHelp = startTutorialFromHelp;
 
         // If tutorial is active on load, start pre-game tutorial instead of login gate
         if (gameState.state.tutorialStep >= 1) {

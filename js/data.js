@@ -520,7 +520,7 @@
             key: 'scanner',
             name: 'Scanner Sensitivity',
             effects: ['+8% rare detection', '+18% rare detection', '+30% rare detection'],
-            costs: [850, 2125, 4250],
+            costs: [510, 2125, 4250],
             // LORE
             lore: [
                 'George built the original scanner mod from a spare navigation array. Year 7. It is still running on his calibration.',
@@ -532,7 +532,7 @@
             key: 'belt',
             name: 'Belt Governor',
             effects: ['-15% jam rate', '-30% jam rate', '-50% jam rate'],
-            costs: [850, 2125, 4250],
+            costs: [510, 2125, 4250],
             // LORE
             lore: [
                 'George shimmed the governor with a piece of insulation tape on day three. It held for twenty-two years. You are replacing the tape.',
@@ -544,7 +544,7 @@
             key: 'storeroom',
             name: 'Storeroom Expansion',
             effects: ['+3 storage slots', '+7 storage slots', '+12 storage slots'],
-            costs: [850, 2125, 4250],
+            costs: [510, 2125, 4250],
             // LORE
             lore: [
                 'George built the original racks himself. He said the station came with nowhere to put things and he fixed it. You are fixing it further.',
@@ -556,7 +556,7 @@
             key: 'comm',
             name: 'Comm Boost',
             effects: ['Unlocks Standing Orders (NPC orders via COMMS)', '+1 concurrent order cap (4 total)', '+2 concurrent order cap (5 total)'],
-            costs: [850, 2125, 4250],
+            costs: [510, 2125, 4250],
             // LORE
             lore: [
                 'George upgraded the antenna himself after the first year. Said the default range was embarrassing. You are just restoring what he built.',
@@ -568,7 +568,7 @@
             key: 'power',
             name: 'Power Regulator',
             effects: ['-10% bot degradation rate', '-20% bot degradation rate', '-33% bot degradation rate'],
-            costs: [850, 2125, 4250],
+            costs: [510, 2125, 4250],
             // LORE
             lore: [
                 'George rewound the coil himself in year 12 when the original failed. His rewind lasted eleven years. This is a proper replacement.',
@@ -580,7 +580,7 @@
             key: 'hull',
             name: 'Hull Patch',
             effects: ['-25% inspection failure debt', '-50% inspection failure debt', '-75% inspection failure debt'],
-            costs: [850, 2125, 4250],
+            costs: [510, 2125, 4250],
             // LORE
             lore: [
                 'George patched this section three times. Each patch is a different colour. He was not embarrassed about this. You should not be either.',
@@ -591,8 +591,8 @@
         {
             key: 'cooling',
             name: 'Cooling Loop',
-            effects: ['-15% chance bots slip below NOMINAL', '-30% chance bots slip below NOMINAL', '-50% chance bots slip below NOMINAL'],
-            costs: [850, 2125, 4250],
+            effects: ['-15% bot slip chance; +15% session time before fatigue warnings', '-30% bot slip chance; +30% session time before fatigue warnings', '-50% bot slip chance; session time extended to maximum'],
+            costs: [510, 2125, 4250],
             // LORE
             lore: [
                 'George ran the original cooling loop off a reclaimed refrigeration unit. He said it was fine. The maintenance logs disagreed twice a year.',
