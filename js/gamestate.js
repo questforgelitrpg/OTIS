@@ -167,6 +167,7 @@
                 svenFirstRefusalDone: false,
                 lastLogoffFatigue: 'NONE', // fatigue tier at last logoff — used for carry-over penalty on re-login
                 fatigueCarryOver: false,
+                dayElapsedAtLogoff: 0,    // ms elapsed in current day at logoff — restored on next login
                 stateVersion: 8,
             };
         },
@@ -216,6 +217,7 @@
         if (typeof state.buttonsPressed !== 'object' || state.buttonsPressed === null) state.buttonsPressed = {};
         if (typeof state.lastLogoffFatigue !== 'string') state.lastLogoffFatigue = 'NONE';
         if (typeof state.fatigueCarryOver !== 'boolean') state.fatigueCarryOver = false;
+        if (typeof state.dayElapsedAtLogoff !== 'number') state.dayElapsedAtLogoff = 0;
     }
     window.ensureStateDefaults = ensureStateDefaults;
 

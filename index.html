@@ -995,6 +995,9 @@
         var logoffTier = (typeof getFatigueTier === 'function') ? getFatigueTier() : 'NONE';
         gameState.state.lastLogoffFatigue = logoffTier;
 
+        // Save the elapsed time in the current day so the clock can resume correctly on re-login
+        gameState.state.dayElapsedAtLogoff = Math.max(0, Date.now() - (window._dayStartedAt || Date.now()));
+
         // Pick logoff message pool based on fatigue tier (if voluntary) or use existing debt pool
         var debt = gameState.state.outstandingDebt || 0;
         var logoffMsg;
@@ -1889,12 +1892,45 @@
             // Enable game-active class to disable tutorial hover tooltips
             document.body.classList.add('game-active');
 
-            // Reset the day-start timestamp so the clock always begins at 00:00 on login.
-            // This ensures tutorial time (or any pre-login time) doesn't bleed into Day 1.
-            window._dayStartedAt = Date.now();
+            // Restore the day-start timestamp from the saved logoff elapsed time.
+            // For a first login after the tutorial, dayElapsedAtLogoff defaults to 0 so
+            // the clock starts at 00:00.  For a saved-game re-login the clock resumes
+            // exactly where it was when the player logged off.
+            var _dayElapsed = Math.max(0, Math.min(
+                gameState.state.dayElapsedAtLogoff || 0,
+                TIMING.MS_PER_INGAME_DAY - 1000 // keep at least 1 s remaining so the timeout fires shortly
+            ));
+            window._dayStartedAt = Date.now() - _dayElapsed;
+
+            // Clear and restart the day-advance interval so it is always aligned with
+            // the current login time.  Without this the interval created at
+            // DOMContentLoaded fires at the wrong time (e.g. only 2 minutes after login
+            // if the player spent 2 minutes on the tutorial/login screen).
+            if (window._otisDayIntervalId) { clearInterval(window._otisDayIntervalId); window._otisDayIntervalId = null; }
+            if (window._otisDayTimeoutId)  { clearTimeout(window._otisDayTimeoutId);   window._otisDayTimeoutId  = null; }
+
+            // First advance fires after the remaining portion of the current day, then
+            // subsequent advances run on the canonical 240-second interval.
+            var _dayRemaining = Math.max(1000, TIMING.MS_PER_INGAME_DAY - _dayElapsed); // minimum 1 s so setTimeout fires promptly
+            window._otisDayTimeoutId = setTimeout(function() {
+                window._otisDayTimeoutId = null;
+                if (window._otisLoggedOff) return; // Player logged off before first advance
+                if (!window._otisGameStarted) return;
+                if (gameState.state.tutorialStep >= 1) return;
+                if (!gameState.state.dayPaused) advanceDay();
+                // Start the regular per-day interval after the first advance
+                window._otisDayIntervalId = setInterval(function() {
+                    if (window._otisLoggedOff) return;
+                    if (!window._otisGameStarted) return;
+                    if (gameState.state.tutorialStep >= 1) return;
+                    if (gameState.state.dayPaused) return;
+                    advanceDay();
+                }, TIMING.MS_PER_INGAME_DAY);
+            }, _dayRemaining);
 
             // Reset shift fatigue — each login starts a fresh shift
             gameState.state.sessionHours = 0;
+            gameState.state.dayElapsedAtLogoff = 0; // Clear saved day progress (already applied above)
             gameState._save();
             updateFatigueVisuals();
 
