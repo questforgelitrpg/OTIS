@@ -106,6 +106,10 @@
             _clearTutorialBadge();
             _showTutorialNav(false);
             s.tutorialStep = 0;
+            // Reset credits to starting value — any credits earned during the tutorial
+            // (e.g. by sorting the demo item multiple times via back/forward navigation)
+            // are wiped so the player begins the real game with the canonical 200 cr.
+            s.credits = 200;
             gameState._save();
             var doneMsg = 'Tutorial complete. The station is yours when you are ready. Click BEGIN GAME to start. The clock starts then.';
             otisLines.push({ role: 'otis', text: doneMsg }); renderOTIS();
