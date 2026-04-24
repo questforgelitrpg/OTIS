@@ -110,13 +110,13 @@
         _watchdogTimer = setInterval(function () {
             if (!_speaking) return;
             const elapsed = Date.now() - _utteranceStartedAt;
-            // Attempt resume if we are past expected duration (Chrome may have paused).
-            const resumeAt = Math.max(10000, _expectedDuration - 2000);
+            // Always call resume() on every tick — it is a no-op when synthesis is not
+            // paused. Chrome (especially on Android and on backgrounded tabs) silently
+            // pauses speech synthesis without firing any event; calling resume() every
+            // 2 s is the standard workaround and prevents the intro from stalling.
+            if (window.speechSynthesis) window.speechSynthesis.resume();
             // Give up and advance the queue if synthesis is clearly stuck.
             const cancelAt = _expectedDuration + 5000;
-            if (elapsed > resumeAt) {
-                if (window.speechSynthesis) window.speechSynthesis.resume();
-            }
             if (elapsed > cancelAt) {
                 if (window.speechSynthesis) window.speechSynthesis.cancel();
                 _speaking = false;

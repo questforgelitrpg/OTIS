@@ -194,8 +194,8 @@
                         <button id="btn-to-broker" class="bin" data-bin="BROKER_BIN" onclick="handleDeclare('BROKER_BIN')" title="Industrial and Vessel items" data-tooltip="Any item&#10;Higher payout when bin is fuller">TO BROKER BIN</button>
                         <button id="btn-to-sven" class="bin" data-bin="SVEN_BIN" onclick="handleDeclare('SVEN_BIN')" title="Rare and Anomalous only — Sven pays 65%" style="color:var(--text-warn);border-color:#3a2a00" data-tooltip="Rare and Anomalous only&#10;65% — auto-ships at 2">TO SVEN BIN</button>
                         <button id="btn-to-archive" onclick="handleDeclare('ARCHIVE')" title="Route to Humanity Archive — Anomalous items only" style="display:none;color:#cc77ff;border-color:#5a2a7a">ARCHIVE</button>
-                        <button onclick="handleDeclare('KEEP')" data-tooltip="Stores in your keep log&#10;Limited capacity">KEEP</button>
-                        <button class="btn-warn" onclick="handleDeclare('SCRAP')" data-tooltip="Low return, instant clear&#10;Watch scrap fill in COMMS">SCRAP</button>
+                        <button class="bin" data-bin="KEEP" onclick="handleDeclare('KEEP')" data-tooltip="Stores in your keep log&#10;Limited capacity">KEEP</button>
+                        <button class="bin btn-warn" data-bin="SCRAP" onclick="handleDeclare('SCRAP')" data-tooltip="Low return, instant clear&#10;Watch scrap fill in COMMS">SCRAP</button>
                     </div>
                 </div>
             </div>

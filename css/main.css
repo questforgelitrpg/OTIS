@@ -756,6 +756,9 @@ body.chaos-shake { animation: chaos-shake 0.5s infinite, flicker 12s infinite; }
 /* Bin buttons are already styled; add smooth transitions for hover states */
 .bin {
     transition: box-shadow 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    min-height: 56px;
+    padding: 0.5rem 0.8rem;
+    font-size: 14px;
 }
 
 /* Applied to a .bin element while the drag clone is hovering over it */
