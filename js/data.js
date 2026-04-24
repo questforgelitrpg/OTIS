@@ -309,7 +309,7 @@
         // Step 10 — Gated: examine item
         { target: 'cc-examine', msg: 'Examine the item now. Click EXAMINE.', gated: true },
         // Step 11 — Sorting options overview
-        { target: 'item-declaration', msg: 'Five choices. MAY BIN, BROKER BIN, SVEN BIN, KEEP, and SCRAP. Each one does something different. I will explain each one before you sort.' },
+        { target: 'item-declaration', msg: 'Five choices. MAY BIN, BROKER BIN, SVEN BIN, KEEP, and SCRAP. Each one does something different. For the three bins, you can click the button or drag the item card from the top of this panel and drop it onto the bin. I will explain each option before you sort.' },
         // Step 12 — May bin
         { target: 'item-declaration', msg: 'MAY BIN. Accepts Civilian and Settlement items only. May Finster runs a recycling operation on the surface. She pays full item value. You ship the bin manually from the COMMS panel. Holds up to 12 items.' },
         // Step 13 — Broker bin
@@ -321,7 +321,7 @@
         // Step 16 — Scrap
         { target: 'item-declaration', msg: 'SCRAP. Sends the item to the scrap channel immediately. May buys scrap by weight. Low return but it clears the belt fast. Watch the scrap fill percentage in COMMS and ship it before the channel hits 100%.' },
         // Step 17 — Gated: sort an item
-        { target: 'item-declaration', msg: 'Sort the item now. Pick whichever bin accepts its category. If you choose wrong I will tell you. The item tags show category and rarity.', gated: true },
+        { target: 'item-declaration', msg: 'Sort the item now. Click a bin button, or drag the item card at the top of this panel and drop it onto a bin. If the category is wrong I will tell you. The item tags show category and rarity.', gated: true },
         // Step 18 — Gated: open comms
         { target: 'module-btn-comms', msg: 'Good. Your item is in a bin. Open COMMS to ship it and collect your credits.', gated: true },
         // Step 19 — Gated: ship the bin

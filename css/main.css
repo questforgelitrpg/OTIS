@@ -721,3 +721,46 @@ body.chaos-shake { animation: chaos-shake 0.5s infinite, flicker 12s infinite; }
     #module-grid { grid-template-columns: repeat(2, 1fr); }
     button, .module-btn, .consult-card { min-height: 40px; }
 }
+
+/* ── DRAG & DROP ─────────────────────────────────────────────────────────── */
+#belt-item {
+    cursor: grab;
+    border: 1px solid var(--border-dim);
+    border-radius: 3px;
+    padding: 0.4rem 0.5rem;
+    margin-bottom: 0.4rem;
+    transition: opacity 0.15s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+/* The floating clone shown during a drag gesture */
+.drag-clone {
+    cursor: grabbing;
+    border: 1px solid var(--text-primary);
+    border-radius: 3px;
+    padding: 0.4rem 0.5rem;
+    background: var(--bg-modal);
+    box-shadow: 0 0 16px rgba(51, 255, 102, 0.35);
+    transition: transform 0.1s ease;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.dragging {
+    opacity: 0.95;
+    z-index: 10000;
+}
+
+/* Bin buttons are already styled; add smooth transitions for hover states */
+.bin {
+    transition: box-shadow 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+/* Applied to a .bin element while the drag clone is hovering over it */
+.bin-hover {
+    box-shadow: 0 0 12px rgba(51, 255, 102, 0.5) !important;
+    border-color: var(--text-bright) !important;
+    color: var(--text-bright) !important;
+}
