@@ -1898,7 +1898,7 @@
             // exactly where it was when the player logged off.
             var _dayElapsed = Math.max(0, Math.min(
                 gameState.state.dayElapsedAtLogoff || 0,
-                TIMING.MS_PER_INGAME_DAY - 1000
+                TIMING.MS_PER_INGAME_DAY - 1000 // keep at least 1 s remaining so the timeout fires shortly
             ));
             window._dayStartedAt = Date.now() - _dayElapsed;
 
@@ -1911,7 +1911,7 @@
 
             // First advance fires after the remaining portion of the current day, then
             // subsequent advances run on the canonical 240-second interval.
-            var _dayRemaining = Math.max(1000, TIMING.MS_PER_INGAME_DAY - _dayElapsed);
+            var _dayRemaining = Math.max(1000, TIMING.MS_PER_INGAME_DAY - _dayElapsed); // minimum 1 s so setTimeout fires promptly
             window._otisDayTimeoutId = setTimeout(function() {
                 window._otisDayTimeoutId = null;
                 if (window._otisLoggedOff) return; // Player logged off before first advance
