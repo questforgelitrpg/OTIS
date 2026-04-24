@@ -177,10 +177,12 @@
                 <div class="modal-label">ITEM QUEUE</div>
                 <p class="zone-hint" id="item-queue-empty">&#x2014; WAITING FOR DROP &#x2014;</p>
                 <div id="item-queue-present" style="display:none">
-                    <p class="item-name" id="item-queue-name"></p>
-                    <div class="item-tags" id="item-tags"></div>
-                    <p class="otis-estimate" id="otis-estimate" style="display:none"></p>
-                    <pre id="item-queue-ascii" class="george-ascii" style="display:none"></pre>
+                    <div id="belt-item" class="draggable-item">
+                        <p class="item-name" id="item-queue-name"></p>
+                        <div class="item-tags" id="item-tags"></div>
+                        <p class="otis-estimate" id="otis-estimate" style="display:none"></p>
+                        <pre id="item-queue-ascii" class="george-ascii" style="display:none"></pre>
+                    </div>
                     <div class="consult-cards">
                         <button class="consult-card" id="cc-examine" onclick="handleConsultMerged()">EXAMINE &amp; VALUE</button>
                         <button class="consult-card" id="cc-george" onclick="handleConsult('CONSULT_GEORGE')">GEORGE ARCHIVE</button>
@@ -188,9 +190,9 @@
                     </div>
                     <div class="item-actions" id="item-declaration" style="display:none">
                         <p id="weigh-it-hint" style="display:none"></p>
-                        <button id="btn-to-may" onclick="handleDeclare('MAY_BIN')" title="Civilian and Settlement items only" data-tooltip="Civilian and Settlement only&#10;Full value — ships to May">TO MAY BIN</button>
-                        <button id="btn-to-broker" onclick="handleDeclare('BROKER_BIN')" title="Industrial and Vessel items" data-tooltip="Any item&#10;Higher payout when bin is fuller">TO BROKER BIN</button>
-                        <button id="btn-to-sven" onclick="handleDeclare('SVEN_BIN')" title="Rare and Anomalous only — Sven pays 65%" style="color:var(--text-warn);border-color:#3a2a00" data-tooltip="Rare and Anomalous only&#10;65% — auto-ships at 2">TO SVEN BIN</button>
+                        <button id="btn-to-may" class="bin" data-bin="MAY_BIN" onclick="handleDeclare('MAY_BIN')" title="Civilian and Settlement items only" data-tooltip="Civilian and Settlement only&#10;Full value — ships to May">TO MAY BIN</button>
+                        <button id="btn-to-broker" class="bin" data-bin="BROKER_BIN" onclick="handleDeclare('BROKER_BIN')" title="Industrial and Vessel items" data-tooltip="Any item&#10;Higher payout when bin is fuller">TO BROKER BIN</button>
+                        <button id="btn-to-sven" class="bin" data-bin="SVEN_BIN" onclick="handleDeclare('SVEN_BIN')" title="Rare and Anomalous only — Sven pays 65%" style="color:var(--text-warn);border-color:#3a2a00" data-tooltip="Rare and Anomalous only&#10;65% — auto-ships at 2">TO SVEN BIN</button>
                         <button id="btn-to-archive" onclick="handleDeclare('ARCHIVE')" title="Route to Humanity Archive — Anomalous items only" style="display:none;color:#cc77ff;border-color:#5a2a7a">ARCHIVE</button>
                         <button onclick="handleDeclare('KEEP')" data-tooltip="Stores in your keep log&#10;Limited capacity">KEEP</button>
                         <button class="btn-warn" onclick="handleDeclare('SCRAP')" data-tooltip="Low return, instant clear&#10;Watch scrap fill in COMMS">SCRAP</button>
@@ -621,6 +623,7 @@
     <script src="js/upgrades.js"></script>
     <script src="js/orders.js"></script>
     <script src="js/tutorial.js"></script>
+    <script src="js/dragdrop.js"></script>
     <script src="js/naming.js"></script>
     <script src="js/debug.js"></script>
     <script src="js/chaos-buttons.js"></script>
